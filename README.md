@@ -46,4 +46,3 @@ Dê **dois cliques** em [`iniciar_servidor.bat`](./iniciar_servidor.bat). Ele in
 ## 📄 Relatórios em PDF no Projeto
 
 - [`Relatorio_Melhorias_e_Testes_CittaLixo.pdf`](./Relatorio_Melhorias_e_Testes_CittaLixo.pdf): Relatório completo de evolução (da v1.0.0 até a **v3.0.0**) e guia de testes.
-- [`Relatorio_Fontes_e_Metodologia_CittaLixo.pdf`](./Relatorio_Fontes_e_Metodologia_CittaLixo.pdf): Fontes de dados geográficos, ambientais e metodologia de simulação.
