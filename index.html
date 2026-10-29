@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CittaLixo — Pontos, Rotas e Horários de Coleta em Olinda e Recife</title>
+    <meta name="theme-color" content="#14532d" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>CittaLixo — Pontos, Rotas em Tempo Real, Denúncias e Guia (Olinda e Recife)</title>
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
@@ -14,6 +16,8 @@
             --green-light: #dcfce7;
             --blue-primary: #0284c7;
             --blue-light: #e0f2fe;
+            --orange-critical: #ea580c;
+            --orange-light: #ffedd5;
             --amber-light: #fef3c7;
             --amber-dark: #92400e;
             --bg-page: #f1f5f9;
@@ -41,7 +45,7 @@
         header {
             background: linear-gradient(135deg, var(--green-dark), var(--green-primary));
             color: white;
-            padding: 24px 20px;
+            padding: 22px 20px 18px;
             text-align: center;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
         }
@@ -53,16 +57,99 @@
         }
 
         header p {
-            margin: 8px auto 0;
-            max-width: 720px;
-            opacity: 0.92;
-            font-size: 0.98rem;
+            margin: 6px auto 14px;
+            max-width: 760px;
+            opacity: 0.94;
+            font-size: 0.96rem;
+        }
+
+        /* Navegação de Abas Principais */
+        .nav-tabs {
+            display: inline-flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.14);
+            padding: 6px;
+            border-radius: 999px;
+        }
+
+        .tab-btn {
+            border: none;
+            background: transparent;
+            color: white;
+            padding: 8px 18px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 0.92rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: var(--green-dark);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.18);
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1240px;
             margin: 0 auto;
-            padding: 20px 16px 48px;
+            padding: 18px 16px 48px;
+        }
+
+        /* Dashboard de Estatísticas no Topo */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            padding: 14px 16px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border-bottom: 4px solid var(--green-primary);
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .stat-card.blue { border-bottom-color: var(--blue-primary); }
+        .stat-card.orange { border-bottom-color: var(--orange-critical); }
+
+        .stat-value {
+            font-size: 1.55rem;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .stat-label {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        /* Aviso de Simulação por Horário Real */
+        .sim-banner {
+            background: var(--amber-light);
+            color: var(--amber-dark);
+            border: 1px solid #fcd34d;
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin-bottom: 16px;
+            font-size: 0.88rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         /* Barra de filtros e ações */
@@ -71,7 +158,7 @@
             padding: 16px;
             border-radius: var(--radius);
             box-shadow: var(--shadow);
-            margin-bottom: 20px;
+            margin-bottom: 18px;
             display: flex;
             flex-wrap: wrap;
             gap: 12px;
@@ -121,9 +208,9 @@
             padding: 9px 12px;
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            font-size: 0.92rem;
+            font-size: 0.9rem;
             background: white;
-            min-width: 160px;
+            min-width: 155px;
         }
 
         .btn-action {
@@ -133,7 +220,7 @@
             padding: 9px 14px;
             border-radius: 8px;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
@@ -145,9 +232,8 @@
             opacity: 0.92;
         }
 
-        .btn-add {
-            background: var(--green-dark);
-        }
+        .btn-add { background: var(--green-dark); }
+        .btn-orange { background: var(--orange-critical); }
 
         /* Layout Mapa + Painel Lateral/Cards */
         .main-grid {
@@ -173,7 +259,7 @@
         }
 
         #map {
-            height: 540px;
+            height: 550px;
             width: 100%;
             border-radius: 8px;
             overflow: hidden;
@@ -182,18 +268,18 @@
         .map-legend {
             display: flex;
             flex-wrap: wrap;
-            gap: 14px;
+            gap: 12px;
             justify-content: space-between;
             align-items: center;
             margin-top: 10px;
-            font-size: 0.84rem;
+            font-size: 0.82rem;
             color: var(--text-muted);
             padding: 0 4px;
         }
 
         .legend-items {
             display: flex;
-            gap: 14px;
+            gap: 12px;
             flex-wrap: wrap;
             align-items: center;
         }
@@ -203,11 +289,12 @@
             width: 10px;
             height: 10px;
             border-radius: 50%;
-            margin-right: 5px;
+            margin-right: 4px;
         }
 
         .dot-ecoponto { background: #16a34a; }
         .dot-coleta { background: #0284c7; }
+        .dot-critico { background: #ea580c; }
         .dot-user { background: #dc2626; }
         .line-rota {
             display: inline-block;
@@ -215,7 +302,7 @@
             height: 4px;
             background: repeating-linear-gradient(90deg, #0284c7 0 6px, transparent 6px 10px);
             vertical-align: middle;
-            margin-right: 5px;
+            margin-right: 4px;
         }
 
         /* Lista de Cards */
@@ -240,7 +327,7 @@
             font-weight: 700;
         }
 
-        #cards-container {
+        #cards-container, #denuncias-container {
             display: flex;
             flex-direction: column;
             gap: 12px;
@@ -251,7 +338,7 @@
 
         .card {
             background: var(--bg-card);
-            padding: 16px;
+            padding: 15px;
             border-radius: var(--radius);
             box-shadow: var(--shadow);
             border-left: 5px solid var(--green-primary);
@@ -262,6 +349,15 @@
 
         .card.coleta-domiciliar {
             border-left-color: var(--blue-primary);
+        }
+
+        .card.denuncia-critica {
+            border-left-color: var(--orange-critical);
+        }
+
+        .card.denuncia-resolvida {
+            border-left-color: #94a3b8;
+            opacity: 0.82;
         }
 
         .card:hover {
@@ -279,7 +375,7 @@
 
         .card h3 {
             margin: 0;
-            font-size: 1.05rem;
+            font-size: 1.03rem;
             color: var(--text-main);
         }
 
@@ -291,46 +387,24 @@
         }
 
         .badge {
-            font-size: 0.75rem;
+            font-size: 0.74rem;
             font-weight: 700;
             padding: 3px 8px;
             border-radius: 6px;
             display: inline-block;
         }
 
-        .badge-city {
-            background: #f1f5f9;
-            color: #334155;
-        }
-
-        .badge-cat-ecoponto {
-            background: var(--green-light);
-            color: var(--green-dark);
-        }
-
-        .badge-cat-coleta {
-            background: var(--blue-light);
-            color: #0369a1;
-        }
-
-        .badge-status-open {
-            background: #bbf7d0;
-            color: #14532d;
-        }
-
-        .badge-status-closed {
-            background: var(--amber-light);
-            color: var(--amber-dark);
-        }
-
-        .badge-distance {
-            background: #fee2e2;
-            color: #991b1b;
-        }
+        .badge-city { background: #f1f5f9; color: #334155; }
+        .badge-cat-ecoponto { background: var(--green-light); color: var(--green-dark); }
+        .badge-cat-coleta { background: var(--blue-light); color: #0369a1; }
+        .badge-cat-critico { background: var(--orange-light); color: #9a3412; }
+        .badge-status-open { background: #bbf7d0; color: #14532d; }
+        .badge-status-closed { background: var(--amber-light); color: var(--amber-dark); }
+        .badge-distance { background: #fee2e2; color: #991b1b; }
 
         .card p {
-            margin: 5px 0;
-            font-size: 0.9rem;
+            margin: 4px 0;
+            font-size: 0.89rem;
             color: var(--text-muted);
         }
 
@@ -341,15 +415,15 @@
         .card-actions {
             margin-top: 10px;
             display: flex;
-            gap: 10px;
+            gap: 8px;
             flex-wrap: wrap;
         }
 
         .card-link {
-            font-size: 0.83rem;
+            font-size: 0.8rem;
             font-weight: 600;
             text-decoration: none;
-            padding: 5px 10px;
+            padding: 5px 9px;
             border-radius: 6px;
             background: #f8fafc;
             border: 1px solid var(--border-color);
@@ -368,15 +442,17 @@
             color: #0369a1;
         }
 
-        .card-link.rota-btn:hover {
-            background: #bae6fd;
+        .card-link.delete-btn:hover {
+            background: #fee2e2;
+            border-color: #ef4444;
+            color: #991b1b;
         }
 
-        /* Modal / Seção de Cadastro de Novo Ponto */
+        /* Formulários */
         .form-section {
-            margin-top: 28px;
+            margin-bottom: 20px;
             background: var(--bg-card);
-            padding: 22px;
+            padding: 20px;
             border-radius: var(--radius);
             box-shadow: var(--shadow);
             display: none;
@@ -389,47 +465,45 @@
         .form-section h2 {
             margin-top: 0;
             color: var(--green-dark);
-            font-size: 1.25rem;
+            font-size: 1.2rem;
         }
 
         .form-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 14px;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 12px;
         }
 
         .form-group {
             display: flex;
             flex-direction: column;
             text-align: left;
-            gap: 5px;
+            gap: 4px;
         }
 
         .form-group label {
-            font-size: 0.85rem;
+            font-size: 0.83rem;
             font-weight: 600;
             color: var(--text-main);
         }
 
         .form-group input,
         .form-group select {
-            padding: 9px 11px;
+            padding: 8px 10px;
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            font-size: 0.92rem;
+            font-size: 0.9rem;
         }
 
         .geocode-bar {
             display: flex;
-            gap: 8px;
+            gap: 6px;
         }
 
-        .geocode-bar input {
-            flex: 1;
-        }
+        .geocode-bar input { flex: 1; }
 
         .form-footer {
-            margin-top: 16px;
+            margin-top: 14px;
             display: flex;
             gap: 10px;
             align-items: center;
@@ -437,8 +511,69 @@
         }
 
         .feedback-msg {
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             font-weight: 600;
+        }
+
+        /* Seção Educativa + Quiz */
+        .edu-section {
+            display: none;
+        }
+
+        .edu-section.active {
+            display: block;
+        }
+
+        .guide-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .guide-card {
+            background: var(--bg-card);
+            padding: 18px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border-top: 5px solid var(--green-primary);
+        }
+
+        .guide-card h3 {
+            margin-top: 0;
+            font-size: 1.05rem;
+        }
+
+        .quiz-box {
+            background: var(--bg-card);
+            padding: 24px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            max-width: 720px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .quiz-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 16px 0;
+        }
+
+        /* Animação pulsante para caminhão simulado e seta de rota */
+        .truck-live-icon {
+            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.35));
+            transition: transform 0.3s linear;
+        }
+
+        .route-arrow {
+            color: #0369a1;
+            font-weight: 900;
+            font-size: 14px;
+            text-shadow: 0 0 3px #ffffff, 0 0 3px #ffffff;
+            pointer-events: none;
         }
 
         footer {
@@ -454,192 +589,348 @@
 
     <header>
         <h1>♻️ CittaLixo</h1>
-        <p>Mapa interativo de Ecopontos, Ecoestações e <strong>Rotas + Horários dos Caminhões de Coleta</strong> em <strong>Olinda e Recife</strong> — 100% gratuito.</p>
+        <p>Ecopontos, Rotas em Tempo Real dos Caminhões, Denúncias de Pontos Críticos e Guia de Reciclagem em <strong>Olinda e Recife</strong>.</p>
+
+        <div class="nav-tabs" role="tablist">
+            <button class="tab-btn active" id="tab-btn-coleta" onclick="alternarAba('coleta')">🗺️ Ecopontos &amp; Rotas de Coleta</button>
+            <button class="tab-btn" id="tab-btn-denuncias" onclick="alternarAba('denuncias')">⚠️ Denúncias de Lixo Acumulado</button>
+            <button class="tab-btn" id="tab-btn-guia" onclick="alternarAba('guia')">📚 Guia de Descarte &amp; Quiz</button>
+        </div>
     </header>
 
     <div class="container">
-        <!-- Barra de Filtros -->
-        <div class="toolbar">
-            <div class="city-pills" role="group" aria-label="Filtro por cidade">
-                <button class="pill-btn active" data-cidade="" onclick="selecionarCidade(this, '')">🌎 Olinda + Recife</button>
-                <button class="pill-btn" data-cidade="Olinda" onclick="selecionarCidade(this, 'Olinda')">🌴 Olinda</button>
-                <button class="pill-btn" data-cidade="Recife" onclick="selecionarCidade(this, 'Recife')">🌉 Recife</button>
+        <!-- Painel de Estatísticas Rápidas (Dashboard) -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-value" id="stat-total-pontos">14</span>
+                <span class="stat-label">📍 Pontos e Rotas (Olinda + Recife)</span>
             </div>
-
-            <div class="filters-row">
-                <select id="filtro-categoria" onchange="aplicarFiltros()" aria-label="Filtrar por modalidade">
-                    <option value="">Todas as modalidades</option>
-                    <option value="Ecoponto">🏢 Ecopontos / Ecoestações fixos</option>
-                    <option value="Coleta Domiciliar">🚛 Horários e Rotas do Caminhão</option>
-                </select>
-
-                <select id="filtro-tipo" onchange="aplicarFiltros()" aria-label="Filtrar por tipo de resíduo">
-                    <option value="">Todos os tipos de lixo</option>
-                    <option value="Recicláveis">♻️ Recicláveis (Plástico, Papel, Vidro, Metal)</option>
-                    <option value="Eletrônicos">🔌 Eletrônicos / Pilhas</option>
-                    <option value="Entulho">🧱 Entulho / Móveis / Poda</option>
-                    <option value="Óleo">🌻 Óleo de Cozinha</option>
-                    <option value="Orgânico">🗑️ Lixo Domiciliar / Orgânico</option>
-                </select>
-
-                <input
-                    type="text"
-                    id="filtro-busca"
-                    placeholder="Buscar bairro, rua ou rota..."
-                    oninput="aplicarFiltros()"
-                    aria-label="Buscar bairro, rua ou rota"
-                />
-
-                <button class="btn-action" onclick="ordenarPertoDeMim()" title="Usar GPS do navegador para achar o ponto ou rota mais próxima">
-                    📍 Perto de Mim
-                </button>
-
-                <button class="btn-action btn-add" onclick="toggleFormulario()">
-                    ➕ Cadastrar Ponto/Rota
-                </button>
+            <div class="stat-card blue">
+                <span class="stat-value" id="stat-ativos-agora">0</span>
+                <span class="stat-label">🟢 Abertos / Caminhões no Horário Agora</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value" id="stat-olinda-recife">8 / 6</span>
+                <span class="stat-label">🌴 Olinda vs 🌉 Recife</span>
+            </div>
+            <div class="stat-card orange">
+                <span class="stat-value" id="stat-denuncias-pendentes">3</span>
+                <span class="stat-label">⚠️ Pontos Críticos de Lixo Pendentes</span>
             </div>
         </div>
 
-        <!-- Formulário Colaborativo de Cadastro -->
-        <section id="secao-cadastro" class="form-section">
-            <h2>➕ Cadastrar Novo Ecoponto ou Rota do Caminhão</h2>
-            <p style="margin-top:0; font-size:0.9rem; color: var(--text-muted);">
-                Para <strong>Ecoponto Fixo</strong>, clique no mapa (ou busque o endereço). Para <strong>Coleta Domiciliar (Caminhão)</strong>, cada clique no mapa adiciona um ponto ao traçado da rota do caminhão!
-            </p>
+        <!-- Alerta de Simulação Baseada no Horário Real do Usuário -->
+        <div class="sim-banner" id="banner-simulacao">
+            <div>
+                <strong>🚛 Rastreamento Estimado por Horário Real (<span id="relogio-usuario">--:--</span>):</strong>
+                A posição do caminhão no mapa é uma <strong>simulação baseada no horário programado da rota</strong>. O caminhão real pode passar alguns minutos antes ou depois devido ao trânsito e volume de coleta.
+            </div>
+        </div>
 
-            <form id="form-ponto" onsubmit="salvarNovoPonto(event)">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="inp-nome">Nome do Ponto ou Rota *</label>
-                        <input type="text" id="inp-nome" required placeholder="Ex: Coleta Noturna - Jardim Atlântico" />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="inp-cidade">Cidade *</label>
-                        <select id="inp-cidade" required>
-                            <option value="Olinda">Olinda</option>
-                            <option value="Recife">Recife</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="inp-bairro">Bairro *</label>
-                        <input type="text" id="inp-bairro" required placeholder="Ex: Bairro Novo, Casa Caiada, Boa Vista" />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="inp-categoria">Modalidade *</label>
-                        <select id="inp-categoria" required onchange="limparRotaDesenhada()">
-                            <option value="Ecoponto">Ecoponto / Ecoestação Fixa</option>
-                            <option value="Coleta Domiciliar">Coleta Domiciliar (Rota do Caminhão)</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="inp-tipo">Resíduos Aceitos *</label>
-                        <input type="text" id="inp-tipo" required placeholder="Ex: Orgânico / Domiciliar, Recicláveis" />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="inp-endereco">Endereço ou Ruas do Percurso *</label>
-                        <div class="geocode-bar">
-                            <input type="text" id="inp-endereco" required placeholder="Ex: Av. Getúlio Vargas -> Praça 12 de Março" />
-                            <button type="button" class="btn-action" onclick="buscarCoordenadasGratuitas()" title="Buscar coordenadas gratuitamente no OpenStreetMap">
-                                🔍 Achar no Mapa
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="inp-horario">Descrição do Horário *</label>
-                        <input type="text" id="inp-horario" required value="Seg a Sáb: 08h às 16h" placeholder="Ex: Seg, Qua e Sex: 07h às 11h" />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="inp-dias">Dias da Semana (p/ status automático)</label>
-                        <input type="text" id="inp-dias" value="Seg,Ter,Qua,Qui,Sex,Sab" placeholder="Dom,Seg,Ter,Qua,Qui,Sex,Sab" />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="inp-inicio">Hora Início</label>
-                        <input type="time" id="inp-inicio" value="08:00" />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="inp-fim">Hora Fim</label>
-                        <input type="time" id="inp-fim" value="16:00" />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="inp-lat">Latitude Inicial * (clique no mapa)</label>
-                        <input type="number" step="any" id="inp-lat" required value="-8.0014" />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="inp-lng">Longitude Inicial * (clique no mapa)</label>
-                        <input type="number" step="any" id="inp-lng" required value="-34.8553" />
-                    </div>
+        <!-- ABA 1 & 2: MAPA COMPARTILHADO + PAINEL DE PONTOS OU DENÚNCIAS -->
+        <div id="visao-mapa-principal">
+            <!-- Barra de Filtros da Aba de Coleta -->
+            <div class="toolbar" id="toolbar-coleta">
+                <div class="city-pills" role="group" aria-label="Filtro por cidade">
+                    <button class="pill-btn active" data-cidade="" onclick="selecionarCidade(this, '')">🌎 Olinda + Recife</button>
+                    <button class="pill-btn" data-cidade="Olinda" onclick="selecionarCidade(this, 'Olinda')">🌴 Olinda</button>
+                    <button class="pill-btn" data-cidade="Recife" onclick="selecionarCidade(this, 'Recife')">🌉 Recife</button>
                 </div>
 
-                <div class="form-group" style="margin-top: 12px;">
-                    <label for="inp-obs">Observações (opcional)</label>
-                    <input type="text" id="inp-obs" placeholder="Ex: Caminhão inicia às 07h no terminal e percorre as avenidas principais" />
-                </div>
+                <div class="filters-row">
+                    <select id="filtro-categoria" onchange="aplicarFiltros()" aria-label="Filtrar por modalidade">
+                        <option value="">Todas as modalidades</option>
+                        <option value="Ecoponto">🏢 Ecopontos / Ecoestações fixos</option>
+                        <option value="Coleta Domiciliar">🚛 Horários e Rotas do Caminhão</option>
+                    </select>
 
-                <div class="form-footer">
-                    <button type="submit" class="btn-action btn-add">💾 Salvar no Mapa</button>
-                    <button type="button" class="pill-btn" onclick="limparRotaDesenhada()">🧹 Limpar Traçado</button>
-                    <button type="button" class="pill-btn" onclick="toggleFormulario()">Cancelar</button>
-                    <span id="form-feedback" class="feedback-msg"></span>
-                </div>
-            </form>
-        </section>
+                    <select id="filtro-tipo" onchange="aplicarFiltros()" aria-label="Filtrar por tipo de resíduo">
+                        <option value="">Todos os tipos de lixo</option>
+                        <option value="Recicláveis">♻️ Recicláveis (Plástico, Papel, Vidro, Metal)</option>
+                        <option value="Eletrônicos">🔌 Eletrônicos / Pilhas</option>
+                        <option value="Entulho">🧱 Entulho / Móveis / Poda</option>
+                        <option value="Óleo">🌻 Óleo de Cozinha</option>
+                        <option value="Orgânico">🗑️ Lixo Domiciliar / Orgânico</option>
+                    </select>
 
-        <!-- Grade Principal: Mapa + Cards -->
-        <div class="main-grid">
-            <div class="map-wrapper">
-                <div id="map"></div>
-                <div class="map-legend">
-                    <div class="legend-items">
-                        <span><i class="dot dot-ecoponto"></i>Ecoponto Fixo</span>
-                        <span><i class="dot dot-coleta"></i>Caminhão de Coleta</span>
-                        <span><i class="line-rota"></i>Rota do Caminhão</span>
-                        <span><i class="dot dot-user"></i>Sua Localização</span>
-                    </div>
-                    <span>💡 Clique em uma rota ou card para destacar o trajeto</span>
+                    <input
+                        type="text"
+                        id="filtro-busca"
+                        placeholder="Buscar bairro, rua ou rota..."
+                        oninput="aplicarFiltros()"
+                        aria-label="Buscar bairro, rua ou rota"
+                    />
+
+                    <button class="btn-action" onclick="ordenarPertoDeMim()" title="Usar GPS do navegador para ordenar pelos mais próximos">
+                        📍 Perto de Mim
+                    </button>
+
+                    <button class="btn-action btn-add" onclick="abrirNovoCadastroPonto()">
+                        ➕ Cadastrar Ponto/Rota
+                    </button>
                 </div>
             </div>
 
-            <div>
-                <div class="cards-header">
-                    <h2>Pontos e Rotas de Coleta</h2>
-                    <span id="contador-pontos" class="count-badge">Carregando...</span>
+            <!-- Barra de Ações da Aba de Denúncias -->
+            <div class="toolbar" id="toolbar-denuncias" style="display:none;">
+                <div class="city-pills">
+                    <button class="pill-btn active" onclick="filtrarDenunciasStatus(this, '')">📋 Todas as Denúncias</button>
+                    <button class="pill-btn" onclick="filtrarDenunciasStatus(this, 'Pendente')">🟠 Pendentes (Críticas)</button>
+                    <button class="pill-btn" onclick="filtrarDenunciasStatus(this, 'Resolvido')">✅ Resolvidas</button>
+                </div>
+                <div class="filters-row">
+                    <button class="btn-action btn-orange" onclick="toggleFormularioDenuncia()">
+                        ⚠️ Reportar Ponto Crítico de Lixo no Mapa
+                    </button>
+                </div>
+            </div>
+
+            <!-- Formulário de Cadastro / Edição de Ecoponto ou Rota -->
+            <section id="secao-cadastro" class="form-section">
+                <h2 id="titulo-form-ponto">➕ Cadastrar Novo Ecoponto ou Rota do Caminhão</h2>
+                <p style="margin-top:0; font-size:0.88rem; color: var(--text-muted);">
+                    Para <strong>Ecoponto Fixo</strong>, clique no mapa ou busque o endereço. Para <strong>Coleta Domiciliar (Caminhão)</strong>, clique em 2 ou mais pontos das ruas no mapa e o sistema traça a rota automaticamente pelas vias (OSRM)!
+                </p>
+
+                <form id="form-ponto" onsubmit="salvarPonto(event)">
+                    <input type="hidden" id="inp-id-edicao" value="" />
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="inp-nome">Nome do Ponto ou Rota *</label>
+                            <input type="text" id="inp-nome" required placeholder="Ex: Coleta Noturna - Jardim Atlântico" />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="inp-cidade">Cidade *</label>
+                            <select id="inp-cidade" required>
+                                <option value="Olinda">Olinda</option>
+                                <option value="Recife">Recife</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="inp-bairro">Bairro *</label>
+                            <input type="text" id="inp-bairro" required placeholder="Ex: Bairro Novo, Casa Caiada, Boa Vista" />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="inp-categoria">Modalidade *</label>
+                            <select id="inp-categoria" required onchange="limparRotaDesenhada()">
+                                <option value="Ecoponto">Ecoponto / Ecoestação Fixa</option>
+                                <option value="Coleta Domiciliar">Coleta Domiciliar (Rota do Caminhão)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="inp-tipo">Resíduos Aceitos *</label>
+                            <input type="text" id="inp-tipo" required placeholder="Ex: Orgânico / Domiciliar, Recicláveis" />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="inp-endereco">Endereço ou Ruas do Percurso *</label>
+                            <div class="geocode-bar">
+                                <input type="text" id="inp-endereco" required placeholder="Ex: Av. Getúlio Vargas, Olinda" />
+                                <button type="button" class="btn-action" onclick="buscarCoordenadasGratuitas()">🔍 Achar</button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="inp-horario">Descrição do Horário *</label>
+                            <input type="text" id="inp-horario" required value="Seg a Sáb: 08h às 16h" />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="inp-dias">Dias da Semana</label>
+                            <input type="text" id="inp-dias" value="Seg,Ter,Qua,Qui,Sex,Sab" />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="inp-inicio">Hora Início</label>
+                            <input type="time" id="inp-inicio" value="08:00" />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="inp-fim">Hora Fim</label>
+                            <input type="time" id="inp-fim" value="16:00" />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="inp-lat">Latitude * (ou clique no mapa)</label>
+                            <input type="number" step="any" id="inp-lat" required value="-8.0014" />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="inp-lng">Longitude * (ou clique no mapa)</label>
+                            <input type="number" step="any" id="inp-lng" required value="-34.8553" />
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 10px;">
+                        <label for="inp-obs">Observações (opcional)</label>
+                        <input type="text" id="inp-obs" placeholder="Ex: Limite de 1m³ por morador / Caminhão compactador" />
+                    </div>
+
+                    <div class="form-footer">
+                        <button type="submit" class="btn-action btn-add" id="btn-salvar-ponto">💾 Salvar no Mapa</button>
+                        <button type="button" class="pill-btn" onclick="limparRotaDesenhada()">🧹 Limpar Traçado</button>
+                        <button type="button" class="pill-btn" onclick="fecharFormularioPonto()">Cancelar</button>
+                        <span id="form-feedback" class="feedback-msg"></span>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Formulário de Nova Denúncia de Ponto Crítico de Lixo -->
+            <section id="secao-denuncia-form" class="form-section">
+                <h2 style="color: var(--orange-critical);">⚠️ Reportar Ponto Crítico / Descarte Irregular de Lixo</h2>
+                <p style="margin-top:0; font-size:0.88rem; color: var(--text-muted);">
+                    Clique no mapa no local onde há lixo ou entulho acumulado irregularmente para posicionar o pino laranja crítico!
+                </p>
+                <form id="form-denuncia" onsubmit="salvarNovaDenuncia(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="den-titulo">O que está acontecendo? *</label>
+                            <input type="text" id="den-titulo" required placeholder="Ex: Entulho e móveis jogados na calçada" />
+                        </div>
+                        <div class="form-group">
+                            <label for="den-cidade">Cidade *</label>
+                            <select id="den-cidade" required>
+                                <option value="Olinda">Olinda</option>
+                                <option value="Recife">Recife</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="den-bairro">Bairro *</label>
+                            <input type="text" id="den-bairro" required placeholder="Ex: Peixinhos, Rio Doce, Santo Amaro" />
+                        </div>
+                        <div class="form-group">
+                            <label for="den-endereco">Endereço / Ponto de Referência *</label>
+                            <input type="text" id="den-endereco" required placeholder="Ex: Esquina com a Av. Presidente Kennedy" />
+                        </div>
+                        <div class="form-group">
+                            <label for="den-residuo">Tipo de Lixo Acumulado *</label>
+                            <input type="text" id="den-residuo" required value="Entulho, Plásticos e Volumosos" />
+                        </div>
+                        <div class="form-group">
+                            <label for="den-gravidade">Nível de Gravidade *</label>
+                            <select id="den-gravidade" required>
+                                <option value="Crítico">🟠 Crítico (Obstruindo rua/canal)</option>
+                                <option value="Alto">🟡 Alto</option>
+                                <option value="Moderado">🔵 Moderado</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="den-lat">Latitude * (clique no mapa)</label>
+                            <input type="number" step="any" id="den-lat" required value="-8.0128" />
+                        </div>
+                        <div class="form-group">
+                            <label for="den-lng">Longitude * (clique no mapa)</label>
+                            <input type="number" step="any" id="den-lng" required value="-34.8694" />
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-top: 10px;">
+                        <label for="den-desc">Detalhes adicionais</label>
+                        <input type="text" id="den-desc" placeholder="Ex: Acumulado há 3 dias próximo à parada de ônibus" />
+                    </div>
+                    <div class="form-footer">
+                        <button type="submit" class="btn-action btn-orange">🚨 Registrar Alerta Crítico</button>
+                        <button type="button" class="pill-btn" onclick="toggleFormularioDenuncia()">Cancelar</button>
+                        <span id="den-feedback" class="feedback-msg"></span>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Grade Principal: Mapa + Painel Lateral -->
+            <div class="main-grid">
+                <div class="map-wrapper">
+                    <div id="map"></div>
+                    <div class="map-legend">
+                        <div class="legend-items">
+                            <span><i class="dot dot-ecoponto"></i>Ecoponto Fixo</span>
+                            <span><i class="dot dot-coleta"></i>Caminhão / Rota</span>
+                            <span><i class="line-rota"></i>Sentido da Rota (►)</span>
+                            <span><i class="dot dot-critico"></i>Ponto Crítico (Denúncia)</span>
+                        </div>
+                    </div>
                 </div>
 
-                <div id="cards-container">
-                    <!-- Cards fallback iniciais (atualizados dinamicamente via API /pontos) -->
-                    <div class="card">
-                        <h3>Ecoponto Centro (Santo Amaro / Boa Vista)</h3>
-                        <p>Recicláveis, Óleo de Cozinha, Eletrônicos</p>
-                        <p>Rua do Sol, 100 - Centro, Recife</p>
+                <!-- Coluna Direita: Lista de Pontos/Rotas OU Lista de Denúncias -->
+                <div id="painel-lista-coleta">
+                    <div class="cards-header">
+                        <h2>Pontos e Rotas de Coleta</h2>
+                        <span id="contador-pontos" class="count-badge">Carregando...</span>
                     </div>
-                    <div class="card">
-                        <h3>Ecoponto Bairro Novo (Orla)</h3>
-                        <p>Recicláveis, Vidro, Plástico, Papel, Metal</p>
-                        <p>Av. Ministro Marcos Freire, próx. à Praça Duque de Caxias</p>
+
+                    <div id="cards-container">
+                        <!-- Cards fallback iniciais para testes rápidos e SEO -->
+                        <div class="card">
+                            <h3>Ecoponto Centro (Santo Amaro / Boa Vista)</h3>
+                            <p>Recicláveis, Óleo de Cozinha, Eletrônicos</p>
+                            <p>Rua do Sol, 100 - Centro, Recife</p>
+                            <p><strong>🕒 Horários:</strong> Seg a Sáb: 08h às 16h</p>
+                        </div>
+                        <div class="card">
+                            <h3>Ecoponto Bairro Novo (Orla)</h3>
+                            <p>Recicláveis, Vidro, Plástico, Papel, Metal</p>
+                            <p>Av. Ministro Marcos Freire, próx. à Praça Duque de Caxias</p>
+                            <p><strong>🕒 Horários:</strong> Seg a Sáb: 07h às 19h</p>
+                        </div>
                     </div>
                 </div>
+
+                <div id="painel-lista-denuncias" style="display:none;">
+                    <div class="cards-header">
+                        <h2 style="color: var(--orange-critical);">⚠️ Pontos Críticos de Lixo Reportados</h2>
+                        <span id="contador-denuncias" class="count-badge" style="background: var(--orange-light); color: #9a3412;">0 alertas</span>
+                    </div>
+                    <div id="denuncias-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 3: GUIA DE DESCARTE CORRETO + QUIZ INTERATIVO -->
+        <div id="visao-educativa" class="edu-section">
+            <h2 style="text-align:center; color: var(--green-dark); margin-top: 8px;">📚 Guia Rápido: Como Preparar cada Resíduo antes de Descartar</h2>
+            <div class="guide-grid">
+                <div class="guide-card">
+                    <h3>♻️ Plástico, Papel, Metal e Vidro</h3>
+                    <p>Passe uma água rápida nas embalagens para tirar restos de comida (evita mau cheiro e formigas nas cooperativas de Olinda e Recife). Vidros quebrados devem ser embalados em caixa de leite ou jornal grosso.</p>
+                </div>
+                <div class="guide-card" style="border-top-color: #eab308;">
+                    <h3>🌻 Óleo de Cozinha Usado</h3>
+                    <p><strong>Nunca jogue na pia!</strong> 1 litro de óleo contamina até 25 mil litros de água. Espere esfriar, coloque com um funil em uma garrafa PET transparente bem fechada e leve a um PEV ou Ecoponto.</p>
+                </div>
+                <div class="guide-card" style="border-top-color: #0284c7;">
+                    <h3>🔌 Eletrônicos, Pilhas e Baterias</h3>
+                    <p>Celulares quebrados, cabos, pilhas e pequenos eletros contêm metais pesados. Não coloque no saco de lixo comum: entregue nos PEVs (como Praça do Carmo, Casa Caiada ou Torre).</p>
+                </div>
+                <div class="guide-card" style="border-top-color: #ea580c;">
+                    <h3>🧱 Entulho, Sofás e Poda de Árvore</h3>
+                    <p>O caminhão compactador comum não recolhe metralha nem móveis velhos. Leve gratuitamente até uma <strong>Ecoestação</strong> (Peixinhos, Ouro Preto, Campo Grande, Torre ou Imbiribeira — limite de 1m³ por morador).</p>
+                </div>
+            </div>
+
+            <div class="quiz-box">
+                <h2 style="margin-top:0; color: var(--green-dark);">🎯 Mini-Quiz CittaLixo: Onde Descartar?</h2>
+                <p id="quiz-pergunta" style="font-size:1.1rem; font-weight:700;">Carregando pergunta...</p>
+                <div class="quiz-options" id="quiz-opcoes"></div>
+                <p id="quiz-resultado" style="font-weight:700; min-height:24px;"></p>
+                <button class="btn-action btn-add" onclick="proximaPerguntaQuiz()">Próximo Item ➡️</button>
             </div>
         </div>
     </div>
 
     <footer>
-        CittaLixo • Dados abertos com OpenStreetMap &amp; Leaflet (Zero Custo de API) • Atendendo Olinda e Recife
+        CittaLixo • Dados abertos com OpenStreetMap, Leaflet &amp; OSRM (Zero Custo de API) • Instalável como App (PWA) • Olinda e Recife
     </footer>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
+        // Registro gratuito do Service Worker (PWA)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(() => {});
+        }
+
         const CENTRO_OLINDA_RECIFE = [-8.0220, -34.8680];
         const map = L.map('map').setView(CENTRO_OLINDA_RECIFE, 12);
 
@@ -650,10 +941,16 @@
 
         const markersLayer = L.layerGroup().addTo(map);
         const routesLayer = L.layerGroup().addTo(map);
+        const liveTrucksLayer = L.layerGroup().addTo(map);
+        const denunciasLayer = L.layerGroup().addTo(map);
+
         const markersById = {};
         const polylinesById = {};
         let todosOsPontos = [];
+        let todasAsDenuncias = [];
         let cidadeSelecionada = '';
+        let statusDenunciaFiltro = '';
+        let abaAtual = 'coleta';
         let localizacaoUsuario = null;
         let marcadorUsuario = null;
 
@@ -665,9 +962,12 @@
 
         // Ícones customizados via SVG embutido (100% gratuito)
         function criarIconeColorido(corHex, simboloInterno = 'circle') {
-            const miolo = simboloInterno === 'truck'
-                ? `<rect x="7" y="9" width="10" height="8" rx="1.5" fill="#ffffff"/><circle cx="10" cy="19" r="2" fill="#ffffff"/><circle cx="18" cy="19" r="2" fill="#ffffff"/>`
-                : `<circle cx="14" cy="14" r="6" fill="#ffffff"/>`;
+            let miolo = `<circle cx="14" cy="14" r="6" fill="#ffffff"/>`;
+            if (simboloInterno === 'truck') {
+                miolo = `<rect x="7" y="9" width="10" height="8" rx="1.5" fill="#ffffff"/><circle cx="10" cy="19" r="2" fill="#ffffff"/><circle cx="18" cy="19" r="2" fill="#ffffff"/>`;
+            } else if (simboloInterno === 'alert') {
+                miolo = `<text x="14" y="19" text-anchor="middle" fill="#ffffff" font-size="15" font-weight="bold">!</text>`;
+            }
             const svg = `
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40">
                     <path d="M14 0C6.268 0 0 6.268 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.268 21.732 0 14 0z" fill="${corHex}" stroke="#ffffff" stroke-width="2"/>
@@ -684,7 +984,19 @@
 
         const iconeEcoponto = criarIconeColorido('#16a34a', 'circle');
         const iconeColeta = criarIconeColorido('#0284c7', 'truck');
+        const iconeCritico = criarIconeColorido('#ea580c', 'alert');
+        const iconeResolvido = criarIconeColorido('#64748b', 'circle');
         const iconeUsuario = criarIconeColorido('#dc2626', 'circle');
+
+        function criarIconeCaminhaoAnimado(emColetaAgora) {
+            const bg = emColetaAgora ? '#16a34a' : '#0284c7';
+            return L.divIcon({
+                className: 'truck-live-icon',
+                html: `<div style="background:${bg}; color:#fff; border:2px solid #fff; border-radius:999px; padding:2px 7px; font-size:13px; font-weight:800; white-space:nowrap; box-shadow:0 2px 6px rgba(0,0,0,0.3);">🚛 ${emColetaAgora ? 'EM ROTA' : 'SIMULAÇÃO'}</div>`,
+                iconSize: [96, 26],
+                iconAnchor: [48, 13]
+            });
+        }
 
         function verificarStatusHorario(ponto) {
             const mapaDias = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
@@ -694,7 +1006,7 @@
 
             const atendeHoje = diasPonto.some(d => d.toLowerCase() === diaHoje.toLowerCase());
             if (!atendeHoje) {
-                return { aberto: false, texto: 'Sem atendimento hoje' };
+                return { aberto: false, atendeHoje: false, progresso: 0, texto: 'Sem atendimento hoje' };
             }
 
             if (ponto.hora_inicio && ponto.hora_fim) {
@@ -705,18 +1017,115 @@
                 const minFim = hFim * 60 + (mFim || 0);
 
                 if (minutosAgora >= minIni && minutosAgora <= minFim) {
+                    const duracao = Math.max(1, minFim - minIni);
+                    const progresso = Math.min(1, Math.max(0, (minutosAgora - minIni) / duracao));
                     return {
                         aberto: true,
-                        texto: ponto.categoria === 'Coleta Domiciliar' ? '🚛 Caminhão em rota agora' : '🟢 Aberto agora'
+                        atendeHoje: true,
+                        progresso,
+                        texto: ponto.categoria === 'Coleta Domiciliar'
+                            ? `🚛 Caminhão na rota (~${Math.round(progresso * 100)}% do percurso)`
+                            : '🟢 Aberto agora'
                     };
                 }
             }
 
             return {
                 aberto: false,
-                texto: ponto.categoria === 'Coleta Domiciliar' ? '📅 Passa hoje (' + ponto.hora_inicio + ')' : '🕒 Atende hoje (' + ponto.hora_inicio + ' às ' + ponto.hora_fim + ')'
+                atendeHoje: true,
+                progresso: null,
+                texto: ponto.categoria === 'Coleta Domiciliar'
+                    ? '📅 Passa hoje (' + ponto.hora_inicio + ' às ' + ponto.hora_fim + ')'
+                    : '🕒 Atende hoje (' + ponto.hora_inicio + ' às ' + ponto.hora_fim + ')'
             };
         }
+
+        function atualizarDashboard() {
+            const agora = new Date();
+            document.getElementById('relogio-usuario').textContent =
+                agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+            const total = todosOsPontos.length;
+            const olinda = todosOsPontos.filter(p => (p.cidade || '').toLowerCase() === 'olinda').length;
+            const recife = todosOsPontos.filter(p => (p.cidade || '').toLowerCase() === 'recife').length;
+            const ativos = todosOsPontos.filter(p => verificarStatusHorario(p).aberto).length;
+            const denPendentes = todasAsDenuncias.filter(d => d.status !== 'Resolvido').length;
+
+            document.getElementById('stat-total-pontos').textContent = total;
+            document.getElementById('stat-ativos-agora').textContent = ativos;
+            document.getElementById('stat-olinda-recife').textContent = `${olinda} / ${recife}`;
+            document.getElementById('stat-denuncias-pendentes').textContent = denPendentes;
+        }
+
+        // Desenha setas direcionais (►) ao longo das ruas da rota para mostrar o sentido do caminhão
+        function adicionarSetasDirecionaisNaRota(coords) {
+            if (!coords || coords.length < 4) return;
+            const passo = Math.max(8, Math.floor(coords.length / 5));
+            for (let i = passo; i < coords.length - 2; i += passo) {
+                const p1 = coords[i - 1];
+                const p2 = coords[i];
+                const dy = p2[0] - p1[0];
+                const dx = p2[1] - p1[1];
+                const anguloDeg = Math.atan2(dx, dy) * (180 / Math.PI) - 90;
+
+                const iconeSeta = L.divIcon({
+                    className: 'route-arrow',
+                    html: `<div style="transform: rotate(${anguloDeg.toFixed(0)}deg);">➤</div>`,
+                    iconSize: [16, 16],
+                    iconAnchor: [8, 8]
+                });
+                L.marker(p2, { icon: iconeSeta, interactive: false }).addTo(routesLayer);
+            }
+        }
+
+        // Posiciona e anima o caminhão ao longo da rota de acordo com o horário real do usuário
+        let passoAnimacao = 0;
+        function atualizarPosicaoCaminhoesNoMapa() {
+            liveTrucksLayer.clearLayers();
+            passoAnimacao = (passoAnimacao + 1) % 1000;
+
+            todosOsPontos.forEach(ponto => {
+                if (ponto.categoria !== 'Coleta Domiciliar') return;
+                const coords = ponto.rota_coordenadas;
+                if (!Array.isArray(coords) || coords.length < 2) return;
+
+                const statusInfo = verificarStatusHorario(ponto);
+                let indiceCoord = 0;
+
+                if (statusInfo.aberto && typeof statusInfo.progresso === 'number') {
+                    // Posição proporcional ao minuto real atual dentro da janela [hora_inicio, hora_fim]
+                    // com leve oscilação entre os vértices próximos para mostrar movimento vivo
+                    const baseIdx = Math.floor(statusInfo.progresso * (coords.length - 1));
+                    const offset = passoAnimacao % 3;
+                    indiceCoord = Math.min(coords.length - 1, baseIdx + offset);
+                } else {
+                    // Fora do horário ativo, exibe a simulação percorrendo a rota com aviso claro
+                    indiceCoord = passoAnimacao % coords.length;
+                }
+
+                const posAtual = coords[indiceCoord];
+                const markerCaminhao = L.marker(posAtual, {
+                    icon: criarIconeCaminhaoAnimado(statusInfo.aberto)
+                }).addTo(liveTrucksLayer);
+
+                markerCaminhao.bindPopup(`
+                    <div style="min-width:220px; line-height:1.4;">
+                        <strong>🚛 ${ponto.nome}</strong><br/>
+                        <span style="color:#92400e; font-size:0.82rem; font-weight:700;">
+                            ⚠️ Simulação baseada no horário programado (${ponto.horario}). O caminhão real pode passar antes ou depois.
+                        </span>
+                        <hr style="border:none; border-top:1px solid #e2e8f0; margin:6px 0;"/>
+                        <b>Status agora:</b> ${statusInfo.texto}<br/>
+                        <b>Trecho:</b> Ponto ${indiceCoord + 1} de ${coords.length} da rota
+                    </div>
+                `);
+            });
+        }
+
+        setInterval(() => {
+            atualizarPosicaoCaminhoesNoMapa();
+            atualizarDashboard();
+        }, 1800);
 
         function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
             const R = 6371;
@@ -734,9 +1143,8 @@
             const p = todosOsPontos.find(item => item.id === id);
             if (!p) return;
 
-            // Resetar destaque das rotas anteriores
             Object.values(polylinesById).forEach(poly => {
-                poly.setStyle({ color: '#0284c7', weight: 5, opacity: 0.8 });
+                poly.setStyle({ color: '#0284c7', weight: 5, opacity: 0.85 });
             });
 
             const poly = polylinesById[id];
@@ -762,7 +1170,7 @@
 
             const container = document.getElementById('cards-container');
             const contador = document.getElementById('contador-pontos');
-            contador.textContent = `${lista.length} ${lista.length === 1 ? 'registro encontrado' : 'registros encontrados'}`;
+            contador.textContent = `${lista.length} ${lista.length === 1 ? 'registro' : 'registros'}`;
 
             if (lista.length === 0) {
                 container.innerHTML = `
@@ -780,19 +1188,24 @@
                 const statusInfo = verificarStatusHorario(ponto);
                 const icone = isColeta ? iconeColeta : iconeEcoponto;
                 const temRota = Array.isArray(ponto.rota_coordenadas) && ponto.rota_coordenadas.length >= 2;
-
                 const urlRota = `https://www.google.com/maps/dir/?api=1&destination=${ponto.latitude},${ponto.longitude}`;
 
+                const avisoSimulacaoHtml = isColeta
+                    ? `<div style="background:#fef3c7; color:#92400e; padding:5px 8px; border-radius:6px; font-size:0.78rem; margin-top:5px;">
+                        ⚠️ <b>Aviso:</b> Posição e horário são uma simulação estimada; o caminhão pode passar antes ou depois.
+                       </div>`
+                    : '';
+
                 const popupHtml = `
-                    <div style="min-width:225px; line-height:1.45;">
+                    <div style="min-width:230px; line-height:1.45;">
                         <strong>${ponto.nome}</strong><br/>
                         <span style="font-size:0.82rem; color:#475569;">${ponto.cidade} • ${ponto.bairro} (${ponto.categoria})</span>
                         <hr style="border:none; border-top:1px solid #e2e8f0; margin:6px 0;"/>
                         <b>♻️ Resíduos:</b> ${ponto.tipo}<br/>
                         <b>🕒 Horário:</b> ${ponto.horario || 'Consultar'}<br/>
                         <b>${isColeta ? '🛣️ Percurso do Caminhão:' : '📍 Endereço:'}</b> ${ponto.endereco}<br/>
-                        ${temRota ? `<b>📌 Paradas na rota:</b> ${ponto.rota_coordenadas.length} pontos mapeados<br/>` : ''}
                         ${ponto.observacoes ? `<small style="color:#475569;">ℹ️ ${ponto.observacoes}</small><br/>` : ''}
+                        ${avisoSimulacaoHtml}
                         <a href="${urlRota}" target="_blank" rel="noopener" style="display:inline-block; margin-top:6px; font-weight:600; color:#16a34a;">🧭 Abrir no Google Maps</a>
                     </div>
                 `;
@@ -803,9 +1216,7 @@
 
                 markersById[ponto.id] = marker;
 
-                // Desenhar rota do caminhão no mapa se for Coleta Domiciliar e possuir coordenadas de rota
                 if (temRota) {
-                    // Contorno branco para destacar sobre as ruas do mapa
                     L.polyline(ponto.rota_coordenadas, {
                         color: '#ffffff',
                         weight: 8,
@@ -814,7 +1225,6 @@
                         lineJoin: 'round'
                     }).addTo(routesLayer);
 
-                    // Linha principal azul tracejada representando o trajeto do caminhão
                     const polyline = L.polyline(ponto.rota_coordenadas, {
                         color: '#0284c7',
                         weight: 5,
@@ -828,7 +1238,8 @@
 
                     polylinesById[ponto.id] = polyline;
 
-                    // Desenhar apenas os marcadores de Início e Fim da rota na rua (evitando poluir cada curva com bolinhas)
+                    adicionarSetasDirecionaisNaRota(ponto.rota_coordenadas);
+
                     const coordInicio = ponto.rota_coordenadas[0];
                     const coordFim = ponto.rota_coordenadas[ponto.rota_coordenadas.length - 1];
 
@@ -868,7 +1279,7 @@
                     <div class="badges">
                         <span class="badge badge-city">📍 ${ponto.cidade} • ${ponto.bairro}</span>
                         <span class="badge ${isColeta ? 'badge-cat-coleta' : 'badge-cat-ecoponto'}">
-                            ${isColeta ? '🚛 Rota de Coleta Domiciliar' : '🏢 Ecoponto Fixo'}
+                            ${isColeta ? '🚛 Rota do Caminhão' : '🏢 Ecoponto Fixo'}
                         </span>
                         <span class="badge ${statusInfo.aberto ? 'badge-status-open' : 'badge-status-closed'}">
                             ${statusInfo.texto}
@@ -878,21 +1289,293 @@
                     <p><strong>♻️ Resíduos:</strong> ${ponto.tipo}</p>
                     <p><strong>🕒 Horários:</strong> ${ponto.horario || 'Seg a Sáb: 08h às 16h'}</p>
                     <p><strong>${isColeta ? '🛣️ Rota / Ruas:' : '📌 Endereço:'}</strong> ${ponto.endereco}</p>
-                    ${ponto.observacoes ? `<p style="font-size:0.84rem;">ℹ️ ${ponto.observacoes}</p>` : ''}
+                    ${isColeta ? `<p style="font-size:0.8rem; color:#92400e;">⚠️ Simulação estimada por horário: o caminhão pode passar antes ou depois.</p>` : ''}
+                    ${ponto.observacoes ? `<p style="font-size:0.83rem;">ℹ️ ${ponto.observacoes}</p>` : ''}
                     <div class="card-actions" onclick="event.stopPropagation();">
                         <button type="button" class="card-link ${temRota ? 'rota-btn' : ''}" onclick="focarPontoNoMapa(${ponto.id})">
-                            ${temRota ? '🛣️ Destacar Rota do Caminhão no Mapa' : '🔍 Ver Ponto no Mapa'}
+                            ${temRota ? '🛣️ Ver Rota' : '🔍 Mapa'}
                         </button>
                         <a class="card-link" href="${urlRota}" target="_blank" rel="noopener">🧭 Como Chegar</a>
+                        <button type="button" class="card-link" onclick="prepararEdicaoPonto(${ponto.id})">✏️ Editar</button>
+                        <button type="button" class="card-link delete-btn" onclick="excluirPonto(${ponto.id})">🗑️ Excluir</button>
                     </div>
                 `;
 
                 container.appendChild(card);
             });
+
+            atualizarPosicaoCaminhoesNoMapa();
+        }
+
+        // --- CRUD: EDITAR E EXCLUIR DIRETO NOS CARDS ---
+        function abrirNovoCadastroPonto() {
+            document.getElementById('inp-id-edicao').value = '';
+            document.getElementById('form-ponto').reset();
+            document.getElementById('titulo-form-ponto').textContent = '➕ Cadastrar Novo Ecoponto ou Rota do Caminhão';
+            document.getElementById('btn-salvar-ponto').textContent = '💾 Salvar no Mapa';
+            limparRotaDesenhada();
+            document.getElementById('secao-cadastro').classList.add('open');
+            document.getElementById('secao-cadastro').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function fecharFormularioPonto() {
+            document.getElementById('secao-cadastro').classList.remove('open');
+            document.getElementById('inp-id-edicao').value = '';
+            limparRotaDesenhada();
+        }
+
+        function prepararEdicaoPonto(id) {
+            const p = todosOsPontos.find(item => item.id === id);
+            if (!p) return;
+
+            document.getElementById('inp-id-edicao').value = p.id;
+            document.getElementById('inp-nome').value = p.nome;
+            document.getElementById('inp-cidade').value = p.cidade;
+            document.getElementById('inp-bairro').value = p.bairro;
+            document.getElementById('inp-categoria').value = p.categoria;
+            document.getElementById('inp-tipo').value = p.tipo;
+            document.getElementById('inp-endereco').value = p.endereco;
+            document.getElementById('inp-horario').value = p.horario;
+            document.getElementById('inp-dias').value = p.dias_semana;
+            document.getElementById('inp-inicio').value = p.hora_inicio;
+            document.getElementById('inp-fim').value = p.hora_fim;
+            document.getElementById('inp-lat').value = p.latitude;
+            document.getElementById('inp-lng').value = p.longitude;
+            document.getElementById('inp-obs').value = p.observacoes || '';
+
+            pontosRotaCadastro = Array.isArray(p.rota_coordenadas) ? [...p.rota_coordenadas] : [];
+            waypointsCadastro = [];
+
+            document.getElementById('titulo-form-ponto').textContent = `✏️ Editando: ${p.nome}`;
+            document.getElementById('btn-salvar-ponto').textContent = '💾 Atualizar Registro';
+            document.getElementById('secao-cadastro').classList.add('open');
+            document.getElementById('secao-cadastro').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function excluirPonto(id) {
+            const p = todosOsPontos.find(item => item.id === id);
+            if (!p) return;
+            if (!confirm(`Tem certeza que deseja excluir "${p.nome}"?`)) return;
+
+            try {
+                const resp = await fetch(`/pontos/${id}`, { method: 'DELETE' });
+                if (resp.ok) {
+                    await carregarPontosDaAPI();
+                }
+            } catch (e) {
+                alert('Erro ao excluir ponto.');
+            }
+        }
+
+        async function salvarPonto(event) {
+            event.preventDefault();
+            const feedback = document.getElementById('form-feedback');
+            const idEdicao = document.getElementById('inp-id-edicao').value;
+
+            const payload = {
+                nome: document.getElementById('inp-nome').value.trim(),
+                cidade: document.getElementById('inp-cidade').value,
+                bairro: document.getElementById('inp-bairro').value.trim(),
+                categoria: document.getElementById('inp-categoria').value,
+                tipo: document.getElementById('inp-tipo').value.trim(),
+                endereco: document.getElementById('inp-endereco').value.trim(),
+                horario: document.getElementById('inp-horario').value.trim(),
+                dias_semana: document.getElementById('inp-dias').value.trim(),
+                hora_inicio: document.getElementById('inp-inicio').value,
+                hora_fim: document.getElementById('inp-fim').value,
+                observacoes: document.getElementById('inp-obs').value.trim(),
+                latitude: parseFloat(document.getElementById('inp-lat').value),
+                longitude: parseFloat(document.getElementById('inp-lng').value),
+                rota_coordenadas: pontosRotaCadastro
+            };
+
+            const url = idEdicao ? `/pontos/${idEdicao}` : '/pontos';
+            const metodo = idEdicao ? 'PUT' : 'POST';
+
+            try {
+                const resp = await fetch(url, {
+                    method: metodo,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!resp.ok) throw new Error('Falha ao salvar');
+                const salvo = await resp.json();
+                feedback.textContent = idEdicao ? '✅ Registro atualizado!' : '✅ Cadastrado com sucesso!';
+                await carregarPontosDaAPI();
+                focarPontoNoMapa(salvo.id);
+                setTimeout(() => fecharFormularioPonto(), 900);
+            } catch (err) {
+                feedback.textContent = '❌ Erro ao salvar. Verifique os campos.';
+            }
+        }
+
+        // --- ABA DE DENÚNCIAS DE PONTOS CRÍTICOS (PINO LARANJA) ---
+        async function carregarDenunciasDaAPI() {
+            try {
+                const resp = await fetch('/denuncias');
+                if (!resp.ok) return;
+                todasAsDenuncias = await resp.json();
+                renderizarDenuncias();
+                atualizarDashboard();
+            } catch (e) {
+                console.error('Erro ao carregar denúncias:', e);
+            }
+        }
+
+        function filtrarDenunciasStatus(btn, status) {
+            document.querySelectorAll('#toolbar-denuncias .pill-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            statusDenunciaFiltro = status;
+            renderizarDenuncias();
+        }
+
+        function renderizarDenuncias() {
+            denunciasLayer.clearLayers();
+            const container = document.getElementById('denuncias-container');
+            const contador = document.getElementById('contador-denuncias');
+
+            const filtradas = todasAsDenuncias.filter(d => {
+                if (statusDenunciaFiltro && d.status !== statusDenunciaFiltro) return false;
+                return true;
+            });
+
+            contador.textContent = `${filtradas.length} ${filtradas.length === 1 ? 'alerta' : 'alertas'}`;
+            container.innerHTML = '';
+
+            filtradas.forEach(den => {
+                const resolvida = den.status === 'Resolvido';
+                const icone = resolvida ? iconeResolvido : iconeCritico;
+
+                const marker = L.marker([den.latitude, den.longitude], { icon: icone })
+                    .addTo(denunciasLayer)
+                    .bindPopup(`
+                        <div style="min-width:210px;">
+                            <strong style="color:${resolvida ? '#475569' : '#ea580c'};">
+                                ${resolvida ? '✅ [RESOLVIDO]' : '🟠 [PONTO CRÍTICO]'} ${den.titulo}
+                            </strong><br/>
+                            <small>${den.cidade} • ${den.bairro}</small>
+                            <hr style="border:none; border-top:1px solid #e2e8f0; margin:5px 0;"/>
+                            <b>Resíduo:</b> ${den.tipo_residuo}<br/>
+                            <b>Local:</b> ${den.endereco}<br/>
+                            ${den.descricao ? `<small>${den.descricao}</small>` : ''}
+                        </div>
+                    `);
+
+                const card = document.createElement('div');
+                card.className = `card ${resolvida ? 'denuncia-resolvida' : 'denuncia-critica'}`;
+                card.onclick = () => {
+                    map.setView([den.latitude, den.longitude], 16, { animate: true });
+                    marker.openPopup();
+                };
+
+                card.innerHTML = `
+                    <div class="card-top">
+                        <h3>${den.titulo}</h3>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-city">📍 ${den.cidade} • ${den.bairro}</span>
+                        <span class="badge ${resolvida ? 'badge-status-open' : 'badge-cat-critico'}">
+                            ${resolvida ? '✅ Limpeza Concluída / Resolvido' : `🟠 Gravidade: ${den.gravidade}`}
+                        </span>
+                    </div>
+                    <p><strong>🗑️ Resíduo Acumulado:</strong> ${den.tipo_residuo}</p>
+                    <p><strong>📌 Local:</strong> ${den.endereco}</p>
+                    ${den.descricao ? `<p>ℹ️ ${den.descricao}</p>` : ''}
+                    <div class="card-actions" onclick="event.stopPropagation();">
+                        <button type="button" class="card-link" onclick="alternarStatusDenuncia(${den.id})">
+                            ${resolvida ? '↩️ Reabrir Alerta' : '✅ Marcar como Resolvido'}
+                        </button>
+                        <button type="button" class="card-link delete-btn" onclick="excluirDenuncia(${den.id})">🗑️ Excluir</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function toggleFormularioDenuncia() {
+            document.getElementById('secao-denuncia-form').classList.toggle('open');
+        }
+
+        async function salvarNovaDenuncia(event) {
+            event.preventDefault();
+            const payload = {
+                titulo: document.getElementById('den-titulo').value.trim(),
+                cidade: document.getElementById('den-cidade').value,
+                bairro: document.getElementById('den-bairro').value.trim(),
+                endereco: document.getElementById('den-endereco').value.trim(),
+                tipo_residuo: document.getElementById('den-residuo').value.trim(),
+                gravidade: document.getElementById('den-gravidade').value,
+                descricao: document.getElementById('den-desc').value.trim(),
+                status: 'Pendente',
+                data_registro: new Date().toLocaleDateString('pt-BR'),
+                latitude: parseFloat(document.getElementById('den-lat').value),
+                longitude: parseFloat(document.getElementById('den-lng').value)
+            };
+
+            const resp = await fetch('/denuncias', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (resp.ok) {
+                document.getElementById('form-denuncia').reset();
+                document.getElementById('secao-denuncia-form').classList.remove('open');
+                await carregarDenunciasDaAPI();
+            }
+        }
+
+        async function alternarStatusDenuncia(id) {
+            await fetch(`/denuncias/${id}/resolver`, { method: 'PUT' });
+            await carregarDenunciasDaAPI();
+        }
+
+        async function excluirDenuncia(id) {
+            if (!confirm('Deseja remover este registro de denúncia?')) return;
+            await fetch(`/denuncias/${id}`, { method: 'DELETE' });
+            await carregarDenunciasDaAPI();
+        }
+
+        // --- NAVEGAÇÃO ENTRE AS 3 ABAS ---
+        function alternarAba(aba) {
+            abaAtual = aba;
+            document.querySelectorAll('.nav-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`tab-btn-${aba}`).classList.add('active');
+
+            const visaoMapa = document.getElementById('visao-mapa-principal');
+            const visaoGuia = document.getElementById('visao-educativa');
+            const toolbarColeta = document.getElementById('toolbar-coleta');
+            const toolbarDenuncias = document.getElementById('toolbar-denuncias');
+            const painelColeta = document.getElementById('painel-lista-coleta');
+            const painelDenuncias = document.getElementById('painel-lista-denuncias');
+
+            if (aba === 'guia') {
+                visaoMapa.style.display = 'none';
+                visaoGuia.classList.add('active');
+                return;
+            }
+
+            visaoGuia.classList.remove('active');
+            visaoMapa.style.display = 'block';
+            setTimeout(() => map.invalidateSize(), 120);
+
+            if (aba === 'denuncias') {
+                toolbarColeta.style.display = 'none';
+                painelColeta.style.display = 'none';
+                document.getElementById('secao-cadastro').classList.remove('open');
+                toolbarDenuncias.style.display = 'flex';
+                painelDenuncias.style.display = 'block';
+            } else {
+                toolbarDenuncias.style.display = 'none';
+                painelDenuncias.style.display = 'none';
+                document.getElementById('secao-denuncia-form').classList.remove('open');
+                toolbarColeta.style.display = 'flex';
+                painelColeta.style.display = 'block';
+            }
         }
 
         function selecionarCidade(botao, cidade) {
-            document.querySelectorAll('.city-pills .pill-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('#toolbar-coleta .city-pills .pill-btn').forEach(b => b.classList.remove('active'));
             botao.classList.add('active');
             cidadeSelecionada = cidade;
 
@@ -950,6 +1633,7 @@
                 if (!resposta.ok) throw new Error('Falha ao buscar pontos');
                 todosOsPontos = await resposta.json();
                 aplicarFiltros();
+                atualizarDashboard();
             } catch (erro) {
                 console.error('Erro ao carregar /pontos:', erro);
             }
@@ -983,14 +1667,6 @@
             );
         }
 
-        function toggleFormulario() {
-            const sec = document.getElementById('secao-cadastro');
-            sec.classList.toggle('open');
-            if (!sec.classList.contains('open')) {
-                limparRotaDesenhada();
-            }
-        }
-
         function limparRotaDesenhada() {
             waypointsCadastro = [];
             pontosRotaCadastro = [];
@@ -1005,7 +1681,6 @@
             document.getElementById('form-feedback').textContent = '';
         }
 
-        // Calcula o trajeto real seguindo as ruas e pontes gratuitamente via OSRM (OpenStreetMap)
         async function calcularTrajetoPelasRuasOSRM(waypoints) {
             if (waypoints.length < 2) return waypoints;
             try {
@@ -1049,20 +1724,33 @@
                     map.setView([lat, lon], 16);
                     feedback.textContent = '✅ Coordenadas encontradas no mapa!';
                 } else {
-                    feedback.textContent = '⚠️ Endereço não encontrado. Você também pode clicar direto no mapa!';
+                    feedback.textContent = '⚠️ Endereço não encontrado. Clique direto no mapa!';
                 }
             } catch (e) {
-                feedback.textContent = '⚠️ Erro ao consultar Nominatim. Clique no mapa para definir a posição.';
+                feedback.textContent = '⚠️ Sem conexão com Nominatim no momento. Clique direto no mapa para marcar!';
             }
         }
 
-        // Permitir clicar no mapa para escolher local ou desenhar rota do caminhão
+        // Clique no mapa funciona tanto para Ponto/Rota quanto para Denúncia de Ponto Crítico
         map.on('click', function (e) {
-            const sec = document.getElementById('secao-cadastro');
-            if (!sec.classList.contains('open')) return;
-
             const lat = parseFloat(e.latlng.lat.toFixed(5));
             const lng = parseFloat(e.latlng.lng.toFixed(5));
+
+            const secDenuncia = document.getElementById('secao-denuncia-form');
+            if (secDenuncia.classList.contains('open')) {
+                document.getElementById('den-lat').value = lat;
+                document.getElementById('den-lng').value = lng;
+                if (marcadorSelecaoCadastro) map.removeLayer(marcadorSelecaoCadastro);
+                marcadorSelecaoCadastro = L.marker([lat, lng], { icon: iconeCritico })
+                    .addTo(map)
+                    .bindPopup('🟠 Local selecionado para o Alerta Crítico').openPopup();
+                document.getElementById('den-feedback').textContent = '🟠 Localização crítica capturada no mapa!';
+                return;
+            }
+
+            const secCadastro = document.getElementById('secao-cadastro');
+            if (!secCadastro.classList.contains('open')) return;
+
             const categoria = document.getElementById('inp-categoria').value;
             const feedback = document.getElementById('form-feedback');
 
@@ -1072,83 +1760,105 @@
                     pontosRotaCadastro = [[lat, lng]];
                     document.getElementById('inp-lat').value = lat;
                     document.getElementById('inp-lng').value = lng;
-                    feedback.textContent = '🚛 Ponto inicial definido! Clique no próximo ponto da rua para traçar a rota seguindo as vias.';
+                    feedback.textContent = '🚛 Ponto inicial definido! Clique no próximo ponto da rua para traçar a rota.';
                 } else {
-                    feedback.textContent = '🛣️ Calculando rota pelas ruas (OpenStreetMap OSRM)...';
+                    feedback.textContent = '🛣️ Ajustando rota pelas ruas...';
                     calcularTrajetoPelasRuasOSRM(waypointsCadastro).then(geometriaRuas => {
                         pontosRotaCadastro = geometriaRuas;
-                        if (linhaRotaCadastro) {
-                            map.removeLayer(linhaRotaCadastro);
-                        }
+                        if (linhaRotaCadastro) map.removeLayer(linhaRotaCadastro);
                         linhaRotaCadastro = L.polyline(pontosRotaCadastro, {
                             color: '#0284c7',
                             weight: 5,
                             dashArray: '10, 8'
                         }).addTo(map);
-                        feedback.textContent = `✅ Rota ajustada exatamente às ruas (${waypointsCadastro.length} paradas)!`;
+                        feedback.textContent = `✅ Rota traçada (${waypointsCadastro.length} paradas)!`;
                     });
                 }
             } else {
                 document.getElementById('inp-lat').value = lat;
                 document.getElementById('inp-lng').value = lng;
-                if (marcadorSelecaoCadastro) {
-                    map.removeLayer(marcadorSelecaoCadastro);
-                }
+                if (marcadorSelecaoCadastro) map.removeLayer(marcadorSelecaoCadastro);
                 marcadorSelecaoCadastro = L.marker([lat, lng]).addTo(map)
-                    .bindPopup('📌 Local selecionado para o novo Ecoponto').openPopup();
+                    .bindPopup('📌 Local selecionado').openPopup();
                 feedback.textContent = '📌 Coordenada selecionada no mapa!';
             }
         });
 
-        async function salvarNovoPonto(event) {
-            event.preventDefault();
-            const feedback = document.getElementById('form-feedback');
-
-            const payload = {
-                nome: document.getElementById('inp-nome').value.trim(),
-                cidade: document.getElementById('inp-cidade').value,
-                bairro: document.getElementById('inp-bairro').value.trim(),
-                categoria: document.getElementById('inp-categoria').value,
-                tipo: document.getElementById('inp-tipo').value.trim(),
-                endereco: document.getElementById('inp-endereco').value.trim(),
-                horario: document.getElementById('inp-horario').value.trim(),
-                dias_semana: document.getElementById('inp-dias').value.trim(),
-                hora_inicio: document.getElementById('inp-inicio').value,
-                hora_fim: document.getElementById('inp-fim').value,
-                observacoes: document.getElementById('inp-obs').value.trim(),
-                latitude: parseFloat(document.getElementById('inp-lat').value),
-                longitude: parseFloat(document.getElementById('inp-lng').value),
-                rota_coordenadas: pontosRotaCadastro
-            };
-
-            try {
-                const resp = await fetch('/pontos', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!resp.ok) {
-                    throw new Error('Erro ao cadastrar ponto');
-                }
-
-                const criado = await resp.json();
-                feedback.textContent = '✅ Cadastrado com sucesso!';
-                document.getElementById('form-ponto').reset();
-                limparRotaDesenhada();
-                await carregarPontosDaAPI();
-                focarPontoNoMapa(criado.id);
-                setTimeout(() => {
-                    feedback.textContent = '';
-                    toggleFormulario();
-                }, 1200);
-            } catch (err) {
-                feedback.textContent = '❌ Erro ao salvar. Verifique os campos.';
+        // --- MINI-QUIZ EDUCATIVO ---
+        const PERGUNTAS_QUIZ = [
+            {
+                item: "🧴 2 Litros de Óleo de Cozinha usado depois de fritura",
+                correta: "Garrafa PET fechada -> PEV (ex: Praça do Carmo / Boa Vista)",
+                opcoes: [
+                    "Garrafa PET fechada -> PEV (ex: Praça do Carmo / Boa Vista)",
+                    "Despejar no ralo da pia com detergente",
+                    "Jogar no saco de lixo orgânico comum"
+                ]
+            },
+            {
+                item: "🛋️ Um sofá velho rasgado e 4 sacos de entulho de reforma",
+                correta: "Levar a uma Ecoestação (Peixinhos, Ouro Preto, Torre, Campo Grande)",
+                opcoes: [
+                    "Deixar na calçada esperando o caminhão compactador comum",
+                    "Levar a uma Ecoestação (Peixinhos, Ouro Preto, Torre, Campo Grande)",
+                    "Colocar na lixeira seletiva de papel e plástico"
+                ]
+            },
+            {
+                item: "🔋 Pilhas alcalinas descarregadas e um celular quebrado",
+                correta: "Ponto de Entrega de Eletrônicos (PEV Casa Caiada / Carmo / Torre)",
+                opcoes: [
+                    "Ponto de Entrega de Eletrônicos (PEV Casa Caiada / Carmo / Torre)",
+                    "Enterrar no quintal",
+                    "Misturar com restos de comida na coleta domiciliar"
+                ]
+            },
+            {
+                item: "🥫 Latas de alumínio, garrafas PET e caixas de papelão limpas",
+                correta: "Ecoponto de Recicláveis Secos / Cooperativas de Olinda e Recife",
+                opcoes: [
+                    "Ecoponto de Recicláveis Secos / Cooperativas de Olinda e Recife",
+                    "Descartar junto com entulho de obra",
+                    "Jogar em terreno baldio"
+                ]
             }
+        ];
+        let indiceQuiz = 0;
+
+        function renderizarQuiz() {
+            const atual = PERGUNTAS_QUIZ[indiceQuiz];
+            document.getElementById('quiz-pergunta').textContent = `Onde descartar: ${atual.item}?`;
+            document.getElementById('quiz-resultado').textContent = '';
+            const container = document.getElementById('quiz-opcoes');
+            container.innerHTML = '';
+
+            atual.opcoes.forEach(op => {
+                const btn = document.createElement('button');
+                btn.className = 'pill-btn';
+                btn.textContent = op;
+                btn.onclick = () => {
+                    const res = document.getElementById('quiz-resultado');
+                    if (op === atual.correta) {
+                        res.style.color = '#16a34a';
+                        res.textContent = '🎉 Resposta correta! Você ajuda a manter Olinda e Recife limpas!';
+                    } else {
+                        res.style.color = '#dc2626';
+                        res.textContent = `❌ Quase! O correto é: ${atual.correta}`;
+                    }
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function proximaPerguntaQuiz() {
+            indiceQuiz = (indiceQuiz + 1) % PERGUNTAS_QUIZ.length;
+            renderizarQuiz();
         }
 
         // Inicialização
         carregarPontosDaAPI();
+        carregarDenunciasDaAPI();
+        renderizarQuiz();
         setTimeout(() => map.invalidateSize(), 200);
     </script>
 

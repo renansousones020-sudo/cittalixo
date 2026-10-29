@@ -93,3 +93,41 @@ def test_ciclo_completo_crud_e_unicidade_id():
 def test_ponto_inexistente_retorna_404():
     assert client.get("/pontos/999999").status_code == 404
     assert client.delete("/pontos/999999").status_code == 404
+
+
+def test_ciclo_denuncias_ponto_critico():
+    # 1. Listar denúncias iniciais
+    resp_list = client.get("/denuncias")
+    assert resp_list.status_code == 200
+    assert isinstance(resp_list.json(), list)
+    assert len(resp_list.json()) >= 1
+
+    # 2. Criar nova denúncia crítica
+    nova_den = {
+        "titulo": "Entulho na calçada de teste",
+        "cidade": "Olinda",
+        "bairro": "Bairro Novo",
+        "endereco": "Av. Getúlio Vargas, 300",
+        "tipo_residuo": "Entulho e restos de poda",
+        "gravidade": "Crítico",
+        "descricao": "Teste automatizado de ponto crítico",
+        "status": "Pendente",
+        "data_registro": "Hoje",
+        "latitude": -7.9920,
+        "longitude": -34.8425,
+    }
+    resp_create = client.post("/denuncias", json=nova_den)
+    assert resp_create.status_code == 201
+    criada = resp_create.json()
+    den_id = criada["id"]
+    assert criada["status"] == "Pendente"
+
+    # 3. Marcar como Resolvido
+    resp_resolve = client.put(f"/denuncias/{den_id}/resolver")
+    assert resp_resolve.status_code == 200
+    assert resp_resolve.json()["status"] == "Resolvido"
+
+    # 4. Excluir denúncia
+    resp_del = client.delete(f"/denuncias/{den_id}")
+    assert resp_del.status_code == 200
+
