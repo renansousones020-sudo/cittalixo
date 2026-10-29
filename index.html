@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CittaLixo — Pontos e Horários de Coleta em Olinda e Recife</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        :root {
+            --green-dark: #14532d;
+            --green-primary: #16a34a;
+            --green-light: #dcfce7;
+            --blue-primary: #0284c7;
+            --blue-light: #e0f2fe;
+            --amber-light: #fef3c7;
+            --amber-dark: #92400e;
+            --bg-page: #f1f5f9;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --border-color: #e2e8f0;
+            --radius: 12px;
+            --shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            line-height: 1.5;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--green-dark), var(--green-primary));
+            color: white;
+            padding: 24px 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2rem;
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            margin: 8px auto 0;
+            max-width: 680px;
+            opacity: 0.92;
+            font-size: 0.98rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px 16px 48px;
+        }
+
+        /* Barra de filtros e ações */
+        .toolbar {
+            background: var(--bg-card);
+            padding: 16px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .city-pills {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .pill-btn {
+            border: 1px solid var(--border-color);
+            background: #f8fafc;
+            color: var(--text-main);
+            padding: 8px 14px;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.18s ease;
+        }
+
+        .pill-btn:hover {
+            border-color: var(--green-primary);
+            background: var(--green-light);
+        }
+
+        .pill-btn.active {
+            background: var(--green-primary);
+            color: white;
+            border-color: var(--green-primary);
+        }
+
+        .filters-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            flex: 1;
+            justify-content: flex-end;
+        }
+
+        .filters-row input,
+        .filters-row select {
+            padding: 9px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.92rem;
+            background: white;
+            min-width: 160px;
+        }
+
+        .btn-action {
+            background: var(--blue-primary);
+            color: white;
+            border: none;
+            padding: 9px 14px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: opacity 0.18s;
+        }
+
+        .btn-action:hover {
+            opacity: 0.92;
+        }
+
+        .btn-add {
+            background: var(--green-dark);
+        }
+
+        /* Layout Mapa + Painel Lateral/Cards */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1.25fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        @media (max-width: 920px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .map-wrapper {
+            background: var(--bg-card);
+            padding: 12px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 16px;
+        }
+
+        #map {
+            height: 520px;
+            width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .map-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            font-size: 0.84rem;
+            color: var(--text-muted);
+            padding: 0 4px;
+        }
+
+        .legend-items {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .dot-ecoponto { background: #16a34a; }
+        .dot-coleta { background: #0284c7; }
+        .dot-user { background: #dc2626; }
+
+        /* Lista de Cards */
+        .cards-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .cards-header h2 {
+            margin: 0;
+            font-size: 1.15rem;
+        }
+
+        .count-badge {
+            background: var(--green-light);
+            color: var(--green-dark);
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.84rem;
+            font-weight: 700;
+        }
+
+        #cards-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 760px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            padding: 16px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border-left: 5px solid var(--green-primary);
+            text-align: left;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            cursor: pointer;
+        }
+
+        .card.coleta-domiciliar {
+            border-left-color: var(--blue-primary);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+        }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .card h3 {
+            margin: 0;
+            font-size: 1.05rem;
+            color: var(--text-main);
+        }
+
+        .badges {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+
+        .badge-city {
+            background: #f1f5f9;
+            color: #334155;
+        }
+
+        .badge-cat-ecoponto {
+            background: var(--green-light);
+            color: var(--green-dark);
+        }
+
+        .badge-cat-coleta {
+            background: var(--blue-light);
+            color: #0369a1;
+        }
+
+        .badge-status-open {
+            background: #bbf7d0;
+            color: #14532d;
+        }
+
+        .badge-status-closed {
+            background: var(--amber-light);
+            color: var(--amber-dark);
+        }
+
+        .badge-distance {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .card p {
+            margin: 5px 0;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .card p strong {
+            color: var(--text-main);
+        }
+
+        .card-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .card-link {
+            font-size: 0.83rem;
+            font-weight: 600;
+            text-decoration: none;
+            padding: 5px 10px;
+            border-radius: 6px;
+            background: #f8fafc;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+        }
+
+        .card-link:hover {
+            background: var(--green-light);
+            border-color: var(--green-primary);
+        }
+
+        /* Modal / Seção de Cadastro de Novo Ponto */
+        .form-section {
+            margin-top: 28px;
+            background: var(--bg-card);
+            padding: 22px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            display: none;
+        }
+
+        .form-section.open {
+            display: block;
+        }
+
+        .form-section h2 {
+            margin-top: 0;
+            color: var(--green-dark);
+            font-size: 1.25rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 14px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+            gap: 5px;
+        }
+
+        .form-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 9px 11px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.92rem;
+        }
+
+        .geocode-bar {
+            display: flex;
+            gap: 8px;
+        }
+
+        .geocode-bar input {
+            flex: 1;
+        }
+
+        .form-footer {
+            margin-top: 16px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .feedback-msg {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>♻️ CittaLixo</h1>
+        <p>Mapa interativo de Ecopontos, Ecoestações e horários de coleta domiciliar em <strong>Olinda e Recife</strong> — 100% gratuito e colaborativo.</p>
+    </header>
+
+    <div class="container">
+        <!-- Barra de Filtros -->
+        <div class="toolbar">
+            <div class="city-pills" role="group" aria-label="Filtro por cidade">
+                <button class="pill-btn active" data-cidade="" onclick="selecionarCidade(this, '')">🌎 Olinda + Recife</button>
+                <button class="pill-btn" data-cidade="Olinda" onclick="selecionarCidade(this, 'Olinda')">🌴 Olinda</button>
+                <button class="pill-btn" data-cidade="Recife" onclick="selecionarCidade(this, 'Recife')">🌉 Recife</button>
+            </div>
+
+            <div class="filters-row">
+                <select id="filtro-categoria" onchange="aplicarFiltros()" aria-label="Filtrar por modalidade">
+                    <option value="">Todas as modalidades</option>
+                    <option value="Ecoponto">🏢 Ecopontos / Ecoestações fixos</option>
+                    <option value="Coleta Domiciliar">🚛 Horários do Caminhão (Coleta Domiciliar)</option>
+                </select>
+
+                <select id="filtro-tipo" onchange="aplicarFiltros()" aria-label="Filtrar por tipo de resíduo">
+                    <option value="">Todos os tipos de lixo</option>
+                    <option value="Recicláveis">♻️ Recicláveis (Plástico, Papel, Vidro, Metal)</option>
+                    <option value="Eletrônicos">🔌 Eletrônicos / Pilhas</option>
+                    <option value="Entulho">🧱 Entulho / Móveis / Poda</option>
+                    <option value="Óleo">🌻 Óleo de Cozinha</option>
+                    <option value="Orgânico">🗑️ Lixo Domiciliar / Orgânico</option>
+                </select>
+
+                <input
+                    type="text"
+                    id="filtro-busca"
+                    placeholder="Buscar bairro, rua ou ponto..."
+                    oninput="aplicarFiltros()"
+                    aria-label="Buscar bairro, rua ou ponto"
+                />
+
+                <button class="btn-action" onclick="ordenarPertoDeMim()" title="Usar GPS do navegador para achar o ponto mais próximo">
+                    📍 Perto de Mim
+                </button>
+
+                <button class="btn-action btn-add" onclick="toggleFormulario()">
+                    ➕ Cadastrar Ponto
+                </button>
+            </div>
+        </div>
+
+        <!-- Formulário Colaborativo de Cadastro (com busca gratuita via OpenStreetMap Nominatim ou clique no mapa) -->
+        <section id="secao-cadastro" class="form-section">
+            <h2>➕ Cadastrar Novo Ecoponto ou Horário de Coleta</h2>
+            <p style="margin-top:0; font-size:0.9rem; color: var(--text-muted);">
+                Você pode clicar diretamente no mapa para preencher a Latitude/Longitude automaticamente, ou buscar o endereço abaixo (via OpenStreetMap gratuito).
+            </p>
+
+            <form id="form-ponto" onsubmit="salvarNovoPonto(event)">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="inp-nome">Nome do Ponto ou Rota *</label>
+                        <input type="text" id="inp-nome" required placeholder="Ex: Ecoestação Jardim Atlântico" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="inp-cidade">Cidade *</label>
+                        <select id="inp-cidade" required>
+                            <option value="Olinda">Olinda</option>
+                            <option value="Recife">Recife</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="inp-bairro">Bairro *</label>
+                        <input type="text" id="inp-bairro" required placeholder="Ex: Bairro Novo, Casa Caiada, Boa Vista" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="inp-categoria">Modalidade *</label>
+                        <select id="inp-categoria" required>
+                            <option value="Ecoponto">Ecoponto / Ecoestação Fixa</option>
+                            <option value="Coleta Domiciliar">Coleta Domiciliar (Caminhão)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="inp-tipo">Resíduos Aceitos *</label>
+                        <input type="text" id="inp-tipo" required placeholder="Ex: Recicláveis, Eletrônicos, Entulho" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="inp-endereco">Endereço / Rua (com busca automática) *</label>
+                        <div class="geocode-bar">
+                            <input type="text" id="inp-endereco" required placeholder="Ex: Av. Getúlio Vargas, Olinda" />
+                            <button type="button" class="btn-action" onclick="buscarCoordenadasGratuitas()" title="Buscar coordenadas gratuitamente no OpenStreetMap">
+                                🔍 Achar no Mapa
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="inp-horario">Descrição do Horário *</label>
+                        <input type="text" id="inp-horario" required value="Seg a Sáb: 08h às 16h" placeholder="Ex: Seg, Qua e Sex: 07h às 11h" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="inp-dias">Dias da Semana (p/ status automático)</label>
+                        <input type="text" id="inp-dias" value="Seg,Ter,Qua,Qui,Sex,Sab" placeholder="Dom,Seg,Ter,Qua,Qui,Sex,Sab" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="inp-inicio">Hora Início</label>
+                        <input type="time" id="inp-inicio" value="08:00" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="inp-fim">Hora Fim</label>
+                        <input type="time" id="inp-fim" value="16:00" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="inp-lat">Latitude * (ou clique no mapa)</label>
+                        <input type="number" step="any" id="inp-lat" required value="-8.0014" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="inp-lng">Longitude * (ou clique no mapa)</label>
+                        <input type="number" step="any" id="inp-lng" required value="-34.8553" />
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 12px;">
+                    <label for="inp-obs">Observações (opcional)</label>
+                    <input type="text" id="inp-obs" placeholder="Ex: Limite de 1m³ de entulho por morador / Entregar óleo em garrafa PET" />
+                </div>
+
+                <div class="form-footer">
+                    <button type="submit" class="btn-action btn-add">💾 Salvar Ponto</button>
+                    <button type="button" class="pill-btn" onclick="toggleFormulario()">Cancelar</button>
+                    <span id="form-feedback" class="feedback-msg"></span>
+                </div>
+            </form>
+        </section>
+
+        <!-- Grade Principal: Mapa + Cards -->
+        <div class="main-grid">
+            <div class="map-wrapper">
+                <div id="map"></div>
+                <div class="map-legend">
+                    <div class="legend-items">
+                        <span><i class="dot dot-ecoponto"></i>Ecoponto / PEV Fixo</span>
+                        <span><i class="dot dot-coleta"></i>Coleta Domiciliar (Caminhão)</span>
+                        <span><i class="dot dot-user"></i>Sua Localização</span>
+                    </div>
+                    <span>💡 Clique em um card para focar no mapa</span>
+                </div>
+            </div>
+
+            <div>
+                <div class="cards-header">
+                    <h2>Pontos e Horários de Coleta</h2>
+                    <span id="contador-pontos" class="count-badge">Carregando...</span>
+                </div>
+
+                <div id="cards-container">
+                    <!-- Cards fallback iniciais (atualizados dinamicamente via API /pontos) -->
+                    <div class="card">
+                        <h3>Ecoponto Centro (Santo Amaro / Boa Vista)</h3>
+                        <p>Recicláveis, Óleo de Cozinha, Eletrônicos</p>
+                        <p>Rua do Sol, 100 - Centro, Recife</p>
+                    </div>
+                    <div class="card">
+                        <h3>Ecoponto Bairro Novo (Orla)</h3>
+                        <p>Recicláveis, Vidro, Plástico, Papel, Metal</p>
+                        <p>Av. Ministro Marcos Freire, próx. à Praça Duque de Caxias</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        CittaLixo • Dados abertos com OpenStreetMap &amp; Leaflet (Zero Custo de API) • Atendendo Olinda e Recife
+    </footer>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // Visão inicial abrangendo Olinda e Recife
+        const CENTRO_OLINDA_RECIFE = [-8.0220, -34.8680];
+        const map = L.map('map').setView(CENTRO_OLINDA_RECIFE, 12);
+
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+
+        const markersLayer = L.layerGroup().addTo(map);
+        const markersById = {};
+        let todosOsPontos = [];
+        let cidadeSelecionada = '';
+        let localizacaoUsuario = null;
+        let marcadorUsuario = null;
+        let marcadorSelecaoCadastro = null;
+
+        // Ícones customizados via SVG embutido (100% gratuito, sem depender de imagens externas)
+        function criarIconeColorido(corHex) {
+            const svg = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40">
+                    <path d="M14 0C6.268 0 0 6.268 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.268 21.732 0 14 0z" fill="${corHex}" stroke="#ffffff" stroke-width="2"/>
+                    <circle cx="14" cy="14" r="6" fill="#ffffff"/>
+                </svg>`;
+            return L.divIcon({
+                className: 'custom-pin',
+                html: svg,
+                iconSize: [28, 40],
+                iconAnchor: [14, 40],
+                popupAnchor: [0, -36]
+            });
+        }
+
+        const iconeEcoponto = criarIconeColorido('#16a34a');
+        const iconeColeta = criarIconeColorido('#0284c7');
+        const iconeUsuario = criarIconeColorido('#dc2626');
+
+        // Verifica se o ponto está aberto / com coleta ativa no dia e hora atuais
+        function verificarStatusHorario(ponto) {
+            const mapaDias = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+            const agora = new Date();
+            const diaHoje = mapaDias[agora.getDay()];
+            const diasPonto = (ponto.dias_semana || '').split(',').map(d => d.trim());
+
+            const atendeHoje = diasPonto.some(d => d.toLowerCase() === diaHoje.toLowerCase());
+            if (!atendeHoje) {
+                return { aberto: false, texto: 'Sem atendimento hoje' };
+            }
+
+            if (ponto.hora_inicio && ponto.hora_fim) {
+                const minutosAgora = agora.getHours() * 60 + agora.getMinutes();
+                const [hIni, mIni] = ponto.hora_inicio.split(':').map(Number);
+                const [hFim, mFim] = ponto.hora_fim.split(':').map(Number);
+                const minIni = hIni * 60 + (mIni || 0);
+                const minFim = hFim * 60 + (mFim || 0);
+
+                if (minutosAgora >= minIni && minutosAgora <= minFim) {
+                    return {
+                        aberto: true,
+                        texto: ponto.categoria === 'Coleta Domiciliar' ? '🚛 Coleta em andamento agora' : '🟢 Aberto agora'
+                    };
+                }
+            }
+
+            return {
+                aberto: false,
+                texto: ponto.categoria === 'Coleta Domiciliar' ? '📅 Passa hoje (' + ponto.hora_inicio + ')' : '🕒 Atende hoje (' + ponto.hora_inicio + ' às ' + ponto.hora_fim + ')'
+            };
+        }
+
+        // Fórmula de Haversine para calcular distância em km gratuitamente no navegador
+        function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a =
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        function focarPontoNoMapa(id) {
+            const p = todosOsPontos.find(item => item.id === id);
+            if (!p) return;
+            map.setView([p.latitude, p.longitude], 16, { animate: true });
+            const marker = markersById[id];
+            if (marker) {
+                marker.openPopup();
+            }
+        }
+
+        function renderizarPontos(lista) {
+            markersLayer.clearLayers();
+            Object.keys(markersById).forEach(k => delete markersById[k]);
+
+            const container = document.getElementById('cards-container');
+            const contador = document.getElementById('contador-pontos');
+            contador.textContent = `${lista.length} ${lista.length === 1 ? 'ponto encontrado' : 'pontos encontrados'}`;
+
+            if (lista.length === 0) {
+                container.innerHTML = `
+                    <div class="card">
+                        <h3>Nenhum ponto encontrado com esses filtros</h3>
+                        <p>Tente limpar a busca ou trocar a cidade selecionada.</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+
+            lista.forEach(ponto => {
+                const isColeta = ponto.categoria === 'Coleta Domiciliar';
+                const statusInfo = verificarStatusHorario(ponto);
+                const icone = isColeta ? iconeColeta : iconeEcoponto;
+
+                // Link gratuito de rota no OpenStreetMap / Google Maps
+                const urlRota = `https://www.google.com/maps/dir/?api=1&destination=${ponto.latitude},${ponto.longitude}`;
+
+                const marker = L.marker([ponto.latitude, ponto.longitude], { icon: icone })
+                    .addTo(markersLayer)
+                    .bindPopup(`
+                        <div style="min-width:210px; line-height:1.4;">
+                            <strong>${ponto.nome}</strong><br/>
+                            <span style="font-size:0.82rem; color:#475569;">${ponto.cidade} • ${ponto.bairro} (${ponto.categoria})</span>
+                            <hr style="border:none; border-top:1px solid #e2e8f0; margin:6px 0;"/>
+                            <b>♻️ Resíduos:</b> ${ponto.tipo}<br/>
+                            <b>🕒 Horário:</b> ${ponto.horario || 'Consultar'}<br/>
+                            <b>📍 Endereço:</b> ${ponto.endereco}<br/>
+                            ${ponto.observacoes ? `<small style="color:#475569;">ℹ️ ${ponto.observacoes}</small><br/>` : ''}
+                            <a href="${urlRota}" target="_blank" rel="noopener" style="display:inline-block; margin-top:6px; font-weight:600; color:#16a34a;">🧭 Traçar rota até aqui</a>
+                        </div>
+                    `);
+
+                markersById[ponto.id] = marker;
+
+                const card = document.createElement('div');
+                card.className = `card ${isColeta ? 'coleta-domiciliar' : ''}`;
+                card.onclick = () => focarPontoNoMapa(ponto.id);
+
+                const distanciaHtml = (typeof ponto.distanciaKm === 'number')
+                    ? `<span class="badge badge-distance">📏 ${ponto.distanciaKm.toFixed(1)} km de você</span>`
+                    : '';
+
+                card.innerHTML = `
+                    <div class="card-top">
+                        <h3>${ponto.nome}</h3>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-city">📍 ${ponto.cidade} • ${ponto.bairro}</span>
+                        <span class="badge ${isColeta ? 'badge-cat-coleta' : 'badge-cat-ecoponto'}">
+                            ${isColeta ? '🚛 Coleta Domiciliar' : '🏢 Ecoponto Fixo'}
+                        </span>
+                        <span class="badge ${statusInfo.aberto ? 'badge-status-open' : 'badge-status-closed'}">
+                            ${statusInfo.texto}
+                        </span>
+                        ${distanciaHtml}
+                    </div>
+                    <p><strong>♻️ Resíduos:</strong> ${ponto.tipo}</p>
+                    <p><strong>🕒 Horários:</strong> ${ponto.horario || 'Seg a Sáb: 08h às 16h'}</p>
+                    <p><strong>📌 Endereço:</strong> ${ponto.endereco}</p>
+                    ${ponto.observacoes ? `<p style="font-size:0.84rem;">ℹ️ ${ponto.observacoes}</p>` : ''}
+                    <div class="card-actions" onclick="event.stopPropagation();">
+                        <button type="button" class="card-link" onclick="focarPontoNoMapa(${ponto.id})">🔍 Ver no Mapa</button>
+                        <a class="card-link" href="${urlRota}" target="_blank" rel="noopener">🧭 Como Chegar</a>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        function selecionarCidade(botao, cidade) {
+            document.querySelectorAll('.city-pills .pill-btn').forEach(b => b.classList.remove('active'));
+            botao.classList.add('active');
+            cidadeSelecionada = cidade;
+
+            if (cidade === 'Olinda') {
+                map.setView([-7.9986, -34.8492], 13);
+            } else if (cidade === 'Recife') {
+                map.setView([-8.05428, -34.8813], 12);
+            } else {
+                map.setView(CENTRO_OLINDA_RECIFE, 12);
+            }
+
+            aplicarFiltros();
+        }
+
+        function aplicarFiltros() {
+            const categoria = document.getElementById('filtro-categoria').value.toLowerCase();
+            const tipo = document.getElementById('filtro-tipo').value.toLowerCase();
+            const busca = document.getElementById('filtro-busca').value.trim().toLowerCase();
+
+            let filtrados = todosOsPontos.filter(p => {
+                if (cidadeSelecionada && (p.cidade || '').toLowerCase() !== cidadeSelecionada.toLowerCase()) {
+                    return false;
+                }
+                if (categoria && (p.categoria || '').toLowerCase() !== categoria) {
+                    return false;
+                }
+                if (tipo && !(p.tipo || '').toLowerCase().includes(tipo)) {
+                    return false;
+                }
+                if (busca) {
+                    const textoCompleto = `${p.nome} ${p.bairro} ${p.endereco} ${p.tipo} ${p.horario}`.toLowerCase();
+                    if (!textoCompleto.includes(busca)) return false;
+                }
+                return true;
+            });
+
+            if (localizacaoUsuario) {
+                filtrados.forEach(p => {
+                    p.distanciaKm = calcularDistanciaKm(
+                        localizacaoUsuario.lat,
+                        localizacaoUsuario.lng,
+                        p.latitude,
+                        p.longitude
+                    );
+                });
+                filtrados.sort((a, b) => a.distanciaKm - b.distanciaKm);
+            }
+
+            renderizarPontos(filtrados);
+        }
+
+        async function carregarPontosDaAPI() {
+            try {
+                const resposta = await fetch('/pontos');
+                if (!resposta.ok) throw new Error('Falha ao buscar pontos');
+                todosOsPontos = await resposta.json();
+                aplicarFiltros();
+            } catch (erro) {
+                console.error('Erro ao carregar /pontos:', erro);
+            }
+        }
+
+        function ordenarPertoDeMim() {
+            if (!navigator.geolocation) {
+                alert('Seu navegador não suporta geolocalização.');
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                pos => {
+                    localizacaoUsuario = {
+                        lat: pos.coords.latitude,
+                        lng: pos.coords.longitude
+                    };
+                    if (marcadorUsuario) {
+                        map.removeLayer(marcadorUsuario);
+                    }
+                    marcadorUsuario = L.marker([localizacaoUsuario.lat, localizacaoUsuario.lng], { icon: iconeUsuario })
+                        .addTo(map)
+                        .bindPopup('<b>📍 Você está aqui</b>')
+                        .openPopup();
+
+                    map.setView([localizacaoUsuario.lat, localizacaoUsuario.lng], 14);
+                    aplicarFiltros();
+                },
+                () => {
+                    alert('Não foi possível obter sua localização. Verifique as permissões de GPS do navegador.');
+                }
+            );
+        }
+
+        function toggleFormulario() {
+            const sec = document.getElementById('secao-cadastro');
+            sec.classList.toggle('open');
+        }
+
+        // Geocodificação 100% gratuita usando Nominatim (OpenStreetMap)
+        async function buscarCoordenadasGratuitas() {
+            const endereco = document.getElementById('inp-endereco').value.trim();
+            const cidade = document.getElementById('inp-cidade').value;
+            const feedback = document.getElementById('form-feedback');
+
+            if (!endereco) {
+                feedback.textContent = '⚠️ Digite uma rua ou endereço antes de buscar.';
+                return;
+            }
+
+            feedback.textContent = '🔎 Buscando no OpenStreetMap...';
+            try {
+                const q = encodeURIComponent(`${endereco}, ${cidade}, Pernambuco, Brasil`);
+                const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${q}`);
+                const dados = await resp.json();
+                if (dados && dados.length > 0) {
+                    const lat = parseFloat(dados[0].lat).toFixed(5);
+                    const lon = parseFloat(dados[0].lon).toFixed(5);
+                    document.getElementById('inp-lat').value = lat;
+                    document.getElementById('inp-lng').value = lon;
+                    map.setView([lat, lon], 16);
+                    feedback.textContent = '✅ Coordenadas encontradas no mapa!';
+                } else {
+                    feedback.textContent = '⚠️ Endereço não encontrado. Você também pode clicar direto no mapa!';
+                }
+            } catch (e) {
+                feedback.textContent = '⚠️ Erro ao consultar Nominatim. Clique no mapa para definir a posição.';
+            }
+        }
+
+        // Permitir clicar no mapa para preencher Latitude e Longitude no formulário
+        map.on('click', function (e) {
+            const sec = document.getElementById('secao-cadastro');
+            if (!sec.classList.contains('open')) return;
+
+            const lat = e.latlng.lat.toFixed(5);
+            const lng = e.latlng.lng.toFixed(5);
+            document.getElementById('inp-lat').value = lat;
+            document.getElementById('inp-lng').value = lng;
+
+            if (marcadorSelecaoCadastro) {
+                map.removeLayer(marcadorSelecaoCadastro);
+            }
+            marcadorSelecaoCadastro = L.marker([lat, lng]).addTo(map)
+                .bindPopup('📌 Local selecionado para o novo ponto').openPopup();
+        });
+
+        async function salvarNovoPonto(event) {
+            event.preventDefault();
+            const feedback = document.getElementById('form-feedback');
+
+            const payload = {
+                nome: document.getElementById('inp-nome').value.trim(),
+                cidade: document.getElementById('inp-cidade').value,
+                bairro: document.getElementById('inp-bairro').value.trim(),
+                categoria: document.getElementById('inp-categoria').value,
+                tipo: document.getElementById('inp-tipo').value.trim(),
+                endereco: document.getElementById('inp-endereco').value.trim(),
+                horario: document.getElementById('inp-horario').value.trim(),
+                dias_semana: document.getElementById('inp-dias').value.trim(),
+                hora_inicio: document.getElementById('inp-inicio').value,
+                hora_fim: document.getElementById('inp-fim').value,
+                observacoes: document.getElementById('inp-obs').value.trim(),
+                latitude: parseFloat(document.getElementById('inp-lat').value),
+                longitude: parseFloat(document.getElementById('inp-lng').value)
+            };
+
+            try {
+                const resp = await fetch('/pontos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!resp.ok) {
+                    throw new Error('Erro ao cadastrar ponto');
+                }
+
+                const criado = await resp.json();
+                feedback.textContent = '✅ Ponto cadastrado com sucesso!';
+                document.getElementById('form-ponto').reset();
+                await carregarPontosDaAPI();
+                focarPontoNoMapa(criado.id);
+                setTimeout(() => {
+                    feedback.textContent = '';
+                    toggleFormulario();
+                }, 1200);
+            } catch (err) {
+                feedback.textContent = '❌ Erro ao salvar ponto. Verifique os campos.';
+            }
+        }
+
+        // Inicialização
+        carregarPontosDaAPI();
+        setTimeout(() => map.invalidateSize(), 200);
+    </script>
+
+</body>
+</html>
