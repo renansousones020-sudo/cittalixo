@@ -15,7 +15,7 @@ app = FastAPI(
         "API gratuita para consulta e gerenciamento de Ecopontos/Ecoestações "
         "e rotas/horários de coleta domiciliar em Recife e Olinda."
     ),
-    version="2.2.0",
+    version="3.0.0",
 )
 
 
@@ -519,6 +519,7 @@ def health():
     return {
         "status": "ok",
         "aplicacao": "CittaLixo",
+        "versao": "3.0.0",
         "cidades_atendidas": ["Olinda", "Recife"],
         "total_pontos": total,
     }
