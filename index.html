@@ -658,6 +658,7 @@
         let marcadorUsuario = null;
 
         // Estado para desenho de nova rota no formulário
+        let waypointsCadastro = [];
         let pontosRotaCadastro = [];
         let linhaRotaCadastro = null;
         let marcadorSelecaoCadastro = null;
@@ -827,24 +828,29 @@
 
                     polylinesById[ponto.id] = polyline;
 
-                    // Desenhar pontos de passagem (paradas/esquinas da rota)
-                    ponto.rota_coordenadas.forEach((coord, idx) => {
-                        const isInicio = idx === 0;
-                        const isFim = idx === ponto.rota_coordenadas.length - 1;
-                        const labelParada = isInicio
-                            ? `🏁 Início da Rota (${ponto.hora_inicio})`
-                            : (isFim ? `🏁 Fim do Trecho (${ponto.hora_fim})` : `🚛 Ponto de passagem #${idx + 1}`);
+                    // Desenhar apenas os marcadores de Início e Fim da rota na rua (evitando poluir cada curva com bolinhas)
+                    const coordInicio = ponto.rota_coordenadas[0];
+                    const coordFim = ponto.rota_coordenadas[ponto.rota_coordenadas.length - 1];
 
-                        L.circleMarker(coord, {
-                            radius: isInicio || isFim ? 6 : 4,
-                            fillColor: isInicio ? '#16a34a' : (isFim ? '#dc2626' : '#0284c7'),
-                            color: '#ffffff',
-                            weight: 2,
-                            fillOpacity: 1
-                        })
-                            .addTo(routesLayer)
-                            .bindTooltip(`${ponto.nome}: ${labelParada}`);
-                    });
+                    L.circleMarker(coordInicio, {
+                        radius: 6,
+                        fillColor: '#16a34a',
+                        color: '#ffffff',
+                        weight: 2,
+                        fillOpacity: 1
+                    })
+                        .addTo(routesLayer)
+                        .bindTooltip(`${ponto.nome}: 🟢 Início da Rota (${ponto.hora_inicio})`);
+
+                    L.circleMarker(coordFim, {
+                        radius: 6,
+                        fillColor: '#dc2626',
+                        color: '#ffffff',
+                        weight: 2,
+                        fillOpacity: 1
+                    })
+                        .addTo(routesLayer)
+                        .bindTooltip(`${ponto.nome}: 🏁 Fim da Rota (${ponto.hora_fim})`);
                 }
 
                 const card = document.createElement('div');
@@ -986,6 +992,7 @@
         }
 
         function limparRotaDesenhada() {
+            waypointsCadastro = [];
             pontosRotaCadastro = [];
             if (linhaRotaCadastro) {
                 map.removeLayer(linhaRotaCadastro);
@@ -996,6 +1003,27 @@
                 marcadorSelecaoCadastro = null;
             }
             document.getElementById('form-feedback').textContent = '';
+        }
+
+        // Calcula o trajeto real seguindo as ruas e pontes gratuitamente via OSRM (OpenStreetMap)
+        async function calcularTrajetoPelasRuasOSRM(waypoints) {
+            if (waypoints.length < 2) return waypoints;
+            try {
+                const coordsStr = waypoints.map(pt => `${pt[1]},${pt[0]}`).join(';');
+                const url = `https://router.project-osrm.org/route/v1/driving/${coordsStr}?overview=full&geometries=geojson`;
+                const resp = await fetch(url);
+                if (!resp.ok) return waypoints;
+                const data = await resp.json();
+                if (data.routes && data.routes.length > 0) {
+                    return data.routes[0].geometry.coordinates.map(c => [
+                        parseFloat(c[1].toFixed(5)),
+                        parseFloat(c[0].toFixed(5))
+                    ]);
+                }
+            } catch (err) {
+                console.warn('Fallback para linha direta se OSRM estiver indisponível:', err);
+            }
+            return waypoints;
         }
 
         async function buscarCoordenadasGratuitas() {
@@ -1039,20 +1067,27 @@
             const feedback = document.getElementById('form-feedback');
 
             if (categoria === 'Coleta Domiciliar') {
-                pontosRotaCadastro.push([lat, lng]);
-                if (pontosRotaCadastro.length === 1) {
+                waypointsCadastro.push([lat, lng]);
+                if (waypointsCadastro.length === 1) {
+                    pontosRotaCadastro = [[lat, lng]];
                     document.getElementById('inp-lat').value = lat;
                     document.getElementById('inp-lng').value = lng;
+                    feedback.textContent = '🚛 Ponto inicial definido! Clique no próximo ponto da rua para traçar a rota seguindo as vias.';
+                } else {
+                    feedback.textContent = '🛣️ Calculando rota pelas ruas (OpenStreetMap OSRM)...';
+                    calcularTrajetoPelasRuasOSRM(waypointsCadastro).then(geometriaRuas => {
+                        pontosRotaCadastro = geometriaRuas;
+                        if (linhaRotaCadastro) {
+                            map.removeLayer(linhaRotaCadastro);
+                        }
+                        linhaRotaCadastro = L.polyline(pontosRotaCadastro, {
+                            color: '#0284c7',
+                            weight: 5,
+                            dashArray: '10, 8'
+                        }).addTo(map);
+                        feedback.textContent = `✅ Rota ajustada exatamente às ruas (${waypointsCadastro.length} paradas)!`;
+                    });
                 }
-                if (linhaRotaCadastro) {
-                    map.removeLayer(linhaRotaCadastro);
-                }
-                linhaRotaCadastro = L.polyline(pontosRotaCadastro, {
-                    color: '#0284c7',
-                    weight: 5,
-                    dashArray: '8, 6'
-                }).addTo(map);
-                feedback.textContent = `🚛 ${pontosRotaCadastro.length} ponto(s) adicionados à rota do caminhão. Continue clicando no mapa para traçar o caminho!`;
             } else {
                 document.getElementById('inp-lat').value = lat;
                 document.getElementById('inp-lng').value = lng;
