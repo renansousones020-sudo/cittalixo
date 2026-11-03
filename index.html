@@ -522,12 +522,18 @@
             color: #9a3412;
         }
 
-        .card-link.voted-disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            background: #e2e8f0 !important;
-            border-color: #cbd5e1 !important;
-            color: #475569 !important;
+        .card-link.voto-ativo-ainda-la {
+            background: #ea580c !important;
+            border-color: #c2410c !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.28);
+        }
+
+        .card-link.voto-ativo-ja-recolhido {
+            background: #15803d !important;
+            border-color: #166534 !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 0 2px rgba(21, 128, 61, 0.28);
         }
 
         .card-link.delete-btn:hover {
@@ -2323,17 +2329,15 @@
                     marker.openPopup();
                 };
 
+                const votouAindaLa = votoDoUsuario === 'ainda_la';
+                const votouJaRecolhido = votoDoUsuario === 'ja_recolhido';
                 const botoesVotacaoHtml = !resolvida
-                    ? (votoDoUsuario
-                        ? `<button type="button" class="card-link voted-disabled" disabled title="Cada morador só pode votar 1 única vez por denúncia para evitar votos falsos">
-                               ✅ Seu voto já foi registrado (${votoDoUsuario === 'ainda_la' ? '👍 Ainda está lá' : '👎 Já foi recolhido'})
-                           </button>`
-                        : `<button type="button" class="card-link upvote-btn" onclick="apoiarDenuncia(${den.id})" title="Confirmar (1 voto único por morador) que o lixo ainda continua no local">
-                               👍 Ainda está lá! (+1)
-                           </button>
-                           <button type="button" class="card-link" onclick="reportarNaoEstaMaisDenuncia(${den.id})" title="Confirmar (1 voto único por morador) que o lixo já foi recolhido">
-                               👎 Já foi recolhido / Não está mais (${qtdLimpo})
-                           </button>`)
+                    ? `<button type="button" class="card-link upvote-btn ${votouAindaLa ? 'voto-ativo-ainda-la' : ''}" onclick="apoiarDenuncia(${den.id})" title="1 voto por morador (clique para selecionar ou trocar seu voto)">
+                           ${votouAindaLa ? '✅ 👍 Ainda está lá! (' + qtdConf + ') • Seu voto' : '👍 Ainda está lá! (' + qtdConf + ')'}
+                       </button>
+                       <button type="button" class="card-link ${votouJaRecolhido ? 'voto-ativo-ja-recolhido' : ''}" onclick="reportarNaoEstaMaisDenuncia(${den.id})" title="1 voto por morador (clique para selecionar ou trocar seu voto)">
+                           ${votouJaRecolhido ? '✅ 👎 Já foi recolhido (' + qtdLimpo + ') • Seu voto' : '👎 Já foi recolhido / Não está mais (' + qtdLimpo + ')'}
+                       </button>`
                     : '';
 
                 card.innerHTML = `
@@ -2389,42 +2393,45 @@
 
         function registrarVotoUnicoUsuario(id, tipoVoto) {
             const mapa = obterMapaVotosUsuario();
-            mapa[String(id)] = tipoVoto;
+            if (tipoVoto) {
+                mapa[String(id)] = tipoVoto;
+            } else {
+                delete mapa[String(id)];
+            }
             localStorage.setItem('cittalixo_votos_denuncias', JSON.stringify(mapa));
         }
 
-        async function apoiarDenuncia(id) {
-            if (obterVotoUsuarioDenuncia(id)) {
-                alert('⚠️ Você já registrou seu voto nesta denúncia! Cada morador só pode votar 1 única vez.');
-                return;
-            }
-            registrarVotoUnicoUsuario(id, 'ainda_la');
+        async function votarDenunciaAbertoUnico(id, opcaoClicada) {
+            const votoAnterior = obterVotoUsuarioDenuncia(id);
+            const votoNovo = votoAnterior === opcaoClicada ? null : opcaoClicada;
+            registrarVotoUnicoUsuario(id, votoNovo);
+
             try {
-                const r = await apiFetch(`/denuncias/${id}/apoiar`, { method: 'PUT' });
+                const r = await apiFetch(`/denuncias/${id}/votar`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ voto_anterior: votoAnterior, voto_novo: votoNovo })
+                });
                 if (!r.ok) throw new Error();
                 await carregarDenunciasDaAPI();
             } catch (e) {
                 const item = todasAsDenuncias.find(d => d.id === id);
-                if (item) item.confirmacoes = (item.confirmacoes || 1) + 1;
+                if (item) {
+                    if (votoAnterior === 'ainda_la') item.confirmacoes = Math.max(0, (item.confirmacoes || 1) - 1);
+                    if (votoAnterior === 'ja_recolhido') item.nao_esta_mais = Math.max(0, (item.nao_esta_mais || 0) - 1);
+                    if (votoNovo === 'ainda_la') item.confirmacoes = (item.confirmacoes || 0) + 1;
+                    if (votoNovo === 'ja_recolhido') item.nao_esta_mais = (item.nao_esta_mais || 0) + 1;
+                }
                 renderizarDenuncias();
             }
         }
 
+        async function apoiarDenuncia(id) {
+            await votarDenunciaAbertoUnico(id, 'ainda_la');
+        }
+
         async function reportarNaoEstaMaisDenuncia(id) {
-            if (obterVotoUsuarioDenuncia(id)) {
-                alert('⚠️ Você já registrou seu voto nesta denúncia! Cada morador só pode votar 1 única vez.');
-                return;
-            }
-            registrarVotoUnicoUsuario(id, 'ja_recolhido');
-            try {
-                const r = await apiFetch(`/denuncias/${id}/nao-esta-mais`, { method: 'PUT' });
-                if (!r.ok) throw new Error();
-                await carregarDenunciasDaAPI();
-            } catch (e) {
-                const item = todasAsDenuncias.find(d => d.id === id);
-                if (item) item.nao_esta_mais = (item.nao_esta_mais || 0) + 1;
-                renderizarDenuncias();
-            }
+            await votarDenunciaAbertoUnico(id, 'ja_recolhido');
         }
 
         async function salvarNovaDenuncia(event) {

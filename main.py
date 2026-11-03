@@ -924,6 +924,46 @@ def reportar_nao_esta_mais_denuncia(id: int):
         conn.close()
 
 
+class DenunciaVotoPayload(BaseModel):
+    voto_anterior: Optional[str] = None
+    voto_novo: Optional[str] = None
+
+
+@app.put("/denuncias/{id}/votar", response_model=DenunciaResponse)
+def votar_denuncia_unico(id: int, payload: DenunciaVotoPayload):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        row = cursor.execute("SELECT * FROM denuncias WHERE id = ?", (id,)).fetchone()
+        if not row:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Denúncia não encontrada",
+            )
+        conf = row["confirmacoes"] if row["confirmacoes"] is not None else 1
+        limpo = row["nao_esta_mais"] if row["nao_esta_mais"] is not None else 0
+
+        if payload.voto_anterior == "ainda_la":
+            conf = max(0, conf - 1)
+        elif payload.voto_anterior == "ja_recolhido":
+            limpo = max(0, limpo - 1)
+
+        if payload.voto_novo == "ainda_la":
+            conf = conf + 1
+        elif payload.voto_novo == "ja_recolhido":
+            limpo = limpo + 1
+
+        cursor.execute(
+            "UPDATE denuncias SET confirmacoes = ?, nao_esta_mais = ? WHERE id = ?",
+            (conf, limpo, id),
+        )
+        conn.commit()
+        atualizado = cursor.execute("SELECT * FROM denuncias WHERE id = ?", (id,)).fetchone()
+        return dict(atualizado)
+    finally:
+        conn.close()
+
+
 @app.put("/denuncias/{id}/resolver", response_model=DenunciaResponse)
 def resolver_denuncia(id: int):
     conn = get_db_connection()
