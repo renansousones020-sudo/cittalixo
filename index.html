@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#14532d" />
     <link rel="manifest" href="/manifest.json" />
-    <title>CittaLixo v3.2.0 — Pontos, Rotas, Cata-Treco, Denúncias e Painel Gestor (Olinda e Recife)</title>
+    <title>CittaLixo v3.3.0 — Pontos, Rotas, Cata-Treco, Denúncias e Painel Gestor (Olinda e Recife)</title>
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
@@ -743,6 +743,113 @@
             pointer-events: none;
         }
 
+        .eco-score-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            padding: 6px 13px;
+            border-radius: 999px;
+            cursor: pointer;
+            font-weight: 800;
+            font-size: 0.82rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: transform 0.15s, background 0.2s;
+        }
+        .eco-score-btn:hover {
+            background: rgba(255, 255, 255, 0.32);
+            transform: translateY(-1px);
+        }
+        body.role-admin .user-only {
+            display: none !important;
+        }
+        .badge-comunidade-limpo {
+            background: #d1fae5 !important;
+            color: #065f46 !important;
+            border: 1px solid #34d399 !important;
+            font-weight: 800;
+        }
+        .card-photo-thumb {
+            width: 100%;
+            max-height: 155px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin: 8px 0;
+            border: 1px solid var(--border-color);
+            cursor: zoom-in;
+            transition: opacity 0.15s;
+        }
+        .card-photo-thumb:hover {
+            opacity: 0.92;
+        }
+        .photo-preview-box {
+            margin-top: 6px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+        }
+        .photo-preview-box img {
+            height: 56px;
+            width: 76px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.68);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .modal-overlay.open {
+            display: flex;
+        }
+        .modal-box {
+            background: var(--bg-card);
+            color: var(--text-main);
+            border-radius: 14px;
+            max-width: 520px;
+            width: 100%;
+            padding: 22px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+        .proximity-alert-banner {
+            background: #dcfce7;
+            border-left: 5px solid #16a34a;
+            color: #14532d;
+            padding: 11px 16px;
+            border-radius: var(--radius);
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            box-shadow: var(--shadow);
+        }
+        .route-info-banner {
+            background: #e0f2fe;
+            border-left: 5px solid #0284c7;
+            color: #0c4a6e;
+            padding: 11px 16px;
+            border-radius: var(--radius);
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+            box-shadow: var(--shadow);
+        }
+
         footer {
             text-align: center;
             padding: 20px;
@@ -756,10 +863,15 @@
 
     <header>
         <div class="header-top-bar">
-            <button class="role-toggle-btn" id="btn-role-mode" onclick="alternarNivelAcesso()" title="Clique para alternar entre visão de Cidadão (Usuário) e Gestor (Admin)">
-                👤 Modo Cidadão (Usuário)
-            </button>
-            <h1>♻️ CittaLixo <span style="font-size:0.88rem; background:rgba(255,255,255,0.22); padding:3px 10px; border-radius:999px; vertical-align:middle;">v3.2.0</span></h1>
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <button class="role-toggle-btn" id="btn-role-mode" onclick="alternarNivelAcesso()" title="Clique para alternar entre visão de Cidadão (Usuário) e Gestor (Admin)">
+                    👤 Modo Cidadão (Usuário)
+                </button>
+                <button class="eco-score-btn user-only" id="btn-eco-score" onclick="abrirModalCidadaoEco()" title="Veja sua pontuação e nível de Cidadão Eco">
+                    🏆 Cidadão Eco: 🌱 Iniciante (0 pts)
+                </button>
+            </div>
+            <h1>♻️ CittaLixo <span style="font-size:0.88rem; background:rgba(255,255,255,0.22); padding:3px 10px; border-radius:999px; vertical-align:middle;">v3.3.0</span></h1>
             <button class="theme-toggle-btn" id="btn-dark-mode" onclick="alternarModoEscuro()">🌙 Modo Escuro</button>
         </div>
 
@@ -805,6 +917,18 @@
                 <strong>Rastreamento Estimado por Horário Real (<span id="relogio-usuario">--:--</span>):</strong>
                 A posição do caminhão no mapa é uma <strong>simulação baseada no horário programado da rota</strong>. O caminhão real pode passar alguns minutos antes ou depois devido ao trânsito e volume de coleta.
             </div>
+        </div>
+
+        <!-- Alerta Inteligente de Caminhão Próximo (< 500m do Usuário) -->
+        <div class="proximity-alert-banner" id="banner-caminhao-proximo">
+            <span id="texto-caminhao-proximo">🚛 O caminhão de coleta está próximo do seu local!</span>
+            <button type="button" class="pill-btn" onclick="document.getElementById('banner-caminhao-proximo').style.display='none'">OK</button>
+        </div>
+
+        <!-- Banner de Rota Traçada no Mapa até o Ecoponto -->
+        <div class="route-info-banner" id="banner-rota-usuario">
+            <div id="texto-rota-usuario">🧭 Rota traçada até o Ecoponto</div>
+            <button type="button" class="pill-btn" onclick="limparRotaAtePontoNoMapa()">✖ Limpar Caminho no Mapa</button>
         </div>
 
         <!-- VISÃO COM MAPA COMPARTILHADO (ABAS: COLETA, CATA-TRECO E DENÚNCIAS) -->
@@ -877,6 +1001,13 @@
                     <button class="pill-btn" onclick="filtrarCataTrecoStatus(this, 'Recolhido')">✅ Recolhidos</button>
                 </div>
                 <div class="filters-row">
+                    <input
+                        type="text"
+                        id="filtro-busca-catatreco"
+                        placeholder="🔍 Consultar protocolo (ex: CT-2026-001), bairro ou solicitante..."
+                        oninput="renderizarCataTreco()"
+                        aria-label="Consultar protocolo Cata-Treco"
+                    />
                     <button class="btn-action btn-purple" onclick="toggleFormularioCataTreco()">
                         🛋️ Solicitar Retirada Gratuita (Cata-Treco)
                     </button>
@@ -1046,6 +1177,14 @@
                         <label for="ct-obs">Ponto de referência / Observações</label>
                         <input type="text" id="ct-obs" placeholder="Ex: Casa de portão branco, deixarei na calçada às 07h30" />
                     </div>
+                    <div class="form-group" style="margin-top: 10px;">
+                        <label for="ct-foto">📸 Foto opcional do móvel / volumoso (câmera ou arquivo)</label>
+                        <input type="file" id="ct-foto" accept="image/*" onchange="previsualizarFotoFormulario(this, 'ct-foto-preview', 'ct')" />
+                        <div class="photo-preview-box" id="ct-foto-preview">
+                            <img id="ct-foto-img" src="" alt="Prévia da foto Cata-Treco" />
+                            <button type="button" class="pill-btn" onclick="limparFotoFormulario('ct-foto', 'ct-foto-preview', 'ct')">🗑️ Remover Foto</button>
+                        </div>
+                    </div>
                     <div class="form-footer">
                         <button type="submit" class="btn-action btn-purple">📑 Gerar Protocolo e Agendar</button>
                         <button type="button" class="pill-btn" onclick="toggleFormularioCataTreco()">Cancelar</button>
@@ -1105,6 +1244,14 @@
                     <div class="form-group" style="margin-top: 10px;">
                         <label for="den-desc">Detalhes adicionais</label>
                         <input type="text" id="den-desc" placeholder="Ex: Acumulado há 3 dias próximo à parada de ônibus" />
+                    </div>
+                    <div class="form-group" style="margin-top: 10px;">
+                        <label for="den-foto">📸 Foto opcional do ponto crítico (câmera ou arquivo)</label>
+                        <input type="file" id="den-foto" accept="image/*" onchange="previsualizarFotoFormulario(this, 'den-foto-preview', 'den')" />
+                        <div class="photo-preview-box" id="den-foto-preview">
+                            <img id="den-foto-img" src="" alt="Prévia da foto da Denúncia" />
+                            <button type="button" class="pill-btn" onclick="limparFotoFormulario('den-foto', 'den-foto-preview', 'den')">🗑️ Remover Foto</button>
+                        </div>
                     </div>
                     <div class="form-footer">
                         <button type="submit" class="btn-action btn-orange">🚨 Registrar Alerta Crítico</button>
@@ -1184,9 +1331,19 @@
                     <span style="font-size:0.86rem; color:var(--text-muted);">Exporte os dados em CSV (compatível com Excel) ou JSON para relatórios acadêmicos e gestão pública.</span>
                 </div>
                 <div class="filters-row">
+                    <button class="btn-action btn-purple" onclick="imprimirOrdemDeServicoDiaria()">🖨️ Imprimir Ordem de Serviço Diária</button>
                     <button class="btn-action btn-add" onclick="exportarDadosCSV()">📥 Baixar Planilha CSV (Excel)</button>
                     <button class="btn-action" onclick="exportarDadosJSON()">📄 Baixar Dados JSON</button>
                 </div>
+            </div>
+
+            <!-- Fila de Verificação Comunitária para o Admin aprovar com 1 clique -->
+            <div class="chart-box" style="margin-bottom: 16px; border-left: 5px solid #10b981;">
+                <h3 style="margin-top:0; color:#065f46;">✨ Verificação Comunitária: Denúncias Relatadas como Limpas pelos Moradores</h3>
+                <p style="font-size:0.84rem; color:var(--text-muted); margin-top:0;">
+                    Denúncias onde os votos de <strong>"👎 Já foi recolhido"</strong> superaram os de <strong>"👍 Ainda está lá"</strong> com confirmação posterior no tempo:
+                </p>
+                <div id="lista-verificacao-comunitaria-admin"></div>
             </div>
 
             <div class="analytics-grid">
@@ -1239,8 +1396,42 @@
         </div>
     </div>
 
+    <!-- Modal Gamificação Cidadão Eco -->
+    <div class="modal-overlay" id="modal-cidadao-eco" onclick="if(event.target===this) fecharModalCidadaoEco()">
+        <div class="modal-box">
+            <h2 style="margin-top:0; color:var(--green-dark);">🏆 Seu Perfil Cidadão Eco</h2>
+            <p id="eco-modal-nivel" style="font-size:1.15rem; font-weight:800; margin:6px 0;"></p>
+            <div class="bar-track" style="height:14px; margin:10px 0;">
+                <div class="bar-fill" id="eco-modal-barra" style="width:0%; background:var(--green-primary); height:100%;"></div>
+            </div>
+            <p id="eco-modal-progresso" style="font-size:0.85rem; color:var(--text-muted);"></p>
+            <hr style="border:none; border-top:1px solid var(--border-color); margin:12px 0;" />
+            <h4 style="margin:6px 0;">🌱 Como ganhar pontos ajudando Olinda e Recife:</h4>
+            <ul style="font-size:0.88rem; line-height:1.6; padding-left:20px; margin:6px 0;">
+                <li><strong>+25 pts</strong> ao reportar um Ponto Crítico de Lixo no mapa</li>
+                <li><strong>+20 pts</strong> ao agendar uma coleta de volumosos no Cata-Treco</li>
+                <li><strong>+15 pts</strong> ao acertar uma pergunta no Quiz Educativo</li>
+                <li><strong>+10 pts</strong> ao votar na verificação comunitária de uma denúncia</li>
+            </ul>
+            <div style="text-align:right; margin-top:14px;">
+                <button type="button" class="btn-action btn-add" onclick="fecharModalCidadaoEco()">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Ampliar Foto da Denúncia ou Cata-Treco -->
+    <div class="modal-overlay" id="modal-foto-ampliada" onclick="fecharFotoAmpliada()">
+        <div class="modal-box" style="max-width:680px; text-align:center;" onclick="event.stopPropagation()">
+            <h3 id="titulo-foto-ampliada" style="margin-top:0;">📸 Foto Registrada</h3>
+            <img id="img-foto-ampliada" src="" alt="Foto Ampliada" style="max-width:100%; max-height:70vh; border-radius:10px; border:1px solid var(--border-color);" />
+            <div style="margin-top:12px;">
+                <button type="button" class="btn-action" onclick="fecharFotoAmpliada()">Fechar</button>
+            </div>
+        </div>
+    </div>
+
     <footer>
-        CittaLixo v3.2.0 • Dados abertos com OpenStreetMap, Leaflet, Esri Satellite &amp; OSRM (Zero Custo de API) • Instalável como App (PWA) • Olinda e Recife
+        CittaLixo v3.3.0 • Dados abertos com OpenStreetMap, Leaflet, Esri Satellite &amp; OSRM (Zero Custo de API) • Instalável como App (PWA) • Olinda e Recife
     </footer>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1593,6 +1784,24 @@
                     .map(([nomeBairro, qtd]) => renderizarBarra(nomeBairro, qtd, totalPontos, '#0284c7'))
                     .join('');
             }
+
+            const elVerif = document.getElementById('lista-verificacao-comunitaria-admin');
+            if (elVerif) {
+                const sugeridasLimpeza = todasAsDenuncias.filter(d => verificarLimpezaComunitariaLogica(d));
+                if (sugeridasLimpeza.length === 0) {
+                    elVerif.innerHTML = `<p style="font-size:0.86rem; color:var(--text-muted); margin:4px 0;">Nenhuma denúncia pendente atingiu maioria comunitária de limpeza ainda.</p>`;
+                } else {
+                    elVerif.innerHTML = sugeridasLimpeza.map(d => `
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; padding:8px 12px; background:var(--bg-input); border-radius:8px; margin-bottom:6px; border:1px solid #34d399;">
+                            <div>
+                                <strong>${d.titulo}</strong> <span style="font-size:0.82rem; color:var(--text-muted);">(${d.cidade} • ${d.bairro} — ${d.endereco})</span><br/>
+                                <small style="color:#065f46; font-weight:700;">👎 ${d.nao_esta_mais || 0} relataram já recolhido vs 👍 ${d.confirmacoes || 1} ainda lá</small>
+                            </div>
+                            <button type="button" class="btn-action btn-add" onclick="alternarStatusDenuncia(${d.id})">✅ Confirmar Limpeza Oficialmente</button>
+                        </div>
+                    `).join('');
+                }
+            }
         }
 
         // Exportação gratuita de CSV (compatível com Excel UTF-8 BOM) e JSON
@@ -1624,7 +1833,7 @@
 
         function exportarDadosJSON() {
             const dados = {
-                versao: '3.2.0',
+                versao: '3.3.0',
                 exportado_em: new Date().toISOString(),
                 pontos_e_rotas: todosOsPontos,
                 agendamentos_catatreco: todosOsCataTrecos,
@@ -1696,6 +1905,25 @@
                         <b>Trecho:</b> Ponto ${indiceCoord + 1} de ${coords.length} da rota
                     </div>
                 `);
+
+                // Alerta inteligente se o caminhão estiver a menos de 500m (0.5 km) da localização do usuário
+                if (localizacaoUsuario && abaAtual === 'coleta') {
+                    const distCaminhaoKm = calcularDistanciaKm(
+                        localizacaoUsuario.lat,
+                        localizacaoUsuario.lng,
+                        posAtual[0],
+                        posAtual[1]
+                    );
+                    if (distCaminhaoKm <= 0.5) {
+                        const metros = Math.max(15, Math.round(distCaminhaoKm * 1000));
+                        const bannerProx = document.getElementById('banner-caminhao-proximo');
+                        const txtProx = document.getElementById('texto-caminhao-proximo');
+                        if (bannerProx && txtProx) {
+                            txtProx.innerHTML = `🚛 <strong>Atenção!</strong> O caminhão da rota <em>"${ponto.nome}"</em> está a cerca de <strong>${metros}m</strong> do seu local!`;
+                            bannerProx.style.display = 'flex';
+                        }
+                    }
+                }
             });
         }
 
@@ -1872,7 +2100,10 @@
                         <button type="button" class="card-link ${temRota ? 'rota-btn' : ''}" onclick="focarPontoNoMapa(${ponto.id})">
                             ${temRota ? '🛣️ Ver Rota' : '🔍 Mapa'}
                         </button>
-                        <a class="card-link" href="${urlRota}" target="_blank" rel="noopener">🧭 Como Chegar</a>
+                        <button type="button" class="card-link rota-btn" onclick="tracarRotaAtePontoNoMapa(${ponto.id})" title="Desenhar o caminho pelas ruas direto neste mapa com distância e tempo">
+                            🧭 Traçar Caminho no Mapa
+                        </button>
+                        <a class="card-link" href="${urlRota}" target="_blank" rel="noopener">🗺️ Google Maps</a>
                         <button type="button" class="card-link admin-only" onclick="prepararEdicaoPonto(${ponto.id})">✏️ Editar</button>
                         <button type="button" class="card-link delete-btn admin-only" onclick="excluirPonto(${ponto.id})">🗑️ Excluir</button>
                     </div>
@@ -2110,8 +2341,13 @@
             const container = document.getElementById('catatreco-container');
             const contador = document.getElementById('contador-catatreco');
 
+            const termoBuscaCt = (document.getElementById('filtro-busca-catatreco')?.value || '').trim().toLowerCase();
             const filtrados = todosOsCataTrecos.filter(c => {
                 if (statusCataTrecoFiltro && c.status !== statusCataTrecoFiltro) return false;
+                if (termoBuscaCt) {
+                    const strBusca = `${c.protocolo || ''} ${c.bairro || ''} ${c.cidade || ''} ${c.solicitante || ''} ${c.endereco || ''} ${c.itens_volumosos || ''}`.toLowerCase();
+                    if (!strBusca.includes(termoBuscaCt)) return false;
+                }
                 return true;
             });
 
@@ -2158,6 +2394,7 @@
                     <p><strong>👤 Solicitante:</strong> ${ct.solicitante} • <strong>Turno:</strong> ${ct.turno_preferido}</p>
                     <p><strong>📌 Endereço:</strong> ${ct.endereco}</p>
                     ${ct.observacoes ? `<p>ℹ️ ${ct.observacoes}</p>` : ''}
+                    ${ct.foto_base64 ? `<img src="${ct.foto_base64}" class="card-photo-thumb" alt="Foto Cata-Treco" onclick="event.stopPropagation(); abrirFotoAmpliada(this.src, '${(ct.protocolo || '') + ' - ' + (ct.itens_volumosos || '').replace(/'/g, '')}')" title="Clique para ampliar a foto" />` : ''}
                     <div class="card-actions admin-only" onclick="event.stopPropagation();">
                         <button type="button" class="card-link" onclick="alternarStatusCataTreco(${ct.id})">
                             ${recolhido ? '↩️ Reabrir Agendamento' : '✅ Marcar como Recolhido'}
@@ -2218,6 +2455,7 @@
                 data_agendada,
                 observacoes,
                 status: 'Agendado',
+                foto_base64: fotoBase64CataTrecoAtual || '',
                 latitude,
                 longitude
             };
@@ -2230,7 +2468,9 @@
                 });
                 if (!resp.ok) throw new Error('Erro HTTP ' + resp.status);
                 const criado = await resp.json();
-                alert(`✅ Agendamento Cata-Treco confirmado!\nSeu protocolo de atendimento é: ${criado.protocolo}`);
+                adicionarPontosEco(20);
+                limparFotoFormulario('ct-foto', 'ct-foto-preview', 'ct');
+                alert(`✅ Agendamento Cata-Treco confirmado! (+20 pts Cidadão Eco)\nSeu protocolo de atendimento é: ${criado.protocolo}`);
                 document.getElementById('form-catatreco').reset();
                 document.getElementById('ct-lat').value = '-7.9918';
                 document.getElementById('ct-lng').value = '-34.8427';
@@ -2351,10 +2591,12 @@
                         </span>
                         <span class="badge badge-status-closed">🔥 ${qtdConf} ${qtdConf === 1 ? 'confirma que ainda está lá' : 'confirmam que ainda está lá'}</span>
                         ${qtdLimpo > 0 ? `<span class="badge badge-status-open">✨ ${qtdLimpo} ${qtdLimpo === 1 ? 'relatou que já foi recolhido' : 'relataram que já foi recolhido'}</span>` : ''}
+                        ${verificarLimpezaComunitariaLogica(den) ? `<span class="badge badge-comunidade-limpo">✅ Comunidade relata que foi limpo (${qtdLimpo}x${qtdConf}) • Aguardando Admin</span>` : ''}
                     </div>
                     <p><strong>🗑️ Resíduo Acumulado:</strong> ${den.tipo_residuo}</p>
                     <p><strong>📌 Local:</strong> ${den.endereco}</p>
                     ${den.descricao ? `<p>ℹ️ ${den.descricao}</p>` : ''}
+                    ${den.foto_base64 ? `<img src="${den.foto_base64}" class="card-photo-thumb" alt="Foto da Denúncia" onclick="event.stopPropagation(); abrirFotoAmpliada(this.src, '${(den.titulo || '').replace(/'/g, '')}')" title="Clique para ampliar a foto" />` : ''}
                     <div class="card-actions" onclick="event.stopPropagation();">
                         ${botoesVotacaoHtml}
                         <button type="button" class="card-link admin-only" onclick="alternarStatusDenuncia(${den.id})">
@@ -2404,6 +2646,9 @@
         async function votarDenunciaAbertoUnico(id, opcaoClicada) {
             const votoAnterior = obterVotoUsuarioDenuncia(id);
             const votoNovo = votoAnterior === opcaoClicada ? null : opcaoClicada;
+            if (!votoAnterior && votoNovo) {
+                adicionarPontosEco(10);
+            }
             registrarVotoUnicoUsuario(id, votoNovo);
 
             try {
@@ -2419,8 +2664,14 @@
                 if (item) {
                     if (votoAnterior === 'ainda_la') item.confirmacoes = Math.max(0, (item.confirmacoes || 1) - 1);
                     if (votoAnterior === 'ja_recolhido') item.nao_esta_mais = Math.max(0, (item.nao_esta_mais || 0) - 1);
-                    if (votoNovo === 'ainda_la') item.confirmacoes = (item.confirmacoes || 0) + 1;
-                    if (votoNovo === 'ja_recolhido') item.nao_esta_mais = (item.nao_esta_mais || 0) + 1;
+                    if (votoNovo === 'ainda_la') {
+                        item.confirmacoes = (item.confirmacoes || 0) + 1;
+                        item.ultimo_voto_ainda_la_em = new Date().toISOString();
+                    }
+                    if (votoNovo === 'ja_recolhido') {
+                        item.nao_esta_mais = (item.nao_esta_mais || 0) + 1;
+                        item.ultimo_voto_recolhido_em = new Date().toISOString();
+                    }
                 }
                 renderizarDenuncias();
             }
@@ -2472,6 +2723,10 @@
                 status: 'Pendente',
                 data_registro: new Date().toLocaleDateString('pt-BR'),
                 confirmacoes: 1,
+                nao_esta_mais: 0,
+                ultimo_voto_ainda_la_em: new Date().toISOString(),
+                ultimo_voto_recolhido_em: '',
+                foto_base64: fotoBase64DenunciaAtual || '',
                 latitude,
                 longitude
             };
@@ -2483,6 +2738,8 @@
                     body: JSON.stringify(payload)
                 });
                 if (!resp.ok) throw new Error('Erro HTTP ' + resp.status);
+                adicionarPontosEco(25);
+                limparFotoFormulario('den-foto', 'den-foto-preview', 'den');
                 document.getElementById('form-denuncia').reset();
                 document.getElementById('den-lat').value = '-8.0128';
                 document.getElementById('den-lng').value = '-34.8694';
@@ -2545,7 +2802,8 @@
             }
 
             visaoMapa.style.display = 'block';
-            sincronizarCamadasMapaPorAba();
+            atualizarBadgeCidadaoEco();
+        sincronizarCamadasMapaPorAba();
 
             document.getElementById('toolbar-coleta').style.display = aba === 'coleta' ? 'block' : 'none';
             document.getElementById('painel-lista-coleta').style.display = aba === 'coleta' ? 'block' : 'none';
@@ -2864,8 +3122,9 @@
                 btn.onclick = () => {
                     const res = document.getElementById('quiz-resultado');
                     if (op === atual.correta) {
+                        adicionarPontosEco(15);
                         res.style.color = '#16a34a';
-                        res.textContent = '🎉 Resposta correta! Você ajuda a manter Olinda e Recife limpas!';
+                        res.textContent = '🎉 Resposta correta! (+15 pts Cidadão Eco) Você ajuda a manter Olinda e Recife limpas!';
                     } else {
                         res.style.color = '#dc2626';
                         res.textContent = `❌ Quase! O correto é: ${atual.correta}`;
@@ -2878,6 +3137,264 @@
         function proximaPerguntaQuiz() {
             indiceQuiz = (indiceQuiz + 1) % PERGUNTAS_QUIZ.length;
             renderizarQuiz();
+        }
+
+
+        // --- GAMIFICAÇÃO CIDADÃO ECO, FOTOS, ROTA ATÉ ECOPONTO E ORDEM DE SERVIÇO (v3.3.0) ---
+        let fotoBase64DenunciaAtual = '';
+        let fotoBase64CataTrecoAtual = '';
+        let linhaRotaUsuarioEcoponto = null;
+
+        function obterPontosEco() {
+            return parseInt(localStorage.getItem('cittalixo_eco_pontos') || '0', 10) || 0;
+        }
+
+        function obterInfoNivelEco(pts) {
+            if (pts >= 200) return { titulo: '👑 Embaixador Eco Olinda/Recife', prox: 300, min: 200 };
+            if (pts >= 100) return { titulo: '🌳 Protetor Urbano', prox: 200, min: 100 };
+            if (pts >= 40) return { titulo: '🌿 Guardião do Bairro', prox: 100, min: 40 };
+            return { titulo: '🌱 Iniciante Verde', prox: 40, min: 0 };
+        }
+
+        function atualizarBadgeCidadaoEco() {
+            const pts = obterPontosEco();
+            const info = obterInfoNivelEco(pts);
+            const btn = document.getElementById('btn-eco-score');
+            if (btn) {
+                btn.innerHTML = `🏆 Cidadão Eco: ${info.titulo} (${pts} pts)`;
+            }
+        }
+
+        function adicionarPontosEco(qtd) {
+            const novoTotal = obterPontosEco() + qtd;
+            localStorage.setItem('cittalixo_eco_pontos', String(novoTotal));
+            atualizarBadgeCidadaoEco();
+        }
+
+        function abrirModalCidadaoEco() {
+            const pts = obterPontosEco();
+            const info = obterInfoNivelEco(pts);
+            const pct = Math.min(100, Math.round(((pts - info.min) / Math.max(1, info.prox - info.min)) * 100));
+            document.getElementById('eco-modal-nivel').textContent = `${info.titulo} — ${pts} pontos`;
+            document.getElementById('eco-modal-barra').style.width = `${pct}%`;
+            document.getElementById('eco-modal-progresso').textContent =
+                pts >= 200
+                    ? '🎉 Você atingiu o nível máximo de engajamento ambiental em Olinda e Recife!'
+                    : `Faltam ${info.prox - pts} pontos para o próximo nível!`;
+            document.getElementById('modal-cidadao-eco').classList.add('open');
+        }
+
+        function fecharModalCidadaoEco() {
+            document.getElementById('modal-cidadao-eco').classList.remove('open');
+        }
+
+        // Regra de Verificação Comunitária: "Já recolhido" supera "Ainda está lá" + lógica temporal
+        function verificarLimpezaComunitariaLogica(den) {
+            if (!den || den.status === 'Resolvido') return false;
+            const qtdConf = den.confirmacoes || 1;
+            const qtdLimpo = den.nao_esta_mais || 0;
+            if (qtdLimpo <= qtdConf) return false;
+            const tsAinda = den.ultimo_voto_ainda_la_em || '';
+            const tsLimpo = den.ultimo_voto_recolhido_em || '';
+            if (tsAinda && tsLimpo && tsLimpo < tsAinda) return false;
+            return true;
+        }
+
+        // Compressão leve de imagem no navegador (Canvas -> Base64 JPEG)
+        function previsualizarFotoFormulario(inputEl, previewBoxId, tipoForm) {
+            const file = inputEl.files && inputEl.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (ev) {
+                const img = new Image();
+                img.onload = function () {
+                    const canvas = document.createElement('canvas');
+                    const maxDim = 640;
+                    let w = img.width;
+                    let h = img.height;
+                    if (w > maxDim || h > maxDim) {
+                        if (w > h) {
+                            h = Math.round((h * maxDim) / w);
+                            w = maxDim;
+                        } else {
+                            w = Math.round((w * maxDim) / h);
+                            h = maxDim;
+                        }
+                    }
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    const comprimida = canvas.toDataURL('image/jpeg', 0.72);
+                    if (tipoForm === 'den') {
+                        fotoBase64DenunciaAtual = comprimida;
+                        document.getElementById('den-foto-img').src = comprimida;
+                    } else {
+                        fotoBase64CataTrecoAtual = comprimida;
+                        document.getElementById('ct-foto-img').src = comprimida;
+                    }
+                    document.getElementById(previewBoxId).style.display = 'flex';
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function limparFotoFormulario(inputId, previewBoxId, tipoForm) {
+            const inp = document.getElementById(inputId);
+            if (inp) inp.value = '';
+            const box = document.getElementById(previewBoxId);
+            if (box) box.style.display = 'none';
+            if (tipoForm === 'den') fotoBase64DenunciaAtual = '';
+            else fotoBase64CataTrecoAtual = '';
+        }
+
+        function abrirFotoAmpliada(src, titulo) {
+            document.getElementById('img-foto-ampliada').src = src;
+            document.getElementById('titulo-foto-ampliada').textContent = '📸 ' + (titulo || 'Foto Registrada');
+            document.getElementById('modal-foto-ampliada').classList.add('open');
+        }
+
+        function fecharFotoAmpliada() {
+            document.getElementById('modal-foto-ampliada').classList.remove('open');
+        }
+
+        // Traçar rota a pé / carro no próprio mapa até o Ecoponto usando OSRM gratuito
+        async function tracarRotaAtePontoNoMapa(id) {
+            const p = todosOsPontos.find(item => item.id === id);
+            if (!p) return;
+
+            const origem = localizacaoUsuario || {
+                lat: p.cidade === 'Recife' ? -8.05428 : -7.9986,
+                lng: p.cidade === 'Recife' ? -34.8890 : -34.8415
+            };
+
+            if (!marcadorUsuario) {
+                marcadorUsuario = L.marker([origem.lat, origem.lng], { icon: iconeUsuario })
+                    .addTo(map)
+                    .bindPopup('<b>📍 Ponto de Partida</b>');
+            }
+
+            const coordsRota = await calcularTrajetoPelasRuasOSRM([
+                [origem.lat, origem.lng],
+                [p.latitude, p.longitude]
+            ]);
+
+            if (linhaRotaUsuarioEcoponto) {
+                map.removeLayer(linhaRotaUsuarioEcoponto);
+            }
+
+            linhaRotaUsuarioEcoponto = L.polyline(coordsRota, {
+                color: '#16a34a',
+                weight: 6,
+                opacity: 0.95,
+                dashArray: '12, 6'
+            }).addTo(map);
+
+            map.fitBounds(linhaRotaUsuarioEcoponto.getBounds(), { padding: [50, 50], maxZoom: 16 });
+
+            const distKm = calcularDistanciaKm(origem.lat, origem.lng, p.latitude, p.longitude);
+            const minCarro = Math.max(2, Math.round((distKm / 28) * 60));
+            const minAPe = Math.max(3, Math.round((distKm / 4.8) * 60));
+
+            const banner = document.getElementById('banner-rota-usuario');
+            const texto = document.getElementById('texto-rota-usuario');
+            if (banner && texto) {
+                texto.innerHTML = `🧭 <strong>Caminho até ${p.nome}:</strong> ~<strong>${distKm.toFixed(2)} km</strong> • 🚗 ~${minCarro} min de carro | 🚶 ~${minAPe} min a pé`;
+                banner.style.display = 'flex';
+            }
+        }
+
+        function limparRotaAtePontoNoMapa() {
+            if (linhaRotaUsuarioEcoponto) {
+                map.removeLayer(linhaRotaUsuarioEcoponto);
+                linhaRotaUsuarioEcoponto = null;
+            }
+            const banner = document.getElementById('banner-rota-usuario');
+            if (banner) banner.style.display = 'none';
+        }
+
+        // Gerador de Ordem de Serviço Diária (Impressão / PDF) no Painel Gestor
+        function imprimirOrdemDeServicoDiaria() {
+            const dataHoje = new Date().toLocaleString('pt-BR');
+            const denPendentes = todasAsDenuncias.filter(d => d.status !== 'Resolvido');
+            const denSugeridas = todasAsDenuncias.filter(d => verificarLimpezaComunitariaLogica(d));
+            const ctAgendados = todosOsCataTrecos.filter(c => c.status !== 'Recolhido');
+
+            const win = window.open('', '_blank', 'width=920,height=720');
+            if (!win) {
+                alert('Permita pop-ups para visualizar e imprimir a Ordem de Serviço Diária.');
+                return;
+            }
+
+            win.document.write(`
+                <!DOCTYPE html>
+                <html lang="pt-BR">
+                <head>
+                    <meta charset="UTF-8" />
+                    <title>Ordem de Serviço Diária - CittaLixo v3.3.0</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; color: #1e293b; padding: 24px; }
+                        h1 { color: #15803d; margin-bottom: 4px; }
+                        h2 { color: #0f172a; border-bottom: 2px solid #cbd5e1; padding-bottom: 4px; margin-top: 22px; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+                        th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
+                        th { background: #f1f5f9; }
+                        .kpi-row { display: flex; gap: 14px; margin: 14px 0; }
+                        .kpi { border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 14px; background: #f8fafc; }
+                    </style>
+                </head>
+                <body>
+                    <h1>♻️ CittaLixo — Ordem de Serviço Operacional Diária</h1>
+                    <p><strong>Municípios:</strong> Olinda &amp; Recife • <strong>Emitido em:</strong> ${dataHoje}</p>
+                    <div class="kpi-row">
+                        <div class="kpi"><strong>Pontos/Rotas Ativos:</strong> ${todosOsPontos.length}</div>
+                        <div class="kpi"><strong>Denúncias Críticas Pendentes:</strong> ${denPendentes.length}</div>
+                        <div class="kpi"><strong>Relatadas Limpas pela Comunidade:</strong> ${denSugeridas.length}</div>
+                        <div class="kpi"><strong>Coletas Cata-Treco Agendadas:</strong> ${ctAgendados.length}</div>
+                    </div>
+
+                    <h2>1. ⚠️ Pontos Críticos de Descarte Irregular Pendentes</h2>
+                    <table>
+                        <thead>
+                            <tr><th>ID</th><th>Cidade / Bairro</th><th>Endereço</th><th>Resíduo / Gravidade</th><th>Votos (👍 Ainda lá / 👎 Já limpo)</th></tr>
+                        </thead>
+                        <tbody>
+                            ${denPendentes.map(d => `
+                                <tr>
+                                    <td>#${d.id}</td>
+                                    <td>${d.cidade} • ${d.bairro}</td>
+                                    <td>${d.endereco}</td>
+                                    <td>${d.tipo_residuo} (${d.gravidade})</td>
+                                    <td>👍 ${d.confirmacoes || 1} | 👎 ${d.nao_esta_mais || 0} ${verificarLimpezaComunitariaLogica(d) ? '<b>[Comunidade relata limpo]</b>' : ''}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+
+                    <h2>2. 🛋️ Coletas de Volumosos Agendadas (Cata-Treco)</h2>
+                    <table>
+                        <thead>
+                            <tr><th>Protocolo</th><th>Cidade / Bairro</th><th>Endereço</th><th>Solicitante / Turno</th><th>Itens para Recolhimento</th></tr>
+                        </thead>
+                        <tbody>
+                            ${ctAgendados.map(c => `
+                                <tr>
+                                    <td><b>${c.protocolo}</b></td>
+                                    <td>${c.cidade} • ${c.bairro}</td>
+                                    <td>${c.endereco}</td>
+                                    <td>${c.solicitante} (${c.data_agendada} - ${c.turno_preferido})</td>
+                                    <td>${c.itens_volumosos}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </body>
+                </html>
+            `);
+            win.document.close();
+            win.focus();
+            setTimeout(() => win.print(), 350);
         }
 
         // Inicialização

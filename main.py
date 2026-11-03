@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 import json
@@ -80,8 +81,11 @@ class DenunciaBase(BaseModel):
     descricao: str = Field(default="", description="Detalhes sobre o acúmulo de lixo")
     status: str = Field(default="Pendente", description="Status: 'Pendente' ou 'Resolvido'")
     data_registro: str = Field(default="Hoje", description="Data/hora do relato")
-    confirmacoes: int = Field(default=1, ge=1, description="Quantidade de moradores que confirmaram ('Ainda está lá! +1')")
+    confirmacoes: int = Field(default=1, ge=0, description="Quantidade de moradores que confirmaram ('Ainda está lá! +1')")
     nao_esta_mais: int = Field(default=0, ge=0, description="Quantidade de moradores que relataram que já foi limpo ('Não está mais lá')")
+    ultimo_voto_ainda_la_em: str = Field(default="", description="Timestamp ISO do último voto 'Ainda está lá'")
+    ultimo_voto_recolhido_em: str = Field(default="", description="Timestamp ISO do último voto 'Já foi recolhido'")
+    foto_base64: str = Field(default="", description="Foto opcional comprimida em Base64")
     latitude: float = Field(..., ge=-90.0, le=90.0)
     longitude: float = Field(..., ge=-180.0, le=180.0)
 
@@ -105,6 +109,7 @@ class CataTrecoBase(BaseModel):
     data_agendada: str = Field(default="Próxima semana", description="Data solicitada")
     observacoes: str = Field(default="", description="Referência ou observações")
     status: str = Field(default="Agendado", description="Status: 'Agendado' ou 'Recolhido'")
+    foto_base64: str = Field(default="", description="Foto opcional do item volumoso em Base64")
     latitude: float = Field(..., ge=-90.0, le=90.0)
     longitude: float = Field(..., ge=-180.0, le=180.0)
 
@@ -559,6 +564,15 @@ def init_db() -> None:
         if "nao_esta_mais" not in colunas_den:
             cursor.execute("ALTER TABLE denuncias ADD COLUMN nao_esta_mais INTEGER NOT NULL DEFAULT 0")
             conn.commit()
+        if "ultimo_voto_ainda_la_em" not in colunas_den:
+            cursor.execute("ALTER TABLE denuncias ADD COLUMN ultimo_voto_ainda_la_em TEXT NOT NULL DEFAULT ''")
+            conn.commit()
+        if "ultimo_voto_recolhido_em" not in colunas_den:
+            cursor.execute("ALTER TABLE denuncias ADD COLUMN ultimo_voto_recolhido_em TEXT NOT NULL DEFAULT ''")
+            conn.commit()
+        if "foto_base64" not in colunas_den:
+            cursor.execute("ALTER TABLE denuncias ADD COLUMN foto_base64 TEXT NOT NULL DEFAULT ''")
+            conn.commit()
 
         total_denuncias = cursor.execute("SELECT COUNT(*) as c FROM denuncias").fetchone()["c"]
         if total_denuncias == 0:
@@ -599,6 +613,11 @@ def init_db() -> None:
             )
             """
         )
+        colunas_ct = [c["name"] for c in cursor.execute("PRAGMA table_info(catatreco)").fetchall()]
+        if "foto_base64" not in colunas_ct:
+            cursor.execute("ALTER TABLE catatreco ADD COLUMN foto_base64 TEXT NOT NULL DEFAULT ''")
+            conn.commit()
+
         total_ct = cursor.execute("SELECT COUNT(*) as c FROM catatreco").fetchone()["c"]
         if total_ct == 0:
             cursor.executemany(
@@ -854,12 +873,15 @@ def criar_denuncia(denuncia: DenunciaCreate):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
+        agora_iso = datetime.now().isoformat()
         cursor.execute(
             """
             INSERT INTO denuncias (
                 titulo, cidade, bairro, endereco, tipo_residuo,
-                gravidade, descricao, status, data_registro, confirmacoes, latitude, longitude
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                gravidade, descricao, status, data_registro, confirmacoes,
+                nao_esta_mais, ultimo_voto_ainda_la_em, ultimo_voto_recolhido_em, foto_base64,
+                latitude, longitude
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 denuncia.titulo,
@@ -872,6 +894,10 @@ def criar_denuncia(denuncia: DenunciaCreate):
                 denuncia.status,
                 denuncia.data_registro,
                 denuncia.confirmacoes,
+                denuncia.nao_esta_mais,
+                denuncia.ultimo_voto_ainda_la_em or agora_iso,
+                denuncia.ultimo_voto_recolhido_em,
+                denuncia.foto_base64,
                 denuncia.latitude,
                 denuncia.longitude,
             ),
@@ -896,7 +922,11 @@ def apoiar_denuncia(id: int):
                 detail="Denúncia não encontrada",
             )
         novas_conf = (row["confirmacoes"] or 1) + 1
-        cursor.execute("UPDATE denuncias SET confirmacoes = ? WHERE id = ?", (novas_conf, id))
+        agora_iso = datetime.now().isoformat()
+        cursor.execute(
+            "UPDATE denuncias SET confirmacoes = ?, ultimo_voto_ainda_la_em = ? WHERE id = ?",
+            (novas_conf, agora_iso, id),
+        )
         conn.commit()
         atualizado = cursor.execute("SELECT * FROM denuncias WHERE id = ?", (id,)).fetchone()
         return dict(atualizado)
@@ -916,7 +946,11 @@ def reportar_nao_esta_mais_denuncia(id: int):
                 detail="Denúncia não encontrada",
             )
         novo_val = (row["nao_esta_mais"] or 0) + 1
-        cursor.execute("UPDATE denuncias SET nao_esta_mais = ? WHERE id = ?", (novo_val, id))
+        agora_iso = datetime.now().isoformat()
+        cursor.execute(
+            "UPDATE denuncias SET nao_esta_mais = ?, ultimo_voto_recolhido_em = ? WHERE id = ?",
+            (novo_val, agora_iso, id),
+        )
         conn.commit()
         atualizado = cursor.execute("SELECT * FROM denuncias WHERE id = ?", (id,)).fetchone()
         return dict(atualizado)
@@ -948,14 +982,20 @@ def votar_denuncia_unico(id: int, payload: DenunciaVotoPayload):
         elif payload.voto_anterior == "ja_recolhido":
             limpo = max(0, limpo - 1)
 
+        ts_ainda = row["ultimo_voto_ainda_la_em"] or ""
+        ts_limpo = row["ultimo_voto_recolhido_em"] or ""
+        agora_iso = datetime.now().isoformat()
+
         if payload.voto_novo == "ainda_la":
             conf = conf + 1
+            ts_ainda = agora_iso
         elif payload.voto_novo == "ja_recolhido":
             limpo = limpo + 1
+            ts_limpo = agora_iso
 
         cursor.execute(
-            "UPDATE denuncias SET confirmacoes = ?, nao_esta_mais = ? WHERE id = ?",
-            (conf, limpo, id),
+            "UPDATE denuncias SET confirmacoes = ?, nao_esta_mais = ?, ultimo_voto_ainda_la_em = ?, ultimo_voto_recolhido_em = ? WHERE id = ?",
+            (conf, limpo, ts_ainda, ts_limpo, id),
         )
         conn.commit()
         atualizado = cursor.execute("SELECT * FROM denuncias WHERE id = ?", (id,)).fetchone()
@@ -1039,8 +1079,8 @@ def criar_catatreco(pedido: CataTrecoCreate):
             INSERT INTO catatreco (
                 protocolo, solicitante, cidade, bairro, endereco,
                 itens_volumosos, turno_preferido, data_agendada,
-                observacoes, status, latitude, longitude
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                observacoes, status, foto_base64, latitude, longitude
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 protocolo,
@@ -1053,6 +1093,7 @@ def criar_catatreco(pedido: CataTrecoCreate):
                 pedido.data_agendada,
                 pedido.observacoes,
                 pedido.status,
+                pedido.foto_base64,
                 pedido.latitude,
                 pedido.longitude,
             ),
