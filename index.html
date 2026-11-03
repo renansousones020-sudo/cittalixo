@@ -1196,9 +1196,10 @@
         const CENTRO_OLINDA_RECIFE = [-8.0220, -34.8680];
         const map = L.map('map').setView(CENTRO_OLINDA_RECIFE, 12);
 
-        const camadaRuasOSM = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; OpenStreetMap'
+        const camadaRuasOSM = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            subdomains: 'abcd',
+            maxZoom: 20,
+            attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
         });
 
         const camadaSateliteEsri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
