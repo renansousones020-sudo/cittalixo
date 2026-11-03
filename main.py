@@ -3,6 +3,7 @@ from typing import List, Optional
 import json
 import sqlite3
 from fastapi import FastAPI, HTTPException, Query, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
@@ -16,6 +17,14 @@ app = FastAPI(
         "e rotas/horários de coleta domiciliar em Recife e Olinda."
     ),
     version="3.1.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
