@@ -531,6 +531,17 @@
             flex-direction: column;
             text-align: left;
             gap: 4px;
+            min-width: 0;
+        }
+
+        .form-group.span-2 {
+            grid-column: span 2;
+        }
+
+        @media (max-width: 680px) {
+            .form-group.span-2 {
+                grid-column: span 1;
+            }
         }
 
         .form-group label {
@@ -541,6 +552,8 @@
 
         .form-group input,
         .form-group select {
+            width: 100%;
+            min-width: 0;
             padding: 8px 10px;
             border: 1px solid var(--border-color);
             border-radius: 8px;
@@ -551,10 +564,21 @@
 
         .geocode-bar {
             display: flex;
-            gap: 6px;
+            gap: 8px;
+            width: 100%;
+            min-width: 0;
+            align-items: stretch;
         }
 
-        .geocode-bar input { flex: 1; }
+        .geocode-bar input {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        .geocode-bar button {
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
 
         .form-footer {
             margin-top: 14px;
@@ -871,7 +895,7 @@
                             <input type="text" id="inp-tipo" required placeholder="Ex: Orgânico / Domiciliar, Recicláveis" />
                         </div>
 
-                        <div class="form-group">
+                        <div class="form-group span-2">
                             <label for="inp-endereco">Endereço ou Ruas do Percurso *</label>
                             <div class="geocode-bar">
                                 <input type="text" id="inp-endereco" required placeholder="Ex: Av. Getúlio Vargas, Olinda" />
