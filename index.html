@@ -522,6 +522,14 @@
             color: #9a3412;
         }
 
+        .card-link.voted-disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background: #e2e8f0 !important;
+            border-color: #cbd5e1 !important;
+            color: #475569 !important;
+        }
+
         .card-link.delete-btn:hover {
             background: #fee2e2;
             border-color: #ef4444;
@@ -2291,6 +2299,7 @@
                 const icone = resolvida ? iconeResolvido : iconeCritico;
                 const qtdConf = den.confirmacoes || 1;
                 const qtdLimpo = den.nao_esta_mais || 0;
+                const votoDoUsuario = obterVotoUsuarioDenuncia(den.id);
 
                 const marker = L.marker([den.latitude, den.longitude], { icon: icone })
                     .addTo(denunciasLayer)
@@ -2299,7 +2308,7 @@
                             <strong style="color:${resolvida ? '#475569' : '#ea580c'};">
                                 ${resolvida ? '✅ [RESOLVIDO]' : '🟠 [PONTO CRÍTICO]'} ${den.titulo}
                             </strong><br/>
-                            <small>${den.cidade} • ${den.bairro} • 👍 ${qtdConf} ainda lá | 👎 ${qtdLimpo} já limpo</small>
+                            <small>${den.cidade} • ${den.bairro} • 👍 ${qtdConf} ainda lá | 👎 ${qtdLimpo} já recolhido</small>
                             <hr style="border:none; border-top:1px solid #e2e8f0; margin:5px 0;"/>
                             <b>Resíduo:</b> ${den.tipo_residuo}<br/>
                             <b>Local:</b> ${den.endereco}<br/>
@@ -2314,6 +2323,19 @@
                     marker.openPopup();
                 };
 
+                const botoesVotacaoHtml = !resolvida
+                    ? (votoDoUsuario
+                        ? `<button type="button" class="card-link voted-disabled" disabled title="Cada morador só pode votar 1 única vez por denúncia para evitar votos falsos">
+                               ✅ Seu voto já foi registrado (${votoDoUsuario === 'ainda_la' ? '👍 Ainda está lá' : '👎 Já foi recolhido'})
+                           </button>`
+                        : `<button type="button" class="card-link upvote-btn" onclick="apoiarDenuncia(${den.id})" title="Confirmar (1 voto único por morador) que o lixo ainda continua no local">
+                               👍 Ainda está lá! (+1)
+                           </button>
+                           <button type="button" class="card-link" onclick="reportarNaoEstaMaisDenuncia(${den.id})" title="Confirmar (1 voto único por morador) que o lixo já foi recolhido">
+                               👎 Já foi recolhido / Não está mais (${qtdLimpo})
+                           </button>`)
+                    : '';
+
                 card.innerHTML = `
                     <div class="card-top">
                         <h3>${den.titulo}</h3>
@@ -2324,20 +2346,13 @@
                             ${resolvida ? '✅ Limpeza Concluída / Resolvido' : `🟠 Gravidade: ${den.gravidade}`}
                         </span>
                         <span class="badge badge-status-closed">🔥 ${qtdConf} ${qtdConf === 1 ? 'confirma que ainda está lá' : 'confirmam que ainda está lá'}</span>
-                        ${qtdLimpo > 0 ? `<span class="badge badge-status-open">✨ ${qtdLimpo} ${qtdLimpo === 1 ? 'relatou que já limparam' : 'relataram que já limparam'}</span>` : ''}
+                        ${qtdLimpo > 0 ? `<span class="badge badge-status-open">✨ ${qtdLimpo} ${qtdLimpo === 1 ? 'relatou que já foi recolhido' : 'relataram que já foi recolhido'}</span>` : ''}
                     </div>
                     <p><strong>🗑️ Resíduo Acumulado:</strong> ${den.tipo_residuo}</p>
                     <p><strong>📌 Local:</strong> ${den.endereco}</p>
                     ${den.descricao ? `<p>ℹ️ ${den.descricao}</p>` : ''}
                     <div class="card-actions" onclick="event.stopPropagation();">
-                        ${!resolvida ? `
-                            <button type="button" class="card-link upvote-btn" onclick="apoiarDenuncia(${den.id})" title="Classificar que o lixo ainda continua acumulado no local">
-                                👍 Ainda está lá! (+1)
-                            </button>
-                            <button type="button" class="card-link" onclick="reportarNaoEstaMaisDenuncia(${den.id})" title="Classificar que o lixo já foi recolhido/não está mais lá">
-                                👎 Já foi limpo / Não está mais (${qtdLimpo})
-                            </button>
-                        ` : ''}
+                        ${botoesVotacaoHtml}
                         <button type="button" class="card-link admin-only" onclick="alternarStatusDenuncia(${den.id})">
                             ${resolvida ? '↩️ Reabrir Alerta (Admin)' : '✅ Marcar como Resolvido (Admin)'}
                         </button>
@@ -2358,7 +2373,32 @@
             }
         }
 
+        // Controle de voto único por usuário/dispositivo para evitar votos falsos repetidos
+        function obterMapaVotosUsuario() {
+            try {
+                return JSON.parse(localStorage.getItem('cittalixo_votos_denuncias') || '{}');
+            } catch (_) {
+                return {};
+            }
+        }
+
+        function obterVotoUsuarioDenuncia(id) {
+            const mapa = obterMapaVotosUsuario();
+            return mapa[String(id)] || null;
+        }
+
+        function registrarVotoUnicoUsuario(id, tipoVoto) {
+            const mapa = obterMapaVotosUsuario();
+            mapa[String(id)] = tipoVoto;
+            localStorage.setItem('cittalixo_votos_denuncias', JSON.stringify(mapa));
+        }
+
         async function apoiarDenuncia(id) {
+            if (obterVotoUsuarioDenuncia(id)) {
+                alert('⚠️ Você já registrou seu voto nesta denúncia! Cada morador só pode votar 1 única vez.');
+                return;
+            }
+            registrarVotoUnicoUsuario(id, 'ainda_la');
             try {
                 const r = await apiFetch(`/denuncias/${id}/apoiar`, { method: 'PUT' });
                 if (!r.ok) throw new Error();
@@ -2371,6 +2411,11 @@
         }
 
         async function reportarNaoEstaMaisDenuncia(id) {
+            if (obterVotoUsuarioDenuncia(id)) {
+                alert('⚠️ Você já registrou seu voto nesta denúncia! Cada morador só pode votar 1 única vez.');
+                return;
+            }
+            registrarVotoUnicoUsuario(id, 'ja_recolhido');
             try {
                 const r = await apiFetch(`/denuncias/${id}/nao-esta-mais`, { method: 'PUT' });
                 if (!r.ok) throw new Error();
