@@ -1053,10 +1053,10 @@
                     <div id="map"></div>
                     <div class="map-legend">
                         <div class="legend-items">
-                            <span><i class="dot dot-ecoponto"></i>Ecoponto</span>
-                            <span><i class="dot dot-coleta"></i>Caminhão/Rota</span>
-                            <span><i class="dot dot-catatreco"></i>Cata-Treco</span>
-                            <span><i class="dot dot-critico"></i>Ponto Crítico</span>
+                            <span id="leg-ecoponto"><i class="dot dot-ecoponto"></i>Ecoponto</span>
+                            <span id="leg-coleta"><i class="dot dot-coleta"></i>Caminhão/Rota</span>
+                            <span id="leg-catatreco" style="display:none;"><i class="dot dot-catatreco"></i>Cata-Treco (Volumosos)</span>
+                            <span id="leg-critico" style="display:none;"><i class="dot dot-critico"></i>Ponto Crítico (Denúncia)</span>
                         </div>
                         <div style="display:flex; gap:6px; flex-wrap:wrap;">
                             <button type="button" class="card-link" onclick="centralizarTodosOsPontosNoMapa()">🎯 Ver Todos os Pontos</button>
@@ -1233,9 +1233,13 @@
 
         function centralizarTodosOsPontosNoMapa() {
             const coords = [];
-            todosOsPontos.forEach(p => {
-                if (typeof p.latitude === 'number' && typeof p.longitude === 'number') {
-                    coords.push([p.latitude, p.longitude]);
+            let fonte = todosOsPontos;
+            if (abaAtual === 'catatreco') fonte = todosOsCataTrecos;
+            else if (abaAtual === 'denuncias') fonte = todasAsDenuncias;
+
+            fonte.forEach(item => {
+                if (typeof item.latitude === 'number' && typeof item.longitude === 'number') {
+                    coords.push([item.latitude, item.longitude]);
                 }
             });
             if (coords.length > 0) {
@@ -1248,8 +1252,51 @@
         const markersLayer = L.layerGroup().addTo(map);
         const routesLayer = L.layerGroup().addTo(map);
         const liveTrucksLayer = L.layerGroup().addTo(map);
-        const catatrecoLayer = L.layerGroup().addTo(map);
-        const denunciasLayer = L.layerGroup().addTo(map);
+        const catatrecoLayer = L.layerGroup();
+        const denunciasLayer = L.layerGroup();
+
+        function fecharTodosOsFormularios() {
+            document.getElementById('secao-cadastro').classList.remove('open');
+            document.getElementById('secao-catatreco-form').classList.remove('open');
+            document.getElementById('secao-denuncia-form').classList.remove('open');
+            limparRotaDesenhada();
+        }
+
+        function sincronizarCamadasMapaPorAba() {
+            // Remove todas as camadas de abas primeiro para isolar 100% cada aba no mapa
+            if (map.hasLayer(markersLayer)) map.removeLayer(markersLayer);
+            if (map.hasLayer(routesLayer)) map.removeLayer(routesLayer);
+            if (map.hasLayer(liveTrucksLayer)) map.removeLayer(liveTrucksLayer);
+            if (map.hasLayer(catatrecoLayer)) map.removeLayer(catatrecoLayer);
+            if (map.hasLayer(denunciasLayer)) map.removeLayer(denunciasLayer);
+
+            const legEco = document.getElementById('leg-ecoponto');
+            const legCol = document.getElementById('leg-coleta');
+            const legCt = document.getElementById('leg-catatreco');
+            const legCri = document.getElementById('leg-critico');
+
+            if (abaAtual === 'coleta') {
+                markersLayer.addTo(map);
+                routesLayer.addTo(map);
+                liveTrucksLayer.addTo(map);
+                if (legEco) legEco.style.display = 'inline';
+                if (legCol) legCol.style.display = 'inline';
+                if (legCt) legCt.style.display = 'none';
+                if (legCri) legCri.style.display = 'none';
+            } else if (abaAtual === 'catatreco') {
+                catatrecoLayer.addTo(map);
+                if (legEco) legEco.style.display = 'none';
+                if (legCol) legCol.style.display = 'none';
+                if (legCt) legCt.style.display = 'inline';
+                if (legCri) legCri.style.display = 'none';
+            } else if (abaAtual === 'denuncias') {
+                denunciasLayer.addTo(map);
+                if (legEco) legEco.style.display = 'none';
+                if (legCol) legCol.style.display = 'none';
+                if (legCt) legCt.style.display = 'none';
+                if (legCri) legCri.style.display = 'inline';
+            }
+        }
 
         const markersById = {};
         const polylinesById = {};
@@ -1752,6 +1799,7 @@
 
         // --- CRUD: EDITAR E EXCLUIR DIRETO NOS CARDS ---
         function abrirNovoCadastroPonto() {
+            fecharTodosOsFormularios();
             document.getElementById('inp-id-edicao').value = '';
             document.getElementById('form-ponto').reset();
             document.getElementById('inp-horario').value = 'Seg a Sáb: 08h às 16h';
@@ -1776,6 +1824,7 @@
         function prepararEdicaoPonto(id) {
             const p = todosOsPontos.find(item => item.id === id);
             if (!p) return;
+            fecharTodosOsFormularios();
 
             document.getElementById('inp-id-edicao').value = p.id;
             document.getElementById('inp-nome').value = p.nome;
@@ -2025,7 +2074,13 @@
         }
 
         function toggleFormularioCataTreco() {
-            document.getElementById('secao-catatreco-form').classList.toggle('open');
+            const sec = document.getElementById('secao-catatreco-form');
+            const estavaAberto = sec.classList.contains('open');
+            fecharTodosOsFormularios();
+            if (!estavaAberto) {
+                sec.classList.add('open');
+                sec.scrollIntoView({ behavior: 'smooth' });
+            }
         }
 
         async function salvarNovoCataTreco(event) {
@@ -2203,7 +2258,13 @@
         }
 
         function toggleFormularioDenuncia() {
-            document.getElementById('secao-denuncia-form').classList.toggle('open');
+            const sec = document.getElementById('secao-denuncia-form');
+            const estavaAberto = sec.classList.contains('open');
+            fecharTodosOsFormularios();
+            if (!estavaAberto) {
+                sec.classList.add('open');
+                sec.scrollIntoView({ behavior: 'smooth' });
+            }
         }
 
         async function apoiarDenuncia(id) {
@@ -2288,18 +2349,25 @@
             await carregarDenunciasDaAPI();
         }
 
-        // --- NAVEGAÇÃO ENTRE AS 5 ABAS ---
+        // --- NAVEGAÇÃO ENTRE AS 5 ABAS (CADA ABA 100% INDIVIDUAL) ---
         function alternarAba(aba) {
             abaAtual = aba;
+            fecharTodosOsFormularios();
+
             document.querySelectorAll('.nav-tabs .tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`tab-btn-${aba}`).classList.add('active');
 
             const visaoMapa = document.getElementById('visao-mapa-principal');
             const visaoGuia = document.getElementById('visao-educativa');
             const visaoGestor = document.getElementById('visao-gestor');
+            const bannerSimulacao = document.getElementById('banner-simulacao');
 
             visaoGuia.classList.remove('active');
             visaoGestor.classList.remove('active');
+
+            if (bannerSimulacao) {
+                bannerSimulacao.style.display = aba === 'coleta' ? 'flex' : 'none';
+            }
 
             if (aba === 'guia') {
                 visaoMapa.style.display = 'none';
@@ -2314,7 +2382,7 @@
             }
 
             visaoMapa.style.display = 'block';
-            setTimeout(() => map.invalidateSize(), 120);
+            sincronizarCamadasMapaPorAba();
 
             document.getElementById('toolbar-coleta').style.display = aba === 'coleta' ? 'block' : 'none';
             document.getElementById('painel-lista-coleta').style.display = aba === 'coleta' ? 'block' : 'none';
@@ -2322,6 +2390,11 @@
             document.getElementById('painel-lista-catatreco').style.display = aba === 'catatreco' ? 'block' : 'none';
             document.getElementById('toolbar-denuncias').style.display = aba === 'denuncias' ? 'flex' : 'none';
             document.getElementById('painel-lista-denuncias').style.display = aba === 'denuncias' ? 'block' : 'none';
+
+            setTimeout(() => {
+                map.invalidateSize();
+                centralizarTodosOsPontosNoMapa();
+            }, 120);
         }
 
         function selecionarCidade(botao, cidade) {
@@ -2645,6 +2718,7 @@
         }
 
         // Inicialização
+        sincronizarCamadasMapaPorAba();
         carregarPontosDaAPI();
         carregarCataTrecoDaAPI();
         carregarDenunciasDaAPI();
