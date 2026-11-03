@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#14532d" />
     <link rel="manifest" href="/manifest.json" />
-    <title>CittaLixo — Pontos, Rotas em Tempo Real, Denúncias e Guia (Olinda e Recife)</title>
+    <title>CittaLixo v3.1.0 — Pontos, Rotas, Cata-Treco, Denúncias e Painel Gestor (Olinda e Recife)</title>
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
@@ -18,15 +18,28 @@
             --blue-light: #e0f2fe;
             --orange-critical: #ea580c;
             --orange-light: #ffedd5;
+            --purple-primary: #7c3aed;
+            --purple-light: #ede9fe;
             --amber-light: #fef3c7;
             --amber-dark: #92400e;
             --bg-page: #f1f5f9;
             --bg-card: #ffffff;
+            --bg-input: #ffffff;
             --text-main: #0f172a;
             --text-muted: #475569;
             --border-color: #e2e8f0;
             --radius: 12px;
             --shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+        }
+
+        body.dark-mode {
+            --bg-page: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #0f172a;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
         }
 
         * {
@@ -40,33 +53,61 @@
             margin: 0;
             padding: 0;
             line-height: 1.5;
+            transition: background-color 0.2s ease, color 0.2s ease;
         }
 
         header {
             background: linear-gradient(135deg, var(--green-dark), var(--green-primary));
             color: white;
-            padding: 22px 20px 18px;
+            padding: 20px 20px 16px;
             text-align: center;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+            position: relative;
+        }
+
+        .header-top-bar {
+            max-width: 1240px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         header h1 {
             margin: 0;
-            font-size: 2rem;
+            font-size: 1.9rem;
             letter-spacing: -0.5px;
+        }
+
+        .theme-toggle-btn {
+            background: rgba(255, 255, 255, 0.18);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            padding: 7px 14px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 0.86rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .theme-toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
 
         header p {
             margin: 6px auto 14px;
-            max-width: 760px;
+            max-width: 820px;
             opacity: 0.94;
-            font-size: 0.96rem;
+            font-size: 0.95rem;
         }
 
         /* Navegação de Abas Principais */
         .nav-tabs {
             display: inline-flex;
-            gap: 8px;
+            gap: 6px;
             flex-wrap: wrap;
             justify-content: center;
             background: rgba(255, 255, 255, 0.14);
@@ -78,10 +119,10 @@
             border: none;
             background: transparent;
             color: white;
-            padding: 8px 18px;
+            padding: 8px 15px;
             border-radius: 999px;
             font-weight: 700;
-            font-size: 0.92rem;
+            font-size: 0.88rem;
             cursor: pointer;
             transition: all 0.2s ease;
         }
@@ -105,14 +146,14 @@
         /* Dashboard de Estatísticas no Topo */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
             gap: 12px;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
         }
 
         .stat-card {
             background: var(--bg-card);
-            padding: 14px 16px;
+            padding: 13px 15px;
             border-radius: var(--radius);
             box-shadow: var(--shadow);
             border-bottom: 4px solid var(--green-primary);
@@ -123,15 +164,16 @@
 
         .stat-card.blue { border-bottom-color: var(--blue-primary); }
         .stat-card.orange { border-bottom-color: var(--orange-critical); }
+        .stat-card.purple { border-bottom-color: var(--purple-primary); }
 
         .stat-value {
-            font-size: 1.55rem;
+            font-size: 1.45rem;
             font-weight: 800;
             color: var(--text-main);
         }
 
         .stat-label {
-            font-size: 0.82rem;
+            font-size: 0.8rem;
             color: var(--text-muted);
             font-weight: 600;
         }
@@ -143,8 +185,8 @@
             border: 1px solid #fcd34d;
             border-radius: 10px;
             padding: 10px 14px;
-            margin-bottom: 16px;
-            font-size: 0.88rem;
+            margin-bottom: 14px;
+            font-size: 0.86rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -155,38 +197,38 @@
         /* Barra de filtros e ações */
         .toolbar {
             background: var(--bg-card);
-            padding: 16px;
+            padding: 14px 16px;
             border-radius: var(--radius);
             box-shadow: var(--shadow);
-            margin-bottom: 18px;
+            margin-bottom: 14px;
             display: flex;
             flex-wrap: wrap;
-            gap: 12px;
+            gap: 10px;
             align-items: center;
             justify-content: space-between;
         }
 
-        .city-pills {
+        .city-pills, .day-pills {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             flex-wrap: wrap;
+            align-items: center;
         }
 
         .pill-btn {
             border: 1px solid var(--border-color);
-            background: #f8fafc;
+            background: var(--bg-input);
             color: var(--text-main);
-            padding: 8px 14px;
+            padding: 7px 13px;
             border-radius: 999px;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             cursor: pointer;
             transition: all 0.18s ease;
         }
 
         .pill-btn:hover {
             border-color: var(--green-primary);
-            background: var(--green-light);
         }
 
         .pill-btn.active {
@@ -195,32 +237,44 @@
             border-color: var(--green-primary);
         }
 
+        .pill-btn.day-pill {
+            padding: 5px 11px;
+            font-size: 0.8rem;
+        }
+
+        .pill-btn.day-pill.active {
+            background: var(--blue-primary);
+            border-color: var(--blue-primary);
+            color: white;
+        }
+
         .filters-row {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
             flex: 1;
             justify-content: flex-end;
         }
 
         .filters-row input,
         .filters-row select {
-            padding: 9px 12px;
+            padding: 8px 11px;
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            font-size: 0.9rem;
-            background: white;
-            min-width: 155px;
+            font-size: 0.88rem;
+            background: var(--bg-input);
+            color: var(--text-main);
+            min-width: 145px;
         }
 
         .btn-action {
             background: var(--blue-primary);
             color: white;
             border: none;
-            padding: 9px 14px;
+            padding: 8px 13px;
             border-radius: 8px;
             font-weight: 600;
-            font-size: 0.88rem;
+            font-size: 0.86rem;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
@@ -234,6 +288,7 @@
 
         .btn-add { background: var(--green-dark); }
         .btn-orange { background: var(--orange-critical); }
+        .btn-purple { background: var(--purple-primary); }
 
         /* Layout Mapa + Painel Lateral/Cards */
         .main-grid {
@@ -268,18 +323,18 @@
         .map-legend {
             display: flex;
             flex-wrap: wrap;
-            gap: 12px;
+            gap: 10px;
             justify-content: space-between;
             align-items: center;
             margin-top: 10px;
-            font-size: 0.82rem;
+            font-size: 0.8rem;
             color: var(--text-muted);
             padding: 0 4px;
         }
 
         .legend-items {
             display: flex;
-            gap: 12px;
+            gap: 10px;
             flex-wrap: wrap;
             align-items: center;
         }
@@ -295,10 +350,10 @@
         .dot-ecoponto { background: #16a34a; }
         .dot-coleta { background: #0284c7; }
         .dot-critico { background: #ea580c; }
-        .dot-user { background: #dc2626; }
+        .dot-catatreco { background: #7c3aed; }
         .line-rota {
             display: inline-block;
-            width: 22px;
+            width: 20px;
             height: 4px;
             background: repeating-linear-gradient(90deg, #0284c7 0 6px, transparent 6px 10px);
             vertical-align: middle;
@@ -315,7 +370,7 @@
 
         .cards-header h2 {
             margin: 0;
-            font-size: 1.15rem;
+            font-size: 1.12rem;
         }
 
         .count-badge {
@@ -323,15 +378,15 @@
             color: var(--green-dark);
             padding: 4px 10px;
             border-radius: 999px;
-            font-size: 0.84rem;
+            font-size: 0.82rem;
             font-weight: 700;
         }
 
-        #cards-container, #denuncias-container {
+        #cards-container, #denuncias-container, #catatreco-container {
             display: flex;
             flex-direction: column;
             gap: 12px;
-            max-height: 760px;
+            max-height: 750px;
             overflow-y: auto;
             padding-right: 4px;
         }
@@ -347,22 +402,14 @@
             cursor: pointer;
         }
 
-        .card.coleta-domiciliar {
-            border-left-color: var(--blue-primary);
-        }
-
-        .card.denuncia-critica {
-            border-left-color: var(--orange-critical);
-        }
-
-        .card.denuncia-resolvida {
-            border-left-color: #94a3b8;
-            opacity: 0.82;
-        }
+        .card.coleta-domiciliar { border-left-color: var(--blue-primary); }
+        .card.denuncia-critica { border-left-color: var(--orange-critical); }
+        .card.catatreco-card { border-left-color: var(--purple-primary); }
+        .card.denuncia-resolvida { border-left-color: #94a3b8; opacity: 0.8; }
 
         .card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
         }
 
         .card-top {
@@ -375,7 +422,7 @@
 
         .card h3 {
             margin: 0;
-            font-size: 1.03rem;
+            font-size: 1.02rem;
             color: var(--text-main);
         }
 
@@ -387,24 +434,25 @@
         }
 
         .badge {
-            font-size: 0.74rem;
+            font-size: 0.73rem;
             font-weight: 700;
             padding: 3px 8px;
             border-radius: 6px;
             display: inline-block;
         }
 
-        .badge-city { background: #f1f5f9; color: #334155; }
+        .badge-city { background: #e2e8f0; color: #1e293b; }
         .badge-cat-ecoponto { background: var(--green-light); color: var(--green-dark); }
         .badge-cat-coleta { background: var(--blue-light); color: #0369a1; }
         .badge-cat-critico { background: var(--orange-light); color: #9a3412; }
+        .badge-cat-purple { background: var(--purple-light); color: #5b21b6; }
         .badge-status-open { background: #bbf7d0; color: #14532d; }
         .badge-status-closed { background: var(--amber-light); color: var(--amber-dark); }
         .badge-distance { background: #fee2e2; color: #991b1b; }
 
         .card p {
             margin: 4px 0;
-            font-size: 0.89rem;
+            font-size: 0.88rem;
             color: var(--text-muted);
         }
 
@@ -415,24 +463,23 @@
         .card-actions {
             margin-top: 10px;
             display: flex;
-            gap: 8px;
+            gap: 7px;
             flex-wrap: wrap;
         }
 
         .card-link {
-            font-size: 0.8rem;
+            font-size: 0.79rem;
             font-weight: 600;
             text-decoration: none;
             padding: 5px 9px;
             border-radius: 6px;
-            background: #f8fafc;
+            background: var(--bg-input);
             border: 1px solid var(--border-color);
             color: var(--text-main);
             cursor: pointer;
         }
 
         .card-link:hover {
-            background: var(--green-light);
             border-color: var(--green-primary);
         }
 
@@ -440,6 +487,12 @@
             background: var(--blue-light);
             border-color: #7dd3fc;
             color: #0369a1;
+        }
+
+        .card-link.upvote-btn {
+            background: var(--orange-light);
+            border-color: #fdba74;
+            color: #9a3412;
         }
 
         .card-link.delete-btn:hover {
@@ -450,7 +503,7 @@
 
         /* Formulários */
         .form-section {
-            margin-bottom: 20px;
+            margin-bottom: 18px;
             background: var(--bg-card);
             padding: 20px;
             border-radius: var(--radius);
@@ -464,8 +517,7 @@
 
         .form-section h2 {
             margin-top: 0;
-            color: var(--green-dark);
-            font-size: 1.2rem;
+            font-size: 1.18rem;
         }
 
         .form-grid {
@@ -482,7 +534,7 @@
         }
 
         .form-group label {
-            font-size: 0.83rem;
+            font-size: 0.82rem;
             font-weight: 600;
             color: var(--text-main);
         }
@@ -492,7 +544,9 @@
             padding: 8px 10px;
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
+            background: var(--bg-input);
+            color: var(--text-main);
         }
 
         .geocode-bar {
@@ -515,12 +569,12 @@
             font-weight: 600;
         }
 
-        /* Seção Educativa + Quiz */
-        .edu-section {
+        /* Seções independentes (Educativa e Painel Gestor) */
+        .tab-panel {
             display: none;
         }
 
-        .edu-section.active {
+        .tab-panel.active {
             display: block;
         }
 
@@ -562,7 +616,55 @@
             margin: 16px 0;
         }
 
-        /* Animação pulsante para caminhão simulado e seta de rota */
+        /* Gráficos Visuais do Painel Gestor */
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 18px;
+            margin-top: 16px;
+        }
+
+        .chart-box {
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .chart-box h3 {
+            margin-top: 0;
+            font-size: 1.05rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        .bar-row {
+            margin: 10px 0;
+        }
+
+        .bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .bar-track {
+            width: 100%;
+            height: 12px;
+            background: var(--border-color);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: var(--green-primary);
+            border-radius: 999px;
+            transition: width 0.4s ease;
+        }
+
         .truck-live-icon {
             filter: drop-shadow(0 2px 5px rgba(0,0,0,0.35));
             transition: transform 0.3s linear;
@@ -588,13 +690,20 @@
 <body>
 
     <header>
-        <h1>♻️ CittaLixo <span style="font-size:0.9rem; background:rgba(255,255,255,0.22); padding:3px 10px; border-radius:999px; vertical-align:middle;">v3.0.0</span></h1>
-        <p>Ecopontos, Rotas em Tempo Real dos Caminhões, Denúncias de Pontos Críticos e Guia de Reciclagem em <strong>Olinda e Recife</strong>.</p>
+        <div class="header-top-bar">
+            <div style="width:130px;"></div>
+            <h1>♻️ CittaLixo <span style="font-size:0.88rem; background:rgba(255,255,255,0.22); padding:3px 10px; border-radius:999px; vertical-align:middle;">v3.1.0</span></h1>
+            <button class="theme-toggle-btn" id="btn-dark-mode" onclick="alternarModoEscuro()">🌙 Modo Escuro</button>
+        </div>
+
+        <p>Ecopontos, Rotas em Tempo Real dos Caminhões, Agendamento Cata-Treco, Denúncias e Painel Gestor em <strong>Olinda e Recife</strong>.</p>
 
         <div class="nav-tabs" role="tablist">
-            <button class="tab-btn active" id="tab-btn-coleta" onclick="alternarAba('coleta')">🗺️ Ecopontos &amp; Rotas de Coleta</button>
-            <button class="tab-btn" id="tab-btn-denuncias" onclick="alternarAba('denuncias')">⚠️ Denúncias de Lixo Acumulado</button>
-            <button class="tab-btn" id="tab-btn-guia" onclick="alternarAba('guia')">📚 Guia de Descarte &amp; Quiz</button>
+            <button class="tab-btn active" id="tab-btn-coleta" onclick="alternarAba('coleta')">🗺️ Ecopontos &amp; Rotas</button>
+            <button class="tab-btn" id="tab-btn-catatreco" onclick="alternarAba('catatreco')">🛋️ Cata-Treco (Volumosos)</button>
+            <button class="tab-btn" id="tab-btn-denuncias" onclick="alternarAba('denuncias')">⚠️ Denúncias de Lixo</button>
+            <button class="tab-btn" id="tab-btn-gestor" onclick="alternarAba('gestor')">📊 Painel Gestor &amp; Dados</button>
+            <button class="tab-btn" id="tab-btn-guia" onclick="alternarAba('guia')">📚 Guia &amp; Quiz</button>
         </div>
     </header>
 
@@ -613,60 +722,96 @@
                 <span class="stat-value" id="stat-olinda-recife">8 / 6</span>
                 <span class="stat-label">🌴 Olinda vs 🌉 Recife</span>
             </div>
+            <div class="stat-card purple">
+                <span class="stat-value" id="stat-catatreco-ativos">3</span>
+                <span class="stat-label">🛋️ Coletas Cata-Treco Agendadas</span>
+            </div>
             <div class="stat-card orange">
                 <span class="stat-value" id="stat-denuncias-pendentes">3</span>
-                <span class="stat-label">⚠️ Pontos Críticos de Lixo Pendentes</span>
+                <span class="stat-label">⚠️ Pontos Críticos Pendentes</span>
             </div>
         </div>
 
         <!-- Alerta de Simulação Baseada no Horário Real do Usuário -->
         <div class="sim-banner" id="banner-simulacao">
             <div>
-                <strong>🚛 Rastreamento Estimado por Horário Real (<span id="relogio-usuario">--:--</span>):</strong>
+                <strong>Rastreamento Estimado por Horário Real (<span id="relogio-usuario">--:--</span>):</strong>
                 A posição do caminhão no mapa é uma <strong>simulação baseada no horário programado da rota</strong>. O caminhão real pode passar alguns minutos antes ou depois devido ao trânsito e volume de coleta.
             </div>
         </div>
 
-        <!-- ABA 1 & 2: MAPA COMPARTILHADO + PAINEL DE PONTOS OU DENÚNCIAS -->
+        <!-- VISÃO COM MAPA COMPARTILHADO (ABAS: COLETA, CATA-TRECO E DENÚNCIAS) -->
         <div id="visao-mapa-principal">
             <!-- Barra de Filtros da Aba de Coleta -->
-            <div class="toolbar" id="toolbar-coleta">
-                <div class="city-pills" role="group" aria-label="Filtro por cidade">
-                    <button class="pill-btn active" data-cidade="" onclick="selecionarCidade(this, '')">🌎 Olinda + Recife</button>
-                    <button class="pill-btn" data-cidade="Olinda" onclick="selecionarCidade(this, 'Olinda')">🌴 Olinda</button>
-                    <button class="pill-btn" data-cidade="Recife" onclick="selecionarCidade(this, 'Recife')">🌉 Recife</button>
+            <div id="toolbar-coleta">
+                <div class="toolbar">
+                    <div class="city-pills" role="group" aria-label="Filtro por cidade">
+                        <button class="pill-btn active" data-cidade="" onclick="selecionarCidade(this, '')">🌎 Olinda + Recife</button>
+                        <button class="pill-btn" data-cidade="Olinda" onclick="selecionarCidade(this, 'Olinda')">🌴 Olinda</button>
+                        <button class="pill-btn" data-cidade="Recife" onclick="selecionarCidade(this, 'Recife')">🌉 Recife</button>
+                    </div>
+
+                    <div class="filters-row">
+                        <select id="filtro-categoria" onchange="aplicarFiltros()" aria-label="Filtrar por modalidade">
+                            <option value="">Todas as modalidades</option>
+                            <option value="Ecoponto">🏢 Ecopontos / Ecoestações fixos</option>
+                            <option value="Coleta Domiciliar">🚛 Horários e Rotas do Caminhão</option>
+                        </select>
+
+                        <select id="filtro-tipo" onchange="aplicarFiltros()" aria-label="Filtrar por tipo de resíduo">
+                            <option value="">Todos os tipos de lixo</option>
+                            <option value="Recicláveis">♻️ Recicláveis (Plástico, Papel, Vidro, Metal)</option>
+                            <option value="Eletrônicos">🔌 Eletrônicos / Pilhas</option>
+                            <option value="Entulho">🧱 Entulho / Móveis / Poda</option>
+                            <option value="Óleo">🌻 Óleo de Cozinha</option>
+                            <option value="Orgânico">🗑️ Lixo Domiciliar / Orgânico</option>
+                        </select>
+
+                        <input
+                            type="text"
+                            id="filtro-busca"
+                            placeholder="Buscar bairro, rua ou rota..."
+                            oninput="aplicarFiltros()"
+                            aria-label="Buscar bairro, rua ou rota"
+                        />
+
+                        <button class="btn-action" onclick="ordenarPertoDeMim()" title="Usar GPS do navegador para ordenar pelos mais próximos">
+                            📍 Perto de Mim
+                        </button>
+
+                        <button class="btn-action btn-add" onclick="abrirNovoCadastroPonto()">
+                            ➕ Cadastrar Ponto/Rota
+                        </button>
+                    </div>
                 </div>
 
+                <!-- Filtro Rápido por Dia da Semana ("Passa Hoje na Minha Rua") -->
+                <div class="toolbar" style="padding: 10px 16px;">
+                    <span style="font-size:0.84rem; font-weight:700; color:var(--text-muted);">📅 Filtrar por Dia de Coleta/Atendimento:</span>
+                    <div class="day-pills">
+                        <button class="pill-btn day-pill active" onclick="selecionarDiaFiltro(this, '')">Todos os Dias</button>
+                        <button class="pill-btn day-pill" onclick="selecionarDiaFiltro(this, 'HOJE')">🔔 Passa / Abre Hoje</button>
+                        <button class="pill-btn day-pill" onclick="selecionarDiaFiltro(this, 'Seg')">Seg</button>
+                        <button class="pill-btn day-pill" onclick="selecionarDiaFiltro(this, 'Ter')">Ter</button>
+                        <button class="pill-btn day-pill" onclick="selecionarDiaFiltro(this, 'Qua')">Qua</button>
+                        <button class="pill-btn day-pill" onclick="selecionarDiaFiltro(this, 'Qui')">Qui</button>
+                        <button class="pill-btn day-pill" onclick="selecionarDiaFiltro(this, 'Sex')">Sex</button>
+                        <button class="pill-btn day-pill" onclick="selecionarDiaFiltro(this, 'Sab')">Sáb</button>
+                        <button class="pill-btn day-pill" onclick="selecionarDiaFiltro(this, 'Dom')">Dom</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Barra de Ações da Aba de Cata-Treco (Volumosos) -->
+            <div class="toolbar" id="toolbar-catatreco" style="display:none;">
+                <div class="city-pills">
+                    <button class="pill-btn active" onclick="filtrarCataTrecoStatus(this, '')">📋 Todos os Agendamentos</button>
+                    <button class="pill-btn" onclick="filtrarCataTrecoStatus(this, 'Agendado')">🟣 Agendados (Aguardando Caminhão)</button>
+                    <button class="pill-btn" onclick="filtrarCataTrecoStatus(this, 'Recolhido')">✅ Recolhidos</button>
+                </div>
                 <div class="filters-row">
-                    <select id="filtro-categoria" onchange="aplicarFiltros()" aria-label="Filtrar por modalidade">
-                        <option value="">Todas as modalidades</option>
-                        <option value="Ecoponto">🏢 Ecopontos / Ecoestações fixos</option>
-                        <option value="Coleta Domiciliar">🚛 Horários e Rotas do Caminhão</option>
-                    </select>
-
-                    <select id="filtro-tipo" onchange="aplicarFiltros()" aria-label="Filtrar por tipo de resíduo">
-                        <option value="">Todos os tipos de lixo</option>
-                        <option value="Recicláveis">♻️ Recicláveis (Plástico, Papel, Vidro, Metal)</option>
-                        <option value="Eletrônicos">🔌 Eletrônicos / Pilhas</option>
-                        <option value="Entulho">🧱 Entulho / Móveis / Poda</option>
-                        <option value="Óleo">🌻 Óleo de Cozinha</option>
-                        <option value="Orgânico">🗑️ Lixo Domiciliar / Orgânico</option>
-                    </select>
-
-                    <input
-                        type="text"
-                        id="filtro-busca"
-                        placeholder="Buscar bairro, rua ou rota..."
-                        oninput="aplicarFiltros()"
-                        aria-label="Buscar bairro, rua ou rota"
-                    />
-
-                    <button class="btn-action" onclick="ordenarPertoDeMim()" title="Usar GPS do navegador para ordenar pelos mais próximos">
-                        📍 Perto de Mim
-                    </button>
-
-                    <button class="btn-action btn-add" onclick="abrirNovoCadastroPonto()">
-                        ➕ Cadastrar Ponto/Rota
+                    <button class="btn-action btn-purple" onclick="toggleFormularioCataTreco()">
+                        🛋️ Solicitar Retirada Gratuita (Cata-Treco)
                     </button>
                 </div>
             </div>
@@ -687,7 +832,7 @@
 
             <!-- Formulário de Cadastro / Edição de Ecoponto ou Rota -->
             <section id="secao-cadastro" class="form-section">
-                <h2 id="titulo-form-ponto">➕ Cadastrar Novo Ecoponto ou Rota do Caminhão</h2>
+                <h2 id="titulo-form-ponto" style="color: var(--green-dark);">➕ Cadastrar Novo Ecoponto ou Rota do Caminhão</h2>
                 <p style="margin-top:0; font-size:0.88rem; color: var(--text-muted);">
                     Para <strong>Ecoponto Fixo</strong>, clique no mapa ou busque o endereço. Para <strong>Coleta Domiciliar (Caminhão)</strong>, clique em 2 ou mais pontos das ruas no mapa e o sistema traça a rota automaticamente pelas vias (OSRM)!
                 </p>
@@ -779,6 +924,69 @@
                 </form>
             </section>
 
+            <!-- Formulário de Agendamento Cata-Treco (Volumosos) -->
+            <section id="secao-catatreco-form" class="form-section">
+                <h2 style="color: var(--purple-primary);">🛋️ Agendar Coleta Gratuita de Volumosos (Cata-Treco)</h2>
+                <p style="margin-top:0; font-size:0.88rem; color: var(--text-muted);">
+                    Tem sofá velho, colchão, geladeira ou restos de poda e não consegue levar até uma Ecoestação? Clique no mapa na sua rua para agendar o recolhimento e gerar seu protocolo!
+                </p>
+                <form id="form-catatreco" onsubmit="salvarNovoCataTreco(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="ct-solicitante">Nome do Morador / Solicitante *</label>
+                            <input type="text" id="ct-solicitante" required placeholder="Ex: João Silva" />
+                        </div>
+                        <div class="form-group">
+                            <label for="ct-cidade">Cidade *</label>
+                            <select id="ct-cidade" required>
+                                <option value="Olinda">Olinda</option>
+                                <option value="Recife">Recife</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="ct-bairro">Bairro *</label>
+                            <input type="text" id="ct-bairro" required placeholder="Ex: Casa Caiada, Rio Doce, Torre" />
+                        </div>
+                        <div class="form-group">
+                            <label for="ct-endereco">Endereço Completo *</label>
+                            <input type="text" id="ct-endereco" required placeholder="Ex: Rua Dr. Manoel de Barros Lima, 150" />
+                        </div>
+                        <div class="form-group">
+                            <label for="ct-itens">Itens para Retirada *</label>
+                            <input type="text" id="ct-itens" required placeholder="Ex: 1 Sofá velho e 1 Colchão de casal" />
+                        </div>
+                        <div class="form-group">
+                            <label for="ct-turno">Turno Preferido *</label>
+                            <select id="ct-turno" required>
+                                <option value="Manhã (08h às 12h)">Manhã (08h às 12h)</option>
+                                <option value="Tarde (13h às 17h)">Tarde (13h às 17h)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="ct-data">Dia / Previsão Desejada *</label>
+                            <input type="text" id="ct-data" required value="Próxima Quinta-feira" />
+                        </div>
+                        <div class="form-group">
+                            <label for="ct-lat">Latitude * (clique no mapa)</label>
+                            <input type="number" step="any" id="ct-lat" required value="-7.9918" />
+                        </div>
+                        <div class="form-group">
+                            <label for="ct-lng">Longitude * (clique no mapa)</label>
+                            <input type="number" step="any" id="ct-lng" required value="-34.8427" />
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-top: 10px;">
+                        <label for="ct-obs">Ponto de referência / Observações</label>
+                        <input type="text" id="ct-obs" placeholder="Ex: Casa de portão branco, deixarei na calçada às 07h30" />
+                    </div>
+                    <div class="form-footer">
+                        <button type="submit" class="btn-action btn-purple">📑 Gerar Protocolo e Agendar</button>
+                        <button type="button" class="pill-btn" onclick="toggleFormularioCataTreco()">Cancelar</button>
+                        <span id="ct-feedback" class="feedback-msg"></span>
+                    </div>
+                </form>
+            </section>
+
             <!-- Formulário de Nova Denúncia de Ponto Crítico de Lixo -->
             <section id="secao-denuncia-form" class="form-section">
                 <h2 style="color: var(--orange-critical);">⚠️ Reportar Ponto Crítico / Descarte Irregular de Lixo</h2>
@@ -845,15 +1053,16 @@
                     <div id="map"></div>
                     <div class="map-legend">
                         <div class="legend-items">
-                            <span><i class="dot dot-ecoponto"></i>Ecoponto Fixo</span>
-                            <span><i class="dot dot-coleta"></i>Caminhão / Rota</span>
-                            <span><i class="line-rota"></i>Sentido da Rota (►)</span>
-                            <span><i class="dot dot-critico"></i>Ponto Crítico (Denúncia)</span>
+                            <span><i class="dot dot-ecoponto"></i>Ecoponto</span>
+                            <span><i class="dot dot-coleta"></i>Caminhão/Rota</span>
+                            <span><i class="dot dot-catatreco"></i>Cata-Treco</span>
+                            <span><i class="dot dot-critico"></i>Ponto Crítico</span>
                         </div>
+                        <button type="button" class="card-link" id="btn-camada-mapa" onclick="alternarCamadaMapa()">🛰️ Ver Mapa de Satélite</button>
                     </div>
                 </div>
 
-                <!-- Coluna Direita: Lista de Pontos/Rotas OU Lista de Denúncias -->
+                <!-- Coluna Direita 1: Lista de Pontos/Rotas -->
                 <div id="painel-lista-coleta">
                     <div class="cards-header">
                         <h2>Pontos e Rotas de Coleta</h2>
@@ -877,6 +1086,16 @@
                     </div>
                 </div>
 
+                <!-- Coluna Direita 2: Lista de Cata-Treco -->
+                <div id="painel-lista-catatreco" style="display:none;">
+                    <div class="cards-header">
+                        <h2 style="color: var(--purple-primary);">🛋️ Coletas de Volumosos (Cata-Treco)</h2>
+                        <span id="contador-catatreco" class="count-badge" style="background: var(--purple-light); color: #5b21b6;">0 pedidos</span>
+                    </div>
+                    <div id="catatreco-container"></div>
+                </div>
+
+                <!-- Coluna Direita 3: Lista de Denúncias -->
                 <div id="painel-lista-denuncias" style="display:none;">
                     <div class="cards-header">
                         <h2 style="color: var(--orange-critical);">⚠️ Pontos Críticos de Lixo Reportados</h2>
@@ -887,8 +1106,39 @@
             </div>
         </div>
 
-        <!-- ABA 3: GUIA DE DESCARTE CORRETO + QUIZ INTERATIVO -->
-        <div id="visao-educativa" class="edu-section">
+        <!-- ABA 4: PAINEL GESTOR, GRÁFICOS E EXPORTAÇÃO DE DADOS (CSV / JSON) -->
+        <div id="visao-gestor" class="tab-panel">
+            <div class="toolbar">
+                <div>
+                    <h2 style="margin:0; font-size:1.25rem; color:var(--green-dark);">📊 Painel de Inteligência Urbana e Dados Abertos</h2>
+                    <span style="font-size:0.86rem; color:var(--text-muted);">Exporte os dados em CSV (compatível com Excel) ou JSON para relatórios acadêmicos e gestão pública.</span>
+                </div>
+                <div class="filters-row">
+                    <button class="btn-action btn-add" onclick="exportarDadosCSV()">📥 Baixar Planilha CSV (Excel)</button>
+                    <button class="btn-action" onclick="exportarDadosJSON()">📄 Baixar Dados JSON</button>
+                </div>
+            </div>
+
+            <div class="analytics-grid">
+                <div class="chart-box">
+                    <h3>🌴🌉 Cobertura por Município e Modalidade</h3>
+                    <div id="grafico-cidades"></div>
+                </div>
+
+                <div class="chart-box">
+                    <h3>⚠️ Eficiência de Resolução (Denúncias e Cata-Treco)</h3>
+                    <div id="grafico-resolucao"></div>
+                </div>
+
+                <div class="chart-box">
+                    <h3>🏘️ Top Bairros Mapeados (Olinda &amp; Recife)</h3>
+                    <div id="grafico-bairros"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 5: GUIA DE DESCARTE CORRETO + QUIZ INTERATIVO -->
+        <div id="visao-educativa" class="tab-panel">
             <h2 style="text-align:center; color: var(--green-dark); margin-top: 8px;">📚 Guia Rápido: Como Preparar cada Resíduo antes de Descartar</h2>
             <div class="guide-grid">
                 <div class="guide-card">
@@ -903,9 +1153,9 @@
                     <h3>🔌 Eletrônicos, Pilhas e Baterias</h3>
                     <p>Celulares quebrados, cabos, pilhas e pequenos eletros contêm metais pesados. Não coloque no saco de lixo comum: entregue nos PEVs (como Praça do Carmo, Casa Caiada ou Torre).</p>
                 </div>
-                <div class="guide-card" style="border-top-color: #ea580c;">
-                    <h3>🧱 Entulho, Sofás e Poda de Árvore</h3>
-                    <p>O caminhão compactador comum não recolhe metralha nem móveis velhos. Leve gratuitamente até uma <strong>Ecoestação</strong> (Peixinhos, Ouro Preto, Campo Grande, Torre ou Imbiribeira — limite de 1m³ por morador).</p>
+                <div class="guide-card" style="border-top-color: #7c3aed;">
+                    <h3>🛋️ Móveis Velhos, Colchões e Entulho</h3>
+                    <p>O caminhão compactador comum não recolhe metralha nem sofás. Use a aba <strong>🛋️ Cata-Treco</strong> para agendar a retirada ou leve gratuitamente a uma <strong>Ecoestação</strong> (limite de 1m³ por morador).</p>
                 </div>
             </div>
 
@@ -920,53 +1170,92 @@
     </div>
 
     <footer>
-        CittaLixo v3.0.0 • Dados abertos com OpenStreetMap, Leaflet &amp; OSRM (Zero Custo de API) • Instalável como App (PWA) • Olinda e Recife
+        CittaLixo v3.1.0 • Dados abertos com OpenStreetMap, Leaflet, Esri Satellite &amp; OSRM (Zero Custo de API) • Instalável como App (PWA) • Olinda e Recife
     </footer>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // Registro gratuito do Service Worker (PWA)
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/sw.js').catch(() => {});
+        }
+
+        // Modo Escuro com persistência em localStorage
+        function alternarModoEscuro() {
+            document.body.classList.toggle('dark-mode');
+            const ativo = document.body.classList.contains('dark-mode');
+            localStorage.setItem('cittalixo_dark', ativo ? '1' : '0');
+            document.getElementById('btn-dark-mode').textContent = ativo ? '☀️ Modo Claro' : '🌙 Modo Escuro';
+        }
+
+        if (localStorage.getItem('cittalixo_dark') === '1') {
+            document.body.classList.add('dark-mode');
+            document.getElementById('btn-dark-mode').textContent = '☀️ Modo Claro';
         }
 
         const CENTRO_OLINDA_RECIFE = [-8.0220, -34.8680];
         const map = L.map('map').setView(CENTRO_OLINDA_RECIFE, 12);
 
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        const camadaRuasOSM = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        }).addTo(map);
+            attribution: '&copy; OpenStreetMap'
+        });
+
+        const camadaSateliteEsri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19,
+            attribution: 'Tiles &copy; Esri'
+        });
+
+        camadaRuasOSM.addTo(map);
+        let usandoSatelite = false;
+
+        function alternarCamadaMapa() {
+            const btn = document.getElementById('btn-camada-mapa');
+            if (usandoSatelite) {
+                map.removeLayer(camadaSateliteEsri);
+                camadaRuasOSM.addTo(map);
+                btn.textContent = '🛰️ Ver Mapa de Satélite';
+                usandoSatelite = false;
+            } else {
+                map.removeLayer(camadaRuasOSM);
+                camadaSateliteEsri.addTo(map);
+                btn.textContent = '🗺️ Ver Mapa de Ruas';
+                usandoSatelite = true;
+            }
+        }
 
         const markersLayer = L.layerGroup().addTo(map);
         const routesLayer = L.layerGroup().addTo(map);
         const liveTrucksLayer = L.layerGroup().addTo(map);
+        const catatrecoLayer = L.layerGroup().addTo(map);
         const denunciasLayer = L.layerGroup().addTo(map);
 
         const markersById = {};
         const polylinesById = {};
         let todosOsPontos = [];
         let todasAsDenuncias = [];
+        let todosOsCataTrecos = [];
         let cidadeSelecionada = '';
+        let diaFiltroSelecionado = '';
         let statusDenunciaFiltro = '';
+        let statusCataTrecoFiltro = '';
         let abaAtual = 'coleta';
         let localizacaoUsuario = null;
         let marcadorUsuario = null;
 
-        // Estado para desenho de nova rota no formulário
         let waypointsCadastro = [];
         let pontosRotaCadastro = [];
         let linhaRotaCadastro = null;
         let marcadorSelecaoCadastro = null;
 
-        // Ícones customizados via SVG embutido (100% gratuito)
         function criarIconeColorido(corHex, simboloInterno = 'circle') {
             let miolo = `<circle cx="14" cy="14" r="6" fill="#ffffff"/>`;
             if (simboloInterno === 'truck') {
                 miolo = `<rect x="7" y="9" width="10" height="8" rx="1.5" fill="#ffffff"/><circle cx="10" cy="19" r="2" fill="#ffffff"/><circle cx="18" cy="19" r="2" fill="#ffffff"/>`;
             } else if (simboloInterno === 'alert') {
                 miolo = `<text x="14" y="19" text-anchor="middle" fill="#ffffff" font-size="15" font-weight="bold">!</text>`;
+            } else if (simboloInterno === 'sofa') {
+                miolo = `<rect x="6" y="11" width="16" height="6" rx="2" fill="#ffffff"/>`;
             }
             const svg = `
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40">
@@ -985,6 +1274,7 @@
         const iconeEcoponto = criarIconeColorido('#16a34a', 'circle');
         const iconeColeta = criarIconeColorido('#0284c7', 'truck');
         const iconeCritico = criarIconeColorido('#ea580c', 'alert');
+        const iconeCataTreco = criarIconeColorido('#7c3aed', 'sofa');
         const iconeResolvido = criarIconeColorido('#64748b', 'circle');
         const iconeUsuario = criarIconeColorido('#dc2626', 'circle');
 
@@ -998,10 +1288,14 @@
             });
         }
 
-        function verificarStatusHorario(ponto) {
+        function obterDiaHojeAbreviado() {
             const mapaDias = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+            return mapaDias[new Date().getDay()];
+        }
+
+        function verificarStatusHorario(ponto) {
+            const diaHoje = obterDiaHojeAbreviado();
             const agora = new Date();
-            const diaHoje = mapaDias[agora.getDay()];
             const diasPonto = (ponto.dias_semana || '').split(',').map(d => d.trim());
 
             const atendeHoje = diasPonto.some(d => d.toLowerCase() === diaHoje.toLowerCase());
@@ -1050,14 +1344,124 @@
             const recife = todosOsPontos.filter(p => (p.cidade || '').toLowerCase() === 'recife').length;
             const ativos = todosOsPontos.filter(p => verificarStatusHorario(p).aberto).length;
             const denPendentes = todasAsDenuncias.filter(d => d.status !== 'Resolvido').length;
+            const ctAgendados = todosOsCataTrecos.filter(c => c.status !== 'Recolhido').length;
 
             document.getElementById('stat-total-pontos').textContent = total;
             document.getElementById('stat-ativos-agora').textContent = ativos;
             document.getElementById('stat-olinda-recife').textContent = `${olinda} / ${recife}`;
+            document.getElementById('stat-catatreco-ativos').textContent = ctAgendados;
             document.getElementById('stat-denuncias-pendentes').textContent = denPendentes;
+
+            renderizarGraficosGestor();
         }
 
-        // Desenha setas direcionais (►) ao longo das ruas da rota para mostrar o sentido do caminhão
+        function renderizarBarra(label, valor, total, corHex) {
+            const pct = total > 0 ? Math.round((valor / total) * 100) : 0;
+            return `
+                <div class="bar-row">
+                    <div class="bar-label">
+                        <span>${label}</span>
+                        <span>${valor} (${pct}%)</span>
+                    </div>
+                    <div class="bar-track">
+                        <div class="bar-fill" style="width:${pct}%; background:${corHex};"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderizarGraficosGestor() {
+            const totalPontos = todosOsPontos.length || 1;
+            const olinda = todosOsPontos.filter(p => (p.cidade || '').toLowerCase() === 'olinda').length;
+            const recife = todosOsPontos.filter(p => (p.cidade || '').toLowerCase() === 'recife').length;
+            const ecopontos = todosOsPontos.filter(p => p.categoria === 'Ecoponto').length;
+            const rotas = todosOsPontos.filter(p => p.categoria === 'Coleta Domiciliar').length;
+
+            const elCidades = document.getElementById('grafico-cidades');
+            if (elCidades) {
+                elCidades.innerHTML =
+                    renderizarBarra('🌴 Olinda (Pontos + Rotas)', olinda, totalPontos, '#16a34a') +
+                    renderizarBarra('🌉 Recife (Pontos + Rotas)', recife, totalPontos, '#0284c7') +
+                    renderizarBarra('🏢 Ecopontos / Ecoestações Fixas', ecopontos, totalPontos, '#15803d') +
+                    renderizarBarra('🚛 Rotas de Coleta Domiciliar', rotas, totalPontos, '#0369a1');
+            }
+
+            const totalDen = todasAsDenuncias.length || 1;
+            const denRes = todasAsDenuncias.filter(d => d.status === 'Resolvido').length;
+            const denPend = todasAsDenuncias.length - denRes;
+            const totalCt = todosOsCataTrecos.length || 1;
+            const ctRec = todosOsCataTrecos.filter(c => c.status === 'Recolhido').length;
+
+            const elRes = document.getElementById('grafico-resolucao');
+            if (elRes) {
+                elRes.innerHTML =
+                    renderizarBarra('🟠 Denúncias Pendentes', denPend, totalDen, '#ea580c') +
+                    renderizarBarra('✅ Denúncias Resolvidas', denRes, totalDen, '#16a34a') +
+                    renderizarBarra('🟣 Cata-Treco Agendados', todosOsCataTrecos.length - ctRec, totalCt, '#7c3aed') +
+                    renderizarBarra('✅ Cata-Treco Recolhidos', ctRec, totalCt, '#16a34a');
+            }
+
+            const contagemBairros = {};
+            todosOsPontos.forEach(p => {
+                const chave = `${p.bairro} (${p.cidade})`;
+                contagemBairros[chave] = (contagemBairros[chave] || 0) + 1;
+            });
+            const topBairros = Object.entries(contagemBairros)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+
+            const elBairros = document.getElementById('grafico-bairros');
+            if (elBairros) {
+                elBairros.innerHTML = topBairros
+                    .map(([nomeBairro, qtd]) => renderizarBarra(nomeBairro, qtd, totalPontos, '#0284c7'))
+                    .join('');
+            }
+        }
+
+        // Exportação gratuita de CSV (compatível com Excel UTF-8 BOM) e JSON
+        function exportarDadosCSV() {
+            const cabecalho = ['ID', 'Nome', 'Cidade', 'Bairro', 'Categoria', 'Residuos', 'Horario', 'Dias', 'Endereco', 'Latitude', 'Longitude'];
+            const linhas = todosOsPontos.map(p => [
+                p.id,
+                `"${(p.nome || '').replace(/"/g, '""')}"`,
+                `"${p.cidade || ''}"`,
+                `"${p.bairro || ''}"`,
+                `"${p.categoria || ''}"`,
+                `"${(p.tipo || '').replace(/"/g, '""')}"`,
+                `"${(p.horario || '').replace(/"/g, '""')}"`,
+                `"${p.dias_semana || ''}"`,
+                `"${(p.endereco || '').replace(/"/g, '""')}"`,
+                p.latitude,
+                p.longitude
+            ].join(';'));
+
+            const conteudo = '\uFEFF' + [cabecalho.join(';'), ...linhas].join('\r\n');
+            const blob = new Blob([conteudo], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'cittalixo_relatorio_pontos_olinda_recife.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function exportarDadosJSON() {
+            const dados = {
+                versao: '3.1.0',
+                exportado_em: new Date().toISOString(),
+                pontos_e_rotas: todosOsPontos,
+                agendamentos_catatreco: todosOsCataTrecos,
+                denuncias_pontos_criticos: todasAsDenuncias
+            };
+            const blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'cittalixo_dados_completos.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
         function adicionarSetasDirecionaisNaRota(coords) {
             if (!coords || coords.length < 4) return;
             const passo = Math.max(8, Math.floor(coords.length / 5));
@@ -1078,7 +1482,6 @@
             }
         }
 
-        // Posiciona e anima o caminhão ao longo da rota de acordo com o horário real do usuário
         let passoAnimacao = 0;
         function atualizarPosicaoCaminhoesNoMapa() {
             liveTrucksLayer.clearLayers();
@@ -1093,13 +1496,10 @@
                 let indiceCoord = 0;
 
                 if (statusInfo.aberto && typeof statusInfo.progresso === 'number') {
-                    // Posição proporcional ao minuto real atual dentro da janela [hora_inicio, hora_fim]
-                    // com leve oscilação entre os vértices próximos para mostrar movimento vivo
                     const baseIdx = Math.floor(statusInfo.progresso * (coords.length - 1));
                     const offset = passoAnimacao % 3;
                     indiceCoord = Math.min(coords.length - 1, baseIdx + offset);
                 } else {
-                    // Fora do horário ativo, exibe a simulação percorrendo a rota com aviso claro
                     indiceCoord = passoAnimacao % coords.length;
                 }
 
@@ -1176,7 +1576,7 @@
                 container.innerHTML = `
                     <div class="card">
                         <h3>Nenhum ponto ou rota encontrado com esses filtros</h3>
-                        <p>Tente limpar a busca ou trocar a cidade selecionada.</p>
+                        <p>Tente limpar a busca, trocar o dia da semana ou a cidade selecionada.</p>
                     </div>`;
                 return;
             }
@@ -1410,7 +1810,136 @@
             }
         }
 
-        // --- ABA DE DENÚNCIAS DE PONTOS CRÍTICOS (PINO LARANJA) ---
+        // --- ABA DE AGENDAMENTO CATA-TRECO (VOLUMOSOS - PINO ROXO) ---
+        async function carregarCataTrecoDaAPI() {
+            try {
+                const resp = await fetch('/catatreco');
+                if (!resp.ok) return;
+                todosOsCataTrecos = await resp.json();
+                renderizarCataTreco();
+                atualizarDashboard();
+            } catch (e) {
+                console.error('Erro ao carregar cata-treco:', e);
+            }
+        }
+
+        function filtrarCataTrecoStatus(btn, status) {
+            document.querySelectorAll('#toolbar-catatreco .pill-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            statusCataTrecoFiltro = status;
+            renderizarCataTreco();
+        }
+
+        function renderizarCataTreco() {
+            catatrecoLayer.clearLayers();
+            const container = document.getElementById('catatreco-container');
+            const contador = document.getElementById('contador-catatreco');
+
+            const filtrados = todosOsCataTrecos.filter(c => {
+                if (statusCataTrecoFiltro && c.status !== statusCataTrecoFiltro) return false;
+                return true;
+            });
+
+            contador.textContent = `${filtrados.length} ${filtrados.length === 1 ? 'pedido' : 'pedidos'}`;
+            container.innerHTML = '';
+
+            filtrados.forEach(ct => {
+                const recolhido = ct.status === 'Recolhido';
+                const icone = recolhido ? iconeResolvido : iconeCataTreco;
+
+                const marker = L.marker([ct.latitude, ct.longitude], { icon: icone })
+                    .addTo(catatrecoLayer)
+                    .bindPopup(`
+                        <div style="min-width:210px;">
+                            <strong style="color:${recolhido ? '#475569' : '#7c3aed'};">
+                                🛋️ [${ct.protocolo}] ${ct.itens_volumosos}
+                            </strong><br/>
+                            <small>${ct.cidade} • ${ct.bairro}</small>
+                            <hr style="border:none; border-top:1px solid #e2e8f0; margin:5px 0;"/>
+                            <b>Morador:</b> ${ct.solicitante}<br/>
+                            <b>Local:</b> ${ct.endereco}<br/>
+                            <b>Previsão:</b> ${ct.data_agendada} (${ct.turno_preferido})
+                        </div>
+                    `);
+
+                const card = document.createElement('div');
+                card.className = `card ${recolhido ? 'denuncia-resolvida' : 'catatreco-card'}`;
+                card.onclick = () => {
+                    map.setView([ct.latitude, ct.longitude], 16, { animate: true });
+                    marker.openPopup();
+                };
+
+                card.innerHTML = `
+                    <div class="card-top">
+                        <h3>🛋️ ${ct.itens_volumosos}</h3>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-cat-purple">📑 Protocolo: ${ct.protocolo}</span>
+                        <span class="badge badge-city">📍 ${ct.cidade} • ${ct.bairro}</span>
+                        <span class="badge ${recolhido ? 'badge-status-open' : 'badge-status-closed'}">
+                            ${recolhido ? '✅ Recolhido pela Equipe' : '🟣 Agendado: ' + ct.data_agendada}
+                        </span>
+                    </div>
+                    <p><strong>👤 Solicitante:</strong> ${ct.solicitante} • <strong>Turno:</strong> ${ct.turno_preferido}</p>
+                    <p><strong>📌 Endereço:</strong> ${ct.endereco}</p>
+                    ${ct.observacoes ? `<p>ℹ️ ${ct.observacoes}</p>` : ''}
+                    <div class="card-actions" onclick="event.stopPropagation();">
+                        <button type="button" class="card-link" onclick="alternarStatusCataTreco(${ct.id})">
+                            ${recolhido ? '↩️ Reabrir Agendamento' : '✅ Marcar como Recolhido'}
+                        </button>
+                        <button type="button" class="card-link delete-btn" onclick="excluirCataTreco(${ct.id})">🗑️ Excluir</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function toggleFormularioCataTreco() {
+            document.getElementById('secao-catatreco-form').classList.toggle('open');
+        }
+
+        async function salvarNovoCataTreco(event) {
+            event.preventDefault();
+            const payload = {
+                solicitante: document.getElementById('ct-solicitante').value.trim(),
+                cidade: document.getElementById('ct-cidade').value,
+                bairro: document.getElementById('ct-bairro').value.trim(),
+                endereco: document.getElementById('ct-endereco').value.trim(),
+                itens_volumosos: document.getElementById('ct-itens').value.trim(),
+                turno_preferido: document.getElementById('ct-turno').value,
+                data_agendada: document.getElementById('ct-data').value.trim(),
+                observacoes: document.getElementById('ct-obs').value.trim(),
+                status: 'Agendado',
+                latitude: parseFloat(document.getElementById('ct-lat').value),
+                longitude: parseFloat(document.getElementById('ct-lng').value)
+            };
+
+            const resp = await fetch('/catatreco', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (resp.ok) {
+                const criado = await resp.json();
+                alert(`✅ Agendamento Cata-Treco confirmado!\nSeu protocolo de atendimento é: ${criado.protocolo}`);
+                document.getElementById('form-catatreco').reset();
+                document.getElementById('secao-catatreco-form').classList.remove('open');
+                await carregarCataTrecoDaAPI();
+            }
+        }
+
+        async function alternarStatusCataTreco(id) {
+            await fetch(`/catatreco/${id}/recolher`, { method: 'PUT' });
+            await carregarCataTrecoDaAPI();
+        }
+
+        async function excluirCataTreco(id) {
+            if (!confirm('Deseja cancelar/excluir este agendamento Cata-Treco?')) return;
+            await fetch(`/catatreco/${id}`, { method: 'DELETE' });
+            await carregarCataTrecoDaAPI();
+        }
+
+        // --- ABA DE DENÚNCIAS DE PONTOS CRÍTICOS (PINO LARANJA + UPVOTE "EU TAMBÉM VI!") ---
         async function carregarDenunciasDaAPI() {
             try {
                 const resp = await fetch('/denuncias');
@@ -1446,6 +1975,7 @@
             filtradas.forEach(den => {
                 const resolvida = den.status === 'Resolvido';
                 const icone = resolvida ? iconeResolvido : iconeCritico;
+                const qtdConf = den.confirmacoes || 1;
 
                 const marker = L.marker([den.latitude, den.longitude], { icon: icone })
                     .addTo(denunciasLayer)
@@ -1454,7 +1984,7 @@
                             <strong style="color:${resolvida ? '#475569' : '#ea580c'};">
                                 ${resolvida ? '✅ [RESOLVIDO]' : '🟠 [PONTO CRÍTICO]'} ${den.titulo}
                             </strong><br/>
-                            <small>${den.cidade} • ${den.bairro}</small>
+                            <small>${den.cidade} • ${den.bairro} • 👍 ${qtdConf} confirmações</small>
                             <hr style="border:none; border-top:1px solid #e2e8f0; margin:5px 0;"/>
                             <b>Resíduo:</b> ${den.tipo_residuo}<br/>
                             <b>Local:</b> ${den.endereco}<br/>
@@ -1478,11 +2008,13 @@
                         <span class="badge ${resolvida ? 'badge-status-open' : 'badge-cat-critico'}">
                             ${resolvida ? '✅ Limpeza Concluída / Resolvido' : `🟠 Gravidade: ${den.gravidade}`}
                         </span>
+                        <span class="badge badge-status-closed">🔥 ${qtdConf} ${qtdConf === 1 ? 'morador confirmou' : 'moradores confirmaram'}</span>
                     </div>
                     <p><strong>🗑️ Resíduo Acumulado:</strong> ${den.tipo_residuo}</p>
                     <p><strong>📌 Local:</strong> ${den.endereco}</p>
                     ${den.descricao ? `<p>ℹ️ ${den.descricao}</p>` : ''}
                     <div class="card-actions" onclick="event.stopPropagation();">
+                        ${!resolvida ? `<button type="button" class="card-link upvote-btn" onclick="apoiarDenuncia(${den.id})">👍 Eu também vi! (+1)</button>` : ''}
                         <button type="button" class="card-link" onclick="alternarStatusDenuncia(${den.id})">
                             ${resolvida ? '↩️ Reabrir Alerta' : '✅ Marcar como Resolvido'}
                         </button>
@@ -1497,6 +2029,11 @@
             document.getElementById('secao-denuncia-form').classList.toggle('open');
         }
 
+        async function apoiarDenuncia(id) {
+            await fetch(`/denuncias/${id}/apoiar`, { method: 'PUT' });
+            await carregarDenunciasDaAPI();
+        }
+
         async function salvarNovaDenuncia(event) {
             event.preventDefault();
             const payload = {
@@ -1509,6 +2046,7 @@
                 descricao: document.getElementById('den-desc').value.trim(),
                 status: 'Pendente',
                 data_registro: new Date().toLocaleDateString('pt-BR'),
+                confirmacoes: 1,
                 latitude: parseFloat(document.getElementById('den-lat').value),
                 longitude: parseFloat(document.getElementById('den-lng').value)
             };
@@ -1536,7 +2074,7 @@
             await carregarDenunciasDaAPI();
         }
 
-        // --- NAVEGAÇÃO ENTRE AS 3 ABAS ---
+        // --- NAVEGAÇÃO ENTRE AS 5 ABAS ---
         function alternarAba(aba) {
             abaAtual = aba;
             document.querySelectorAll('.nav-tabs .tab-btn').forEach(b => b.classList.remove('active'));
@@ -1544,34 +2082,32 @@
 
             const visaoMapa = document.getElementById('visao-mapa-principal');
             const visaoGuia = document.getElementById('visao-educativa');
-            const toolbarColeta = document.getElementById('toolbar-coleta');
-            const toolbarDenuncias = document.getElementById('toolbar-denuncias');
-            const painelColeta = document.getElementById('painel-lista-coleta');
-            const painelDenuncias = document.getElementById('painel-lista-denuncias');
+            const visaoGestor = document.getElementById('visao-gestor');
+
+            visaoGuia.classList.remove('active');
+            visaoGestor.classList.remove('active');
 
             if (aba === 'guia') {
                 visaoMapa.style.display = 'none';
                 visaoGuia.classList.add('active');
                 return;
             }
+            if (aba === 'gestor') {
+                visaoMapa.style.display = 'none';
+                visaoGestor.classList.add('active');
+                renderizarGraficosGestor();
+                return;
+            }
 
-            visaoGuia.classList.remove('active');
             visaoMapa.style.display = 'block';
             setTimeout(() => map.invalidateSize(), 120);
 
-            if (aba === 'denuncias') {
-                toolbarColeta.style.display = 'none';
-                painelColeta.style.display = 'none';
-                document.getElementById('secao-cadastro').classList.remove('open');
-                toolbarDenuncias.style.display = 'flex';
-                painelDenuncias.style.display = 'block';
-            } else {
-                toolbarDenuncias.style.display = 'none';
-                painelDenuncias.style.display = 'none';
-                document.getElementById('secao-denuncia-form').classList.remove('open');
-                toolbarColeta.style.display = 'flex';
-                painelColeta.style.display = 'block';
-            }
+            document.getElementById('toolbar-coleta').style.display = aba === 'coleta' ? 'block' : 'none';
+            document.getElementById('painel-lista-coleta').style.display = aba === 'coleta' ? 'block' : 'none';
+            document.getElementById('toolbar-catatreco').style.display = aba === 'catatreco' ? 'flex' : 'none';
+            document.getElementById('painel-lista-catatreco').style.display = aba === 'catatreco' ? 'block' : 'none';
+            document.getElementById('toolbar-denuncias').style.display = aba === 'denuncias' ? 'flex' : 'none';
+            document.getElementById('painel-lista-denuncias').style.display = aba === 'denuncias' ? 'block' : 'none';
         }
 
         function selecionarCidade(botao, cidade) {
@@ -1590,6 +2126,13 @@
             aplicarFiltros();
         }
 
+        function selecionarDiaFiltro(botao, dia) {
+            document.querySelectorAll('.day-pills .day-pill').forEach(b => b.classList.remove('active'));
+            botao.classList.add('active');
+            diaFiltroSelecionado = dia === 'HOJE' ? obterDiaHojeAbreviado() : dia;
+            aplicarFiltros();
+        }
+
         function aplicarFiltros() {
             const categoria = document.getElementById('filtro-categoria').value.toLowerCase();
             const tipo = document.getElementById('filtro-tipo').value.toLowerCase();
@@ -1604,6 +2147,12 @@
                 }
                 if (tipo && !(p.tipo || '').toLowerCase().includes(tipo)) {
                     return false;
+                }
+                if (diaFiltroSelecionado) {
+                    const diasPonto = (p.dias_semana || '').toLowerCase();
+                    if (!diasPonto.includes(diaFiltroSelecionado.toLowerCase())) {
+                        return false;
+                    }
                 }
                 if (busca) {
                     const textoCompleto = `${p.nome} ${p.bairro} ${p.endereco} ${p.tipo} ${p.horario}`.toLowerCase();
@@ -1731,10 +2280,21 @@
             }
         }
 
-        // Clique no mapa funciona tanto para Ponto/Rota quanto para Denúncia de Ponto Crítico
         map.on('click', function (e) {
             const lat = parseFloat(e.latlng.lat.toFixed(5));
             const lng = parseFloat(e.latlng.lng.toFixed(5));
+
+            const secCataTreco = document.getElementById('secao-catatreco-form');
+            if (secCataTreco.classList.contains('open')) {
+                document.getElementById('ct-lat').value = lat;
+                document.getElementById('ct-lng').value = lng;
+                if (marcadorSelecaoCadastro) map.removeLayer(marcadorSelecaoCadastro);
+                marcadorSelecaoCadastro = L.marker([lat, lng], { icon: iconeCataTreco })
+                    .addTo(map)
+                    .bindPopup('🟣 Local selecionado para retirada Cata-Treco').openPopup();
+                document.getElementById('ct-feedback').textContent = '🟣 Localização capturada no mapa!';
+                return;
+            }
 
             const secDenuncia = document.getElementById('secao-denuncia-form');
             if (secDenuncia.classList.contains('open')) {
@@ -1797,10 +2357,10 @@
             },
             {
                 item: "🛋️ Um sofá velho rasgado e 4 sacos de entulho de reforma",
-                correta: "Levar a uma Ecoestação (Peixinhos, Ouro Preto, Torre, Campo Grande)",
+                correta: "Agendar Cata-Treco no app ou levar a uma Ecoestação (Peixinhos, Ouro Preto, Torre)",
                 opcoes: [
                     "Deixar na calçada esperando o caminhão compactador comum",
-                    "Levar a uma Ecoestação (Peixinhos, Ouro Preto, Torre, Campo Grande)",
+                    "Agendar Cata-Treco no app ou levar a uma Ecoestação (Peixinhos, Ouro Preto, Torre)",
                     "Colocar na lixeira seletiva de papel e plástico"
                 ]
             },
@@ -1857,6 +2417,7 @@
 
         // Inicialização
         carregarPontosDaAPI();
+        carregarCataTrecoDaAPI();
         carregarDenunciasDaAPI();
         renderizarQuiz();
         setTimeout(() => map.invalidateSize(), 200);

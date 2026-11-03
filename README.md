@@ -1,6 +1,6 @@
-# ♻️ CittaLixo v3.0.0 — Recife & Olinda
+# ♻️ CittaLixo v3.1.0 — Recife & Olinda
 
-Aplicação web progressiva (PWA) e API REST **100% gratuita** para identificação de **Ecopontos / Ecoestações fixas**, visualização de **rotas reais e horários dos caminhões de coleta domiciliar**, mapeamento colaborativo de **pontos críticos de lixo acumulado (denúncias)** e **educação ambiental** nas cidades de **Olinda e Recife (PE)**.
+Aplicação web progressiva (PWA) e API REST **100% gratuita** para identificação de **Ecopontos / Ecoestações fixas**, visualização de **rotas reais e horários dos caminhões de coleta domiciliar**, agendamento gratuito de **Cata-Treco (móveis e volumosos)**, mapeamento colaborativo de **pontos críticos de lixo acumulado (denúncias com apoio comunitário)**, **Painel Gestor com exportação CSV/JSON** e **educação ambiental** nas cidades de **Olinda e Recife (PE)**.
 
 ---
 
@@ -8,7 +8,7 @@ Aplicação web progressiva (PWA) e API REST **100% gratuita** para identificaç
 
 - **v1.0.0 (Original)**: Protótipo inicial em memória com apenas 1 ponto no Recife e `index.html` estático desconectado da API.
 - **v2.0.0**: Integração completa Front-end/Back-end (`fetch('/pontos')`), banco de dados persistente SQLite (`cittalixo.db`), expansão para **Olinda e Recife**, filtros combinados, status em tempo real (*Aberto agora*), geolocalização GPS (*Perto de Mim* via Haversine) e geocodificação gratuita via Nominatim.
-- **v3.0.0 (Versão Atual Completa)**:
+- **v3.0.0**:
   - 🛣️ **Rotas Reais nas Ruas (OSRM/OpenStreetMap)**: Traçado viário real sem atravessar casas ou rios, com **setas direcionais (`➤`)** e **animação do caminhão baseada no horário real do usuário** (com alerta transparente de simulação estimada).
   - ✏️ **CRUD Completo na Interface**: Botões de **Editar (`PUT`)** e **Excluir (`DELETE`)** diretamente em cada card.
   - ⚠️ **Aba Exclusiva de Denúncias de Lixo Acumulado**: Pino laranja crítico no mapa, filtro de pendentes/resolvidas e botão **Marcar como Resolvido** (`/denuncias`).
@@ -16,6 +16,12 @@ Aplicação web progressiva (PWA) e API REST **100% gratuita** para identificaç
   - 📊 **Dashboard de Estatísticas em Tempo Real** no topo da página.
   - 📱 **PWA (Progressive Web App)** com `manifest.json` e `sw.js` (funcionamento com cache offline e instalável no celular).
   - ⚡ **Script `iniciar_servidor.bat`** para ligar o servidor e abrir o navegador automaticamente com 1 clique.
+- **v3.1.0 (Versão Atual Completa)**:
+  - 🛋️ **Aba de Agendamento de Cata-Treco (Móveis, Colchões e Eletrodomésticos)**: Geração automática de protocolo (`CT-2026-XXX`), pinos roxos no mapa e controle de status (*Agendado* / *Recolhido*) via endpoints `/catatreco`.
+  - 🌙 **Modo Escuro (`Dark Mode`) + Camada de Satélite Esri**: Alternância de tema clara/escura no cabeçalho salva no navegador e botão no mapa para alternar entre **Mapa de Ruas (OpenStreetMap)** e **Visão de Satélite Real (Esri World Imagery)** 100% gratuita.
+  - 📊 **Aba de Painel Gestor & Dados Abertos**: Gráficos visuais comparativos entre Olinda e Recife, taxa de resolução de denúncias, bairros mais críticos e botões para **baixar planilhas CSV (compatíveis com Excel)** e **JSON** gratuitamente.
+  - 👍 **Votação Comunitária em Denúncias (`Eu também vi! +1`)**: Botão para moradores confirmarem que um foco de lixo persiste (`PUT /denuncias/{id}/apoiar`), priorizando os pontos mais urgentes no topo da lista.
+  - 🔔 **Filtro Rápido por Dia da Semana (`Passa / Abre Hoje`, `Seg` a `Dom`)**: Barra de pílulas rápidas na aba principal e filtro `dia_semana` na API (`GET /pontos?dia_semana=Seg`).
 
 ---
 
@@ -34,7 +40,7 @@ Dê **dois cliques** em [`iniciar_servidor.bat`](./iniciar_servidor.bat). Ele in
 
 ### 3. Suítes de Testes Automatizados
 ```bash
-# Testes de API e Banco SQLite (Pytest + FastAPI TestClient - 6 suítes incluindo pontos e denúncias)
+# Testes de API e Banco SQLite (Pytest + FastAPI TestClient - 7 suítes cobrindo pontos, denúncias + upvote e cata-treco)
 ..\.venv\Scripts\pytest.exe test_api.py -v
 
 # Testes End-to-End de Interface no Navegador (Selenium Headless)
@@ -43,6 +49,6 @@ Dê **dois cliques** em [`iniciar_servidor.bat`](./iniciar_servidor.bat). Ele in
 
 ---
 
-## 📄 Relatórios em PDF no Projeto
+## 📄 Relatório Unificado em PDF no Projeto
 
-- [`Relatorio_Melhorias_e_Testes_CittaLixo.pdf`](./Relatorio_Melhorias_e_Testes_CittaLixo.pdf): Relatório completo de evolução (da v1.0.0 até a **v3.0.0**) e guia de testes.
+- [`Relatorio_Melhorias_e_Testes_CittaLixo.pdf`](./Relatorio_Melhorias_e_Testes_CittaLixo.pdf): Relatório técnico consolidado de evolução (da v1.0.0 até a **v3.1.0**), fontes oficiais (Recife e Olinda) e guia completo de testes.

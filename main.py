@@ -15,7 +15,7 @@ app = FastAPI(
         "API gratuita para consulta e gerenciamento de Ecopontos/Ecoestações "
         "e rotas/horários de coleta domiciliar em Recife e Olinda."
     ),
-    version="3.0.0",
+    version="3.1.0",
 )
 
 
@@ -71,6 +71,7 @@ class DenunciaBase(BaseModel):
     descricao: str = Field(default="", description="Detalhes sobre o acúmulo de lixo")
     status: str = Field(default="Pendente", description="Status: 'Pendente' ou 'Resolvido'")
     data_registro: str = Field(default="Hoje", description="Data/hora do relato")
+    confirmacoes: int = Field(default=1, ge=1, description="Quantidade de moradores que confirmaram ('Eu também vi!')")
     latitude: float = Field(..., ge=-90.0, le=90.0)
     longitude: float = Field(..., ge=-180.0, le=180.0)
 
@@ -81,6 +82,76 @@ class DenunciaCreate(DenunciaBase):
 
 class DenunciaResponse(DenunciaBase):
     id: int
+
+
+# Modelos de Agendamento de Coleta de Volumosos / Cata-Treco
+class CataTrecoBase(BaseModel):
+    solicitante: str = Field(..., min_length=2, description="Nome do morador solicitante")
+    cidade: str = Field(default="Olinda", description="Cidade (Olinda ou Recife)")
+    bairro: str = Field(..., description="Bairro da coleta")
+    endereco: str = Field(..., description="Endereço completo para recolhimento na calçada")
+    itens_volumosos: str = Field(..., description="Itens (ex: Sofá velho, Colchão, Geladeira, Restos de Poda)")
+    turno_preferido: str = Field(default="Manhã (08h às 12h)", description="Turno preferido para retirada")
+    data_agendada: str = Field(default="Próxima semana", description="Data solicitada")
+    observacoes: str = Field(default="", description="Referência ou observações")
+    status: str = Field(default="Agendado", description="Status: 'Agendado' ou 'Recolhido'")
+    latitude: float = Field(..., ge=-90.0, le=90.0)
+    longitude: float = Field(..., ge=-180.0, le=180.0)
+
+
+class CataTrecoCreate(CataTrecoBase):
+    pass
+
+
+class CataTrecoResponse(CataTrecoBase):
+    id: int
+    protocolo: str
+
+
+CATATRECO_INICIAIS = [
+    {
+        "protocolo": "CT-2026-001",
+        "solicitante": "Morador - Bairro Novo",
+        "cidade": "Olinda",
+        "bairro": "Bairro Novo",
+        "endereco": "Rua Cândido Pessoa, 140 - Bairro Novo",
+        "itens_volumosos": "1 Sofá de 3 lugares e 1 Colchão de casal",
+        "turno_preferido": "Manhã (08h às 12h)",
+        "data_agendada": "Quinta-feira",
+        "observacoes": "Deixado na calçada no início da manhã conforme orientação.",
+        "status": "Agendado",
+        "latitude": -8.0012,
+        "longitude": -34.8428,
+    },
+    {
+        "protocolo": "CT-2026-002",
+        "solicitante": "Moradora - Casa Caiada",
+        "cidade": "Olinda",
+        "bairro": "Casa Caiada",
+        "endereco": "Av. Carlos de Lima Cavalcanti, 920",
+        "itens_volumosos": "Geladeira antiga inoperante e galhos de poda",
+        "turno_preferido": "Tarde (13h às 17h)",
+        "data_agendada": "Sexta-feira",
+        "observacoes": "Próximo à padaria principal.",
+        "status": "Agendado",
+        "latitude": -7.9865,
+        "longitude": -34.8415,
+    },
+    {
+        "protocolo": "CT-2026-003",
+        "solicitante": "Condomínio Boa Vista",
+        "cidade": "Recife",
+        "bairro": "Boa Vista",
+        "endereco": "Rua da Imperatriz, 210 - Boa Vista",
+        "itens_volumosos": "Armário de madeira desmontado e cadeiras quebradas",
+        "turno_preferido": "Manhã (08h às 12h)",
+        "data_agendada": "Sábado",
+        "observacoes": "Portaria avisa quando o caminhão Cata-Treco chegar.",
+        "status": "Agendado",
+        "latitude": -8.0602,
+        "longitude": -34.8854,
+    },
+]
 
 
 DENUNCIAS_INICIAIS = [
@@ -465,24 +536,71 @@ def init_db() -> None:
                 descricao TEXT NOT NULL DEFAULT '',
                 status TEXT NOT NULL DEFAULT 'Pendente',
                 data_registro TEXT NOT NULL DEFAULT 'Hoje',
+                confirmacoes INTEGER NOT NULL DEFAULT 1,
                 latitude REAL NOT NULL,
                 longitude REAL NOT NULL
             )
             """
         )
+        colunas_den = [c["name"] for c in cursor.execute("PRAGMA table_info(denuncias)").fetchall()]
+        if "confirmacoes" not in colunas_den:
+            cursor.execute("ALTER TABLE denuncias ADD COLUMN confirmacoes INTEGER NOT NULL DEFAULT 1")
+            conn.commit()
+
         total_denuncias = cursor.execute("SELECT COUNT(*) as c FROM denuncias").fetchone()["c"]
         if total_denuncias == 0:
+            for d_item in DENUNCIAS_INICIAIS:
+                d_copy = dict(d_item)
+                d_copy.setdefault("confirmacoes", 3)
+                cursor.execute(
+                    """
+                    INSERT INTO denuncias (
+                        titulo, cidade, bairro, endereco, tipo_residuo,
+                        gravidade, descricao, status, data_registro, confirmacoes, latitude, longitude
+                    ) VALUES (
+                        :titulo, :cidade, :bairro, :endereco, :tipo_residuo,
+                        :gravidade, :descricao, :status, :data_registro, :confirmacoes, :latitude, :longitude
+                    )
+                    """,
+                    d_copy,
+                )
+            conn.commit()
+
+        # Tabela de Solicitações de Coleta de Volumosos / Cata-Treco
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS catatreco (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                protocolo TEXT NOT NULL,
+                solicitante TEXT NOT NULL,
+                cidade TEXT NOT NULL DEFAULT 'Olinda',
+                bairro TEXT NOT NULL,
+                endereco TEXT NOT NULL,
+                itens_volumosos TEXT NOT NULL,
+                turno_preferido TEXT NOT NULL DEFAULT 'Manhã (08h às 12h)',
+                data_agendada TEXT NOT NULL DEFAULT 'Próxima semana',
+                observacoes TEXT NOT NULL DEFAULT '',
+                status TEXT NOT NULL DEFAULT 'Agendado',
+                latitude REAL NOT NULL,
+                longitude REAL NOT NULL
+            )
+            """
+        )
+        total_ct = cursor.execute("SELECT COUNT(*) as c FROM catatreco").fetchone()["c"]
+        if total_ct == 0:
             cursor.executemany(
                 """
-                INSERT INTO denuncias (
-                    titulo, cidade, bairro, endereco, tipo_residuo,
-                    gravidade, descricao, status, data_registro, latitude, longitude
+                INSERT INTO catatreco (
+                    protocolo, solicitante, cidade, bairro, endereco,
+                    itens_volumosos, turno_preferido, data_agendada,
+                    observacoes, status, latitude, longitude
                 ) VALUES (
-                    :titulo, :cidade, :bairro, :endereco, :tipo_residuo,
-                    :gravidade, :descricao, :status, :data_registro, :latitude, :longitude
+                    :protocolo, :solicitante, :cidade, :bairro, :endereco,
+                    :itens_volumosos, :turno_preferido, :data_agendada,
+                    :observacoes, :status, :latitude, :longitude
                 )
                 """,
-                DENUNCIAS_INICIAIS,
+                CATATRECO_INICIAIS,
             )
             conn.commit()
     finally:
@@ -519,7 +637,7 @@ def health():
     return {
         "status": "ok",
         "aplicacao": "CittaLixo",
-        "versao": "3.0.0",
+        "versao": "3.1.0",
         "cidades_atendidas": ["Olinda", "Recife"],
         "total_pontos": total,
     }
@@ -532,6 +650,7 @@ def listar_pontos(
     bairro: Optional[str] = Query(None, description="Filtrar por bairro"),
     categoria: Optional[str] = Query(None, description="Filtrar por categoria (Ecoponto ou Coleta Domiciliar)"),
     tipo: Optional[str] = Query(None, description="Filtrar por tipo de resíduo"),
+    dia_semana: Optional[str] = Query(None, description="Filtrar por dia da semana (Seg, Ter, Qua, Qui, Sex, Sab, Dom)"),
     busca: Optional[str] = Query(None, description="Busca textual em nome, endereço, bairro ou tipo"),
 ):
     query = "SELECT * FROM pontos WHERE 1=1"
@@ -549,6 +668,9 @@ def listar_pontos(
     if tipo:
         query += " AND LOWER(tipo) LIKE LOWER(?)"
         params.append(f"%{tipo.strip()}%")
+    if dia_semana:
+        query += " AND LOWER(dias_semana) LIKE LOWER(?)"
+        params.append(f"%{dia_semana.strip()}%")
     if busca:
         termo = f"%{busca.strip()}%"
         query += (
@@ -704,7 +826,7 @@ def listar_denuncias(
     if status_filtro:
         query += " AND LOWER(status) = LOWER(?)"
         params.append(status_filtro.strip())
-    query += " ORDER BY CASE WHEN status = 'Pendente' THEN 0 ELSE 1 END, id DESC"
+    query += " ORDER BY CASE WHEN status = 'Pendente' THEN 0 ELSE 1 END, confirmacoes DESC, id DESC"
 
     conn = get_db_connection()
     try:
@@ -723,8 +845,8 @@ def criar_denuncia(denuncia: DenunciaCreate):
             """
             INSERT INTO denuncias (
                 titulo, cidade, bairro, endereco, tipo_residuo,
-                gravidade, descricao, status, data_registro, latitude, longitude
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                gravidade, descricao, status, data_registro, confirmacoes, latitude, longitude
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 denuncia.titulo,
@@ -736,6 +858,7 @@ def criar_denuncia(denuncia: DenunciaCreate):
                 denuncia.descricao,
                 denuncia.status,
                 denuncia.data_registro,
+                denuncia.confirmacoes,
                 denuncia.latitude,
                 denuncia.longitude,
             ),
@@ -744,6 +867,26 @@ def criar_denuncia(denuncia: DenunciaCreate):
         novo_id = cursor.lastrowid
         row = conn.execute("SELECT * FROM denuncias WHERE id = ?", (novo_id,)).fetchone()
         return dict(row)
+    finally:
+        conn.close()
+
+
+@app.put("/denuncias/{id}/apoiar", response_model=DenunciaResponse)
+def apoiar_denuncia(id: int):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        row = cursor.execute("SELECT * FROM denuncias WHERE id = ?", (id,)).fetchone()
+        if not row:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Denúncia não encontrada",
+            )
+        novas_conf = (row["confirmacoes"] or 1) + 1
+        cursor.execute("UPDATE denuncias SET confirmacoes = ? WHERE id = ?", (novas_conf, id))
+        conn.commit()
+        atualizado = cursor.execute("SELECT * FROM denuncias WHERE id = ?", (id,)).fetchone()
+        return dict(atualizado)
     finally:
         conn.close()
 
@@ -785,3 +928,103 @@ def remover_denuncia(id: int):
     finally:
         conn.close()
 
+
+# --- ENDPOINTS DE AGENDAMENTO DE COLETA DE VOLUMOSOS / CATA-TRECO ---
+
+@app.get("/catatreco", response_model=List[CataTrecoResponse])
+def listar_catatreco(
+    cidade: Optional[str] = Query(None, description="Filtrar por cidade (Olinda ou Recife)"),
+    status_filtro: Optional[str] = Query(None, alias="status", description="Filtrar por status (Agendado ou Recolhido)"),
+):
+    query = "SELECT * FROM catatreco WHERE 1=1"
+    params: list = []
+    if cidade:
+        query += " AND LOWER(cidade) = LOWER(?)"
+        params.append(cidade.strip())
+    if status_filtro:
+        query += " AND LOWER(status) = LOWER(?)"
+        params.append(status_filtro.strip())
+    query += " ORDER BY CASE WHEN status = 'Agendado' THEN 0 ELSE 1 END, id DESC"
+
+    conn = get_db_connection()
+    try:
+        rows = conn.execute(query, params).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+@app.post("/catatreco", response_model=CataTrecoResponse, status_code=status.HTTP_201_CREATED)
+def criar_catatreco(pedido: CataTrecoCreate):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        prox_num = cursor.execute("SELECT COALESCE(MAX(id), 0) + 1 as n FROM catatreco").fetchone()["n"]
+        protocolo = f"CT-2026-{prox_num:03d}"
+        cursor.execute(
+            """
+            INSERT INTO catatreco (
+                protocolo, solicitante, cidade, bairro, endereco,
+                itens_volumosos, turno_preferido, data_agendada,
+                observacoes, status, latitude, longitude
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                protocolo,
+                pedido.solicitante,
+                pedido.cidade,
+                pedido.bairro,
+                pedido.endereco,
+                pedido.itens_volumosos,
+                pedido.turno_preferido,
+                pedido.data_agendada,
+                pedido.observacoes,
+                pedido.status,
+                pedido.latitude,
+                pedido.longitude,
+            ),
+        )
+        conn.commit()
+        novo_id = cursor.lastrowid
+        row = conn.execute("SELECT * FROM catatreco WHERE id = ?", (novo_id,)).fetchone()
+        return dict(row)
+    finally:
+        conn.close()
+
+
+@app.put("/catatreco/{id}/recolher", response_model=CataTrecoResponse)
+def recolher_catatreco(id: int):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        row = cursor.execute("SELECT * FROM catatreco WHERE id = ?", (id,)).fetchone()
+        if not row:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Agendamento Cata-Treco não encontrado",
+            )
+        novo_status = "Recolhido" if row["status"] != "Recolhido" else "Agendado"
+        cursor.execute("UPDATE catatreco SET status = ? WHERE id = ?", (novo_status, id))
+        conn.commit()
+        atualizado = cursor.execute("SELECT * FROM catatreco WHERE id = ?", (id,)).fetchone()
+        return dict(atualizado)
+    finally:
+        conn.close()
+
+
+@app.delete("/catatreco/{id}")
+def remover_catatreco(id: int):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        row = cursor.execute("SELECT id FROM catatreco WHERE id = ?", (id,)).fetchone()
+        if not row:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Agendamento Cata-Treco não encontrado",
+            )
+        cursor.execute("DELETE FROM catatreco WHERE id = ?", (id,))
+        conn.commit()
+        return {"mensagem": "Agendamento Cata-Treco removido com sucesso", "id": id}
+    finally:
+        conn.close()
