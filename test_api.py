@@ -10,7 +10,7 @@ def test_health():
     assert response.status_code == 200
     dados = response.json()
     assert dados["status"] == "ok"
-    assert dados["versao"] == "3.1.0"
+    assert dados["versao"] == "3.2.0"
     assert "Olinda" in dados["cidades_atendidas"]
     assert "Recife" in dados["cidades_atendidas"]
     assert dados["total_pontos"] >= 1
@@ -102,7 +102,7 @@ def test_ponto_inexistente_retorna_404():
     assert client.delete("/pontos/999999").status_code == 404
 
 
-def test_ciclo_denuncias_ponto_critico_e_upvote():
+def test_ciclo_denuncias_ponto_critico_classificacao_e_resolucao_admin():
     # 1. Listar denúncias iniciais
     resp_list = client.get("/denuncias")
     assert resp_list.status_code == 200
@@ -121,6 +121,7 @@ def test_ciclo_denuncias_ponto_critico_e_upvote():
         "status": "Pendente",
         "data_registro": "Hoje",
         "confirmacoes": 1,
+        "nao_esta_mais": 0,
         "latitude": -7.9920,
         "longitude": -34.8425,
     }
@@ -130,18 +131,24 @@ def test_ciclo_denuncias_ponto_critico_e_upvote():
     den_id = criada["id"]
     assert criada["status"] == "Pendente"
     assert criada["confirmacoes"] == 1
+    assert criada["nao_esta_mais"] == 0
 
-    # 3. Apoiar denúncia ("Eu também vi! +1")
+    # 3. Classificar que ainda está lá ("Ainda está lá! +1")
     resp_upvote = client.put(f"/denuncias/{den_id}/apoiar")
     assert resp_upvote.status_code == 200
     assert resp_upvote.json()["confirmacoes"] == 2
 
-    # 4. Marcar como Resolvido
+    # 4. Classificar que já foi limpo ("Já foi limpo / Não está mais lá +1")
+    resp_clean = client.put(f"/denuncias/{den_id}/nao-esta-mais")
+    assert resp_clean.status_code == 200
+    assert resp_clean.json()["nao_esta_mais"] == 1
+
+    # 5. Marcar oficialmente como Resolvido (Admin)
     resp_resolve = client.put(f"/denuncias/{den_id}/resolver")
     assert resp_resolve.status_code == 200
     assert resp_resolve.json()["status"] == "Resolvido"
 
-    # 5. Excluir denúncia
+    # 6. Excluir denúncia (Admin)
     resp_del = client.delete(f"/denuncias/{den_id}")
     assert resp_del.status_code == 200
 
@@ -174,11 +181,11 @@ def test_ciclo_catatreco_agendamento_e_protocolo():
     assert criado["status"] == "Agendado"
     assert criado["protocolo"].startswith("CT-2026-")
 
-    # 3. Marcar como Recolhido
+    # 3. Marcar como Recolhido (Admin)
     resp_rec = client.put(f"/catatreco/{ct_id}/recolher")
     assert resp_rec.status_code == 200
     assert resp_rec.json()["status"] == "Recolhido"
 
-    # 4. Excluir agendamento de Cata-Treco
+    # 4. Excluir agendamento de Cata-Treco (Admin)
     resp_del = client.delete(f"/catatreco/{ct_id}")
     assert resp_del.status_code == 200

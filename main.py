@@ -16,7 +16,7 @@ app = FastAPI(
         "API gratuita para consulta e gerenciamento de Ecopontos/Ecoestações "
         "e rotas/horários de coleta domiciliar em Recife e Olinda."
     ),
-    version="3.1.0",
+    version="3.2.0",
 )
 
 app.add_middleware(
@@ -80,7 +80,8 @@ class DenunciaBase(BaseModel):
     descricao: str = Field(default="", description="Detalhes sobre o acúmulo de lixo")
     status: str = Field(default="Pendente", description="Status: 'Pendente' ou 'Resolvido'")
     data_registro: str = Field(default="Hoje", description="Data/hora do relato")
-    confirmacoes: int = Field(default=1, ge=1, description="Quantidade de moradores que confirmaram ('Eu também vi!')")
+    confirmacoes: int = Field(default=1, ge=1, description="Quantidade de moradores que confirmaram ('Ainda está lá! +1')")
+    nao_esta_mais: int = Field(default=0, ge=0, description="Quantidade de moradores que relataram que já foi limpo ('Não está mais lá')")
     latitude: float = Field(..., ge=-90.0, le=90.0)
     longitude: float = Field(..., ge=-180.0, le=180.0)
 
@@ -555,6 +556,9 @@ def init_db() -> None:
         if "confirmacoes" not in colunas_den:
             cursor.execute("ALTER TABLE denuncias ADD COLUMN confirmacoes INTEGER NOT NULL DEFAULT 1")
             conn.commit()
+        if "nao_esta_mais" not in colunas_den:
+            cursor.execute("ALTER TABLE denuncias ADD COLUMN nao_esta_mais INTEGER NOT NULL DEFAULT 0")
+            conn.commit()
 
         total_denuncias = cursor.execute("SELECT COUNT(*) as c FROM denuncias").fetchone()["c"]
         if total_denuncias == 0:
@@ -646,7 +650,7 @@ def health():
     return {
         "status": "ok",
         "aplicacao": "CittaLixo",
-        "versao": "3.1.0",
+        "versao": "3.2.0",
         "cidades_atendidas": ["Olinda", "Recife"],
         "total_pontos": total,
     }
@@ -893,6 +897,26 @@ def apoiar_denuncia(id: int):
             )
         novas_conf = (row["confirmacoes"] or 1) + 1
         cursor.execute("UPDATE denuncias SET confirmacoes = ? WHERE id = ?", (novas_conf, id))
+        conn.commit()
+        atualizado = cursor.execute("SELECT * FROM denuncias WHERE id = ?", (id,)).fetchone()
+        return dict(atualizado)
+    finally:
+        conn.close()
+
+
+@app.put("/denuncias/{id}/nao-esta-mais", response_model=DenunciaResponse)
+def reportar_nao_esta_mais_denuncia(id: int):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        row = cursor.execute("SELECT * FROM denuncias WHERE id = ?", (id,)).fetchone()
+        if not row:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Denúncia não encontrada",
+            )
+        novo_val = (row["nao_esta_mais"] or 0) + 1
+        cursor.execute("UPDATE denuncias SET nao_esta_mais = ? WHERE id = ?", (novo_val, id))
         conn.commit()
         atualizado = cursor.execute("SELECT * FROM denuncias WHERE id = ?", (id,)).fetchone()
         return dict(atualizado)

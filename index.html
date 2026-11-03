@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#14532d" />
     <link rel="manifest" href="/manifest.json" />
-    <title>CittaLixo v3.1.0 — Pontos, Rotas, Cata-Treco, Denúncias e Painel Gestor (Olinda e Recife)</title>
+    <title>CittaLixo v3.2.0 — Pontos, Rotas, Cata-Treco, Denúncias e Painel Gestor (Olinda e Recife)</title>
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
@@ -95,6 +95,33 @@
 
         .theme-toggle-btn:hover {
             background: rgba(255, 255, 255, 0.3);
+        }
+
+        .role-toggle-btn {
+            background: rgba(255, 255, 255, 0.22);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.55);
+            padding: 7px 14px;
+            border-radius: 999px;
+            font-weight: 800;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .role-toggle-btn.is-admin {
+            background: #fef08a;
+            color: #14532d;
+            border-color: #fde047;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
+        }
+
+        /* Oculta automaticamente qualquer botão ou aba exclusiva de Admin quando estiver no Modo Cidadão (Usuário) */
+        body.role-user .admin-only {
+            display: none !important;
         }
 
         header p {
@@ -711,12 +738,14 @@
     </style>
 </head>
 
-<body>
+<body class="role-user">
 
     <header>
         <div class="header-top-bar">
-            <div style="width:130px;"></div>
-            <h1>♻️ CittaLixo <span style="font-size:0.88rem; background:rgba(255,255,255,0.22); padding:3px 10px; border-radius:999px; vertical-align:middle;">v3.1.0</span></h1>
+            <button class="role-toggle-btn" id="btn-role-mode" onclick="alternarNivelAcesso()" title="Clique para alternar entre visão de Cidadão (Usuário) e Gestor (Admin)">
+                👤 Modo Cidadão (Usuário)
+            </button>
+            <h1>♻️ CittaLixo <span style="font-size:0.88rem; background:rgba(255,255,255,0.22); padding:3px 10px; border-radius:999px; vertical-align:middle;">v3.2.0</span></h1>
             <button class="theme-toggle-btn" id="btn-dark-mode" onclick="alternarModoEscuro()">🌙 Modo Escuro</button>
         </div>
 
@@ -726,7 +755,7 @@
             <button class="tab-btn active" id="tab-btn-coleta" onclick="alternarAba('coleta')">🗺️ Ecopontos &amp; Rotas</button>
             <button class="tab-btn" id="tab-btn-catatreco" onclick="alternarAba('catatreco')">🛋️ Cata-Treco (Volumosos)</button>
             <button class="tab-btn" id="tab-btn-denuncias" onclick="alternarAba('denuncias')">⚠️ Denúncias de Lixo</button>
-            <button class="tab-btn" id="tab-btn-gestor" onclick="alternarAba('gestor')">📊 Painel Gestor &amp; Dados</button>
+            <button class="tab-btn admin-only" id="tab-btn-gestor" onclick="alternarAba('gestor')">🛡️ Painel Gestor &amp; Dados</button>
             <button class="tab-btn" id="tab-btn-guia" onclick="alternarAba('guia')">📚 Guia &amp; Quiz</button>
         </div>
     </header>
@@ -803,7 +832,7 @@
                             📍 Perto de Mim
                         </button>
 
-                        <button class="btn-action btn-add" onclick="abrirNovoCadastroPonto()">
+                        <button class="btn-action btn-add admin-only" id="btn-cadastrar-ponto" onclick="abrirNovoCadastroPonto()">
                             ➕ Cadastrar Ponto/Rota
                         </button>
                     </div>
@@ -1197,7 +1226,7 @@
     </div>
 
     <footer>
-        CittaLixo v3.1.0 • Dados abertos com OpenStreetMap, Leaflet, Esri Satellite &amp; OSRM (Zero Custo de API) • Instalável como App (PWA) • Olinda e Recife
+        CittaLixo v3.2.0 • Dados abertos com OpenStreetMap, Leaflet, Esri Satellite &amp; OSRM (Zero Custo de API) • Instalável como App (PWA) • Olinda e Recife
     </footer>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1208,6 +1237,34 @@
                 regs.forEach(r => r.update());
             }).catch(() => {});
             navigator.serviceWorker.register('/sw.js?v=3.1.2').catch(() => {});
+        }
+
+        // Controle de Nível de Acesso: 'usuario' (Cidadão - padrão) ou 'admin' (Gestor)
+        let nivelAcessoAtual = 'usuario';
+
+        function aplicarNivelAcessoNaInterface() {
+            const btnRole = document.getElementById('btn-role-mode');
+            if (nivelAcessoAtual === 'admin') {
+                document.body.classList.remove('role-user');
+                document.body.classList.add('role-admin');
+                btnRole.classList.add('is-admin');
+                btnRole.innerHTML = '🛡️ Modo Admin (Gestor)';
+            } else {
+                document.body.classList.remove('role-admin');
+                document.body.classList.add('role-user');
+                btnRole.classList.remove('is-admin');
+                btnRole.innerHTML = '👤 Modo Cidadão (Usuário)';
+                // Se estava na aba Painel Gestor ou com formulário de cadastro de ponto aberto, volta para a aba principal e fecha
+                document.getElementById('secao-cadastro').classList.remove('open');
+                if (abaAtual === 'gestor') {
+                    alternarAba('coleta');
+                }
+            }
+        }
+
+        function alternarNivelAcesso() {
+            nivelAcessoAtual = nivelAcessoAtual === 'usuario' ? 'admin' : 'usuario';
+            aplicarNivelAcessoNaInterface();
         }
 
         // Modo Escuro com persistência em localStorage
@@ -1553,7 +1610,7 @@
 
         function exportarDadosJSON() {
             const dados = {
-                versao: '3.1.0',
+                versao: '3.2.0',
                 exportado_em: new Date().toISOString(),
                 pontos_e_rotas: todosOsPontos,
                 agendamentos_catatreco: todosOsCataTrecos,
@@ -1802,8 +1859,8 @@
                             ${temRota ? '🛣️ Ver Rota' : '🔍 Mapa'}
                         </button>
                         <a class="card-link" href="${urlRota}" target="_blank" rel="noopener">🧭 Como Chegar</a>
-                        <button type="button" class="card-link" onclick="prepararEdicaoPonto(${ponto.id})">✏️ Editar</button>
-                        <button type="button" class="card-link delete-btn" onclick="excluirPonto(${ponto.id})">🗑️ Excluir</button>
+                        <button type="button" class="card-link admin-only" onclick="prepararEdicaoPonto(${ponto.id})">✏️ Editar</button>
+                        <button type="button" class="card-link delete-btn admin-only" onclick="excluirPonto(${ponto.id})">🗑️ Excluir</button>
                     </div>
                 `;
 
@@ -1823,6 +1880,7 @@
 
         // --- CRUD: EDITAR E EXCLUIR DIRETO NOS CARDS ---
         function abrirNovoCadastroPonto() {
+            if (nivelAcessoAtual !== 'admin') return;
             fecharTodosOsFormularios();
             document.getElementById('inp-id-edicao').value = '';
             document.getElementById('form-ponto').reset();
@@ -2086,7 +2144,7 @@
                     <p><strong>👤 Solicitante:</strong> ${ct.solicitante} • <strong>Turno:</strong> ${ct.turno_preferido}</p>
                     <p><strong>📌 Endereço:</strong> ${ct.endereco}</p>
                     ${ct.observacoes ? `<p>ℹ️ ${ct.observacoes}</p>` : ''}
-                    <div class="card-actions" onclick="event.stopPropagation();">
+                    <div class="card-actions admin-only" onclick="event.stopPropagation();">
                         <button type="button" class="card-link" onclick="alternarStatusCataTreco(${ct.id})">
                             ${recolhido ? '↩️ Reabrir Agendamento' : '✅ Marcar como Recolhido'}
                         </button>
@@ -2232,6 +2290,7 @@
                 const resolvida = den.status === 'Resolvido';
                 const icone = resolvida ? iconeResolvido : iconeCritico;
                 const qtdConf = den.confirmacoes || 1;
+                const qtdLimpo = den.nao_esta_mais || 0;
 
                 const marker = L.marker([den.latitude, den.longitude], { icon: icone })
                     .addTo(denunciasLayer)
@@ -2240,7 +2299,7 @@
                             <strong style="color:${resolvida ? '#475569' : '#ea580c'};">
                                 ${resolvida ? '✅ [RESOLVIDO]' : '🟠 [PONTO CRÍTICO]'} ${den.titulo}
                             </strong><br/>
-                            <small>${den.cidade} • ${den.bairro} • 👍 ${qtdConf} confirmações</small>
+                            <small>${den.cidade} • ${den.bairro} • 👍 ${qtdConf} ainda lá | 👎 ${qtdLimpo} já limpo</small>
                             <hr style="border:none; border-top:1px solid #e2e8f0; margin:5px 0;"/>
                             <b>Resíduo:</b> ${den.tipo_residuo}<br/>
                             <b>Local:</b> ${den.endereco}<br/>
@@ -2264,17 +2323,25 @@
                         <span class="badge ${resolvida ? 'badge-status-open' : 'badge-cat-critico'}">
                             ${resolvida ? '✅ Limpeza Concluída / Resolvido' : `🟠 Gravidade: ${den.gravidade}`}
                         </span>
-                        <span class="badge badge-status-closed">🔥 ${qtdConf} ${qtdConf === 1 ? 'morador confirmou' : 'moradores confirmaram'}</span>
+                        <span class="badge badge-status-closed">🔥 ${qtdConf} ${qtdConf === 1 ? 'confirma que ainda está lá' : 'confirmam que ainda está lá'}</span>
+                        ${qtdLimpo > 0 ? `<span class="badge badge-status-open">✨ ${qtdLimpo} ${qtdLimpo === 1 ? 'relatou que já limparam' : 'relataram que já limparam'}</span>` : ''}
                     </div>
                     <p><strong>🗑️ Resíduo Acumulado:</strong> ${den.tipo_residuo}</p>
                     <p><strong>📌 Local:</strong> ${den.endereco}</p>
                     ${den.descricao ? `<p>ℹ️ ${den.descricao}</p>` : ''}
                     <div class="card-actions" onclick="event.stopPropagation();">
-                        ${!resolvida ? `<button type="button" class="card-link upvote-btn" onclick="apoiarDenuncia(${den.id})">👍 Eu também vi! (+1)</button>` : ''}
-                        <button type="button" class="card-link" onclick="alternarStatusDenuncia(${den.id})">
-                            ${resolvida ? '↩️ Reabrir Alerta' : '✅ Marcar como Resolvido'}
+                        ${!resolvida ? `
+                            <button type="button" class="card-link upvote-btn" onclick="apoiarDenuncia(${den.id})" title="Classificar que o lixo ainda continua acumulado no local">
+                                👍 Ainda está lá! (+1)
+                            </button>
+                            <button type="button" class="card-link" onclick="reportarNaoEstaMaisDenuncia(${den.id})" title="Classificar que o lixo já foi recolhido/não está mais lá">
+                                👎 Já foi limpo / Não está mais (${qtdLimpo})
+                            </button>
+                        ` : ''}
+                        <button type="button" class="card-link admin-only" onclick="alternarStatusDenuncia(${den.id})">
+                            ${resolvida ? '↩️ Reabrir Alerta (Admin)' : '✅ Marcar como Resolvido (Admin)'}
                         </button>
-                        <button type="button" class="card-link delete-btn" onclick="excluirDenuncia(${den.id})">🗑️ Excluir</button>
+                        <button type="button" class="card-link delete-btn admin-only" onclick="excluirDenuncia(${den.id})">🗑️ Excluir</button>
                     </div>
                 `;
                 container.appendChild(card);
@@ -2292,8 +2359,27 @@
         }
 
         async function apoiarDenuncia(id) {
-            await apiFetch(`/denuncias/${id}/apoiar`, { method: 'PUT' });
-            await carregarDenunciasDaAPI();
+            try {
+                const r = await apiFetch(`/denuncias/${id}/apoiar`, { method: 'PUT' });
+                if (!r.ok) throw new Error();
+                await carregarDenunciasDaAPI();
+            } catch (e) {
+                const item = todasAsDenuncias.find(d => d.id === id);
+                if (item) item.confirmacoes = (item.confirmacoes || 1) + 1;
+                renderizarDenuncias();
+            }
+        }
+
+        async function reportarNaoEstaMaisDenuncia(id) {
+            try {
+                const r = await apiFetch(`/denuncias/${id}/nao-esta-mais`, { method: 'PUT' });
+                if (!r.ok) throw new Error();
+                await carregarDenunciasDaAPI();
+            } catch (e) {
+                const item = todasAsDenuncias.find(d => d.id === id);
+                if (item) item.nao_esta_mais = (item.nao_esta_mais || 0) + 1;
+                renderizarDenuncias();
+            }
         }
 
         async function salvarNovaDenuncia(event) {
@@ -2375,6 +2461,7 @@
 
         // --- NAVEGAÇÃO ENTRE AS 5 ABAS (CADA ABA 100% INDIVIDUAL) ---
         function alternarAba(aba) {
+            if (aba === 'gestor' && nivelAcessoAtual !== 'admin') return;
             abaAtual = aba;
             fecharTodosOsFormularios();
 

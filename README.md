@@ -1,6 +1,6 @@
-# ♻️ CittaLixo v3.1.0 — Recife & Olinda
+# ♻️ CittaLixo v3.2.0 — Recife & Olinda
 
-Aplicação web progressiva (PWA) e API REST **100% gratuita** para identificação de **Ecopontos / Ecoestações fixas**, visualização de **rotas reais e horários dos caminhões de coleta domiciliar**, agendamento gratuito de **Cata-Treco (móveis e volumosos)**, mapeamento colaborativo de **pontos críticos de lixo acumulado (denúncias com apoio comunitário)**, **Painel Gestor com exportação CSV/JSON** e **educação ambiental** nas cidades de **Olinda e Recife (PE)**.
+Aplicação web progressiva (PWA) e API REST **100% gratuita** com **Níveis de Acesso (Modo Cidadão / Usuário e Modo Admin / Gestor)** para identificação de **Ecopontos / Ecoestações fixas**, visualização de **rotas reais e horários dos caminhões de coleta domiciliar**, agendamento gratuito de **Cata-Treco (móveis e volumosos)**, mapeamento colaborativo de **pontos críticos de lixo acumulado (com classificação comunitária se ainda está lá ou já foi limpo)**, **Painel Gestor exclusivo para Admin com exportação CSV/JSON** e **educação ambiental** nas cidades de **Olinda e Recife (PE)**.
 
 ---
 
@@ -16,12 +16,23 @@ Aplicação web progressiva (PWA) e API REST **100% gratuita** para identificaç
   - 📊 **Dashboard de Estatísticas em Tempo Real** no topo da página.
   - 📱 **PWA (Progressive Web App)** com `manifest.json` e `sw.js` (funcionamento com cache offline e instalável no celular).
   - ⚡ **Script `iniciar_servidor.bat`** para ligar o servidor e abrir o navegador automaticamente com 1 clique.
-- **v3.1.0 (Versão Atual Completa)**:
+- **v3.1.0**:
   - 🛋️ **Aba de Agendamento de Cata-Treco (Móveis, Colchões e Eletrodomésticos)**: Geração automática de protocolo (`CT-2026-XXX`), pinos roxos no mapa e controle de status (*Agendado* / *Recolhido*) via endpoints `/catatreco`.
-  - 🌙 **Modo Escuro (`Dark Mode`) + Camada de Satélite Esri**: Alternância de tema clara/escura no cabeçalho salva no navegador e botão no mapa para alternar entre **Mapa de Ruas (OpenStreetMap)** e **Visão de Satélite Real (Esri World Imagery)** 100% gratuita.
+  - 🌙 **Modo Escuro (`Dark Mode`) + Camada de Satélite Esri**: Alternância de tema clara/escura no cabeçalho salva no navegador e botão no mapa para alternar entre **Mapa de Ruas** e **Visão de Satélite Real (Esri World Imagery)** 100% gratuita.
   - 📊 **Aba de Painel Gestor & Dados Abertos**: Gráficos visuais comparativos entre Olinda e Recife, taxa de resolução de denúncias, bairros mais críticos e botões para **baixar planilhas CSV (compatíveis com Excel)** e **JSON** gratuitamente.
-  - 👍 **Votação Comunitária em Denúncias (`Eu também vi! +1`)**: Botão para moradores confirmarem que um foco de lixo persiste (`PUT /denuncias/{id}/apoiar`), priorizando os pontos mais urgentes no topo da lista.
   - 🔔 **Filtro Rápido por Dia da Semana (`Passa / Abre Hoje`, `Seg` a `Dom`)**: Barra de pílulas rápidas na aba principal e filtro `dia_semana` na API (`GET /pontos?dia_semana=Seg`).
+  - 🗺️ **Isolamento Individual por Aba no Mapa e nos Formulários**: Cada aba exibe exclusivamente seus próprios pinos e seu próprio formulário.
+- **v3.2.0 (Versão Atual Completa — Controle de Níveis de Acesso)**:
+  - 👤 **Modo Cidadão (Usuário — Padrão ao abrir)**:
+    - Pode consultar todos os Ecopontos e Rotas de Caminhão, filtrar por cidade/dia/resíduo e usar o GPS *Perto de Mim*.
+    - Pode solicitar agendamento gratuito de **Cata-Treco** (gerando protocolo).
+    - Pode registrar **Denúncias de Lixo** e **classificar se o lixo ainda está no local (`👍 Ainda está lá! +1`) ou se já foi limpo (`👎 Já foi limpo / Não está mais`)**.
+    - Pode usar a aba **📚 Guia & Quiz** normalmente.
+    - **Restrições do Usuário**: Não pode adicionar/editar/excluir pontos de coleta, não vê a aba **Painel Gestor & Dados**, não pode marcar Cata-Treco como recolhido e não pode marcar oficialmente uma denúncia como resolvida.
+  - 🛡️ **Modo Admin (Gestor — Alternância rápida no topo)**:
+    - Libera o botão **`➕ Cadastrar Ponto/Rota`** e os botões **`✏️ Editar`** e **`🗑️ Excluir`** em todos os registros.
+    - Libera a aba exclusiva **`🛡️ Painel Gestor & Dados`** com gráficos analíticos e exportação CSV/JSON.
+    - Libera os botões **`✅ Marcar como Resolvido (Admin)`** nas denúncias e **`✅ Marcar como Recolhido`** nos agendamentos de Cata-Treco.
 
 ---
 
@@ -40,7 +51,7 @@ Dê **dois cliques** em [`iniciar_servidor.bat`](./iniciar_servidor.bat). Ele in
 
 ### 3. Suítes de Testes Automatizados
 ```bash
-# Testes de API e Banco SQLite (Pytest + FastAPI TestClient - 7 suítes cobrindo pontos, denúncias + upvote e cata-treco)
+# Testes de API e Banco SQLite (Pytest + FastAPI TestClient - 7 suítes cobrindo pontos, denúncias + classificação comunitária e cata-treco)
 ..\.venv\Scripts\pytest.exe test_api.py -v
 
 # Testes End-to-End de Interface no Navegador (Selenium Headless)
@@ -51,4 +62,4 @@ Dê **dois cliques** em [`iniciar_servidor.bat`](./iniciar_servidor.bat). Ele in
 
 ## 📄 Relatório Unificado em PDF no Projeto
 
-- [`Relatorio_Melhorias_e_Testes_CittaLixo.pdf`](./Relatorio_Melhorias_e_Testes_CittaLixo.pdf): Relatório técnico consolidado de evolução (da v1.0.0 até a **v3.1.0**), fontes oficiais (Recife e Olinda) e guia completo de testes.
+- [`Relatorio_Melhorias_e_Testes_CittaLixo.pdf`](./Relatorio_Melhorias_e_Testes_CittaLixo.pdf): Relatório técnico consolidado de evolução (da v1.0.0 até a **v3.2.0**), níveis de acesso, fontes oficiais (Recife e Olinda) e guia completo de testes.
