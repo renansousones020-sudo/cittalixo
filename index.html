@@ -1058,7 +1058,10 @@
                             <span><i class="dot dot-catatreco"></i>Cata-Treco</span>
                             <span><i class="dot dot-critico"></i>Ponto Crítico</span>
                         </div>
-                        <button type="button" class="card-link" id="btn-camada-mapa" onclick="alternarCamadaMapa()">🛰️ Ver Mapa de Satélite</button>
+                        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                            <button type="button" class="card-link" onclick="centralizarTodosOsPontosNoMapa()">🎯 Ver Todos os Pontos</button>
+                            <button type="button" class="card-link" id="btn-camada-mapa" onclick="alternarCamadaMapa()">🛰️ Ver Mapa de Satélite</button>
+                        </div>
                     </div>
                 </div>
 
@@ -1177,7 +1180,10 @@
 
     <script>
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js').catch(() => {});
+            navigator.serviceWorker.getRegistrations().then(regs => {
+                regs.forEach(r => r.update());
+            }).catch(() => {});
+            navigator.serviceWorker.register('/sw.js?v=3.1.2').catch(() => {});
         }
 
         // Modo Escuro com persistência em localStorage
@@ -1195,6 +1201,7 @@
 
         const CENTRO_OLINDA_RECIFE = [-8.0220, -34.8680];
         const map = L.map('map').setView(CENTRO_OLINDA_RECIFE, 12);
+        let primeiraRenderizacaoMapa = true;
 
         const camadaRuasOSM = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
             maxZoom: 19,
@@ -1221,6 +1228,20 @@
                 camadaSateliteEsri.addTo(map);
                 btn.textContent = '🗺️ Ver Mapa de Ruas';
                 usandoSatelite = true;
+            }
+        }
+
+        function centralizarTodosOsPontosNoMapa() {
+            const coords = [];
+            todosOsPontos.forEach(p => {
+                if (typeof p.latitude === 'number' && typeof p.longitude === 'number') {
+                    coords.push([p.latitude, p.longitude]);
+                }
+            });
+            if (coords.length > 0) {
+                map.fitBounds(L.latLngBounds(coords), { padding: [38, 38], maxZoom: 14 });
+            } else {
+                map.setView(CENTRO_OLINDA_RECIFE, 12);
             }
         }
 
@@ -1705,6 +1726,14 @@
             });
 
             atualizarPosicaoCaminhoesNoMapa();
+
+            if (lista.length > 0 && primeiraRenderizacaoMapa) {
+                primeiraRenderizacaoMapa = false;
+                const bounds = L.latLngBounds(lista.map(p => [p.latitude, p.longitude]));
+                if (bounds.isValid()) {
+                    map.fitBounds(bounds, { padding: [38, 38], maxZoom: 14 });
+                }
+            }
         }
 
         // --- CRUD: EDITAR E EXCLUIR DIRETO NOS CARDS ---
