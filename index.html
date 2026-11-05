@@ -850,6 +850,72 @@
             box-shadow: var(--shadow);
         }
 
+        /* Autocomplete Inteligente de Bairros, Regiões e Endereços */
+        .autocomplete-wrap {
+            position: relative;
+            width: 100%;
+        }
+        .geocode-bar .autocomplete-wrap {
+            flex: 1;
+            min-width: 0;
+        }
+        .filters-row > .autocomplete-wrap {
+            flex: 1;
+            min-width: 210px;
+        }
+        .autocomplete-menu {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--green-primary);
+            border-radius: 10px;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.22);
+            z-index: 4000;
+            max-height: 230px;
+            overflow-y: auto;
+            display: none;
+        }
+        .autocomplete-menu.open {
+            display: block;
+        }
+        .autocomplete-item {
+            padding: 9px 12px;
+            font-size: 0.88rem;
+            color: var(--text-main);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.12s;
+        }
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+        .autocomplete-item:hover,
+        .autocomplete-item.active-item {
+            background: var(--green-light);
+            color: #065f46;
+        }
+        .autocomplete-item mark {
+            background: transparent;
+            color: var(--green-dark);
+            font-weight: 900;
+            text-decoration: underline;
+        }
+        .autocomplete-tag {
+            font-size: 0.73rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 999px;
+            background: var(--bg-input);
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
         footer {
             text-align: center;
             padding: 20px;
@@ -2803,6 +2869,7 @@
 
             visaoMapa.style.display = 'block';
             atualizarBadgeCidadaoEco();
+        inicializarTodosAutocompletesLocais();
         sincronizarCamadasMapaPorAba();
 
             document.getElementById('toolbar-coleta').style.display = aba === 'coleta' ? 'block' : 'none';
@@ -3395,6 +3462,344 @@
             win.document.close();
             win.focus();
             setTimeout(() => win.print(), 350);
+        }
+
+
+        // --- AUTOCOMPLETE INTELIGENTE EM TODOS OS CAMPOS DE LOCAL (BAIRROS, REGIÕES E ENDEREÇOS) ---
+        const CATALOGO_BAIRROS_REGIOES = [
+            // Olinda e divisas metropolitanas
+            { nome: "Ouro Preto", cidade: "Olinda", regiao: "🌴 Olinda", lat: -7.9942, lng: -34.8648 },
+            { nome: "Ouro Preto (Cohab / 7º RO)", cidade: "Olinda", regiao: "🌴 Olinda", lat: -7.9915, lng: -34.8680 },
+            { nome: "Maranguape I", cidade: "Olinda", regiao: "📍 Região Norte / Divisa", lat: -7.9482, lng: -34.8595 },
+            { nome: "Maranguape II", cidade: "Olinda", regiao: "📍 Região Norte / Divisa", lat: -7.9378, lng: -34.8472 },
+            { nome: "Maranguape", cidade: "Olinda", regiao: "📍 Região Norte / RMR", lat: -7.9430, lng: -34.8535 },
+            { nome: "Bairro Novo", cidade: "Olinda", regiao: "🌴 Olinda", lat: -7.9986, lng: -34.8415 },
+            { nome: "Casa Caiada", cidade: "Olinda", regiao: "🌴 Olinda", lat: -7.9825, lng: -34.8398 },
+            { nome: "Rio Doce", cidade: "Olinda", regiao: "🌴 Olinda", lat: -7.9602, lng: -34.8371 },
+            { nome: "Jardim Atlântico", cidade: "Olinda", regiao: "🌴 Olinda", lat: -7.9718, lng: -34.8394 },
+            { nome: "Jardim Fragoso", cidade: "Olinda", regiao: "🌴 Olinda", lat: -7.9752, lng: -34.8510 },
+            { nome: "Jardim Brasil", cidade: "Olinda", regiao: "🌴 Olinda", lat: -8.0045, lng: -34.8620 },
+            { nome: "Peixinhos", cidade: "Olinda", regiao: "🌴 Olinda", lat: -8.0128, lng: -34.8694 },
+            { nome: "Carmo", cidade: "Olinda", regiao: "🌴 Olinda", lat: -8.0175, lng: -34.8492 },
+            { nome: "Varadouro", cidade: "Olinda", regiao: "🌴 Olinda", lat: -8.0182, lng: -34.8531 },
+            { nome: "Sítio Histórico", cidade: "Olinda", regiao: "🌴 Olinda", lat: -8.0140, lng: -34.8483 },
+            { nome: "Amparo", cidade: "Olinda", regiao: "🌴 Olinda", lat: -8.0108, lng: -34.8524 },
+            { nome: "Bonsucesso", cidade: "Olinda", regiao: "🌴 Olinda", lat: -8.0052, lng: -34.8548 },
+            { nome: "Guadalupe", cidade: "Olinda", regiao: "🌴 Olinda", lat: -8.0091, lng: -34.8568 },
+            { nome: "Monte", cidade: "Olinda", regiao: "🌴 Olinda", lat: -8.0018, lng: -34.8520 },
+            { nome: "Bultrins", cidade: "Olinda", regiao: "🌴 Olinda", lat: -7.9896, lng: -34.8525 },
+            { nome: "Salgadinho", cidade: "Olinda", regiao: "🌴 Olinda", lat: -8.0265, lng: -34.8655 },
+            { nome: "Santa Tereza", cidade: "Olinda", regiao: "🌴 Olinda", lat: -8.0195, lng: -34.8590 },
+            { nome: "Cidade Tabajara", cidade: "Olinda", regiao: "🌴 Olinda", lat: -7.9810, lng: -34.8690 },
+            { nome: "Tabajara", cidade: "Olinda", regiao: "🌴 Olinda", lat: -7.9810, lng: -34.8690 },
+            { nome: "Águas Compridas", cidade: "Olinda", regiao: "🌴 Olinda", lat: -7.9965, lng: -34.8890 },
+            { nome: "Caixa d'Água", cidade: "Olinda", regiao: "🌴 Olinda", lat: -8.0065, lng: -34.8835 },
+            { nome: "Sapucaia", cidade: "Olinda", regiao: "🌴 Olinda", lat: -7.9980, lng: -34.8780 },
+            { nome: "Alto da Bondade", cidade: "Olinda", regiao: "🌴 Olinda", lat: -7.9920, lng: -34.8960 },
+            { nome: "Aguazinha", cidade: "Olinda", regiao: "🌴 Olinda", lat: -8.0040, lng: -34.8720 },
+            { nome: "São Benedito", cidade: "Olinda", regiao: "🌴 Olinda", lat: -8.0010, lng: -34.8760 },
+            { nome: "Vila Popular", cidade: "Olinda", regiao: "🌴 Olinda", lat: -8.0068, lng: -34.8615 },
+            { nome: "Umuarama", cidade: "Olinda", regiao: "🌴 Olinda", lat: -8.0020, lng: -34.8560 },
+            { nome: "Jatobá", cidade: "Olinda", regiao: "🌴 Olinda", lat: -7.9912, lng: -34.8610 },
+            { nome: "Janga", cidade: "Olinda", regiao: "📍 Região Norte / Divisa", lat: -7.9345, lng: -34.8245 },
+            { nome: "Pau Amarelo", cidade: "Olinda", regiao: "📍 Região Norte / Divisa", lat: -7.9125, lng: -34.8255 },
+            // Recife
+            { nome: "Boa Viagem", cidade: "Recife", regiao: "🌉 Recife", lat: -8.1189, lng: -34.9014 },
+            { nome: "Boa Vista", cidade: "Recife", regiao: "🌉 Recife", lat: -8.0602, lng: -34.8854 },
+            { nome: "Santo Amaro", cidade: "Recife", regiao: "🌉 Recife", lat: -8.0485, lng: -34.8780 },
+            { nome: "Santo Antônio", cidade: "Recife", regiao: "🌉 Recife", lat: -8.0630, lng: -34.8785 },
+            { nome: "Bairro do Recife (Recife Antigo)", cidade: "Recife", regiao: "🌉 Recife", lat: -8.0631, lng: -34.8711 },
+            { nome: "Casa Amarela", cidade: "Recife", regiao: "🌉 Recife", lat: -8.0266, lng: -34.9181 },
+            { nome: "Casa Forte", cidade: "Recife", regiao: "🌉 Recife", lat: -8.0345, lng: -34.9185 },
+            { nome: "Espinheiro", cidade: "Recife", regiao: "🌉 Recife", lat: -8.0402, lng: -34.8960 },
+            { nome: "Graças", cidade: "Recife", regiao: "🌉 Recife", lat: -8.0465, lng: -34.9015 },
+            { nome: "Aflitos", cidade: "Recife", regiao: "🌉 Recife", lat: -8.0420, lng: -34.9005 },
+            { nome: "Derby", cidade: "Recife", regiao: "🌉 Recife", lat: -8.0545, lng: -34.8995 },
+            { nome: "Torre", cidade: "Recife", regiao: "🌉 Recife", lat: -8.0452, lng: -34.9110 },
+            { nome: "Madalena", cidade: "Recife", regiao: "🌉 Recife", lat: -8.0535, lng: -34.9085 },
+            { nome: "Cordeiro", cidade: "Recife", regiao: "🌉 Recife", lat: -8.0525, lng: -34.9245 },
+            { nome: "Várzea", cidade: "Recife", regiao: "🌉 Recife", lat: -8.0490, lng: -34.9590 },
+            { nome: "Imbiribeira", cidade: "Recife", regiao: "🌉 Recife", lat: -8.0965, lng: -34.9112 },
+            { nome: "Pina", cidade: "Recife", regiao: "🌉 Recife", lat: -8.0895, lng: -34.8845 },
+            { nome: "Afogados", cidade: "Recife", regiao: "🌉 Recife", lat: -8.0775, lng: -34.9065 },
+            { nome: "Ibura", cidade: "Recife", regiao: "🌉 Recife", lat: -8.1215, lng: -34.9390 },
+            { nome: "Parnamirim", cidade: "Recife", regiao: "🌉 Recife", lat: -8.0340, lng: -34.9105 },
+            { nome: "Tamarineira", cidade: "Recife", regiao: "🌉 Recife", lat: -8.0285, lng: -34.9045 },
+            { nome: "Encruzilhada", cidade: "Recife", regiao: "🌉 Recife", lat: -8.0365, lng: -34.8925 },
+            { nome: "Campo Grande", cidade: "Recife", regiao: "🌉 Recife", lat: -8.0315, lng: -34.8825 },
+            { nome: "Arruda", cidade: "Recife", regiao: "🌉 Recife", lat: -8.0235, lng: -34.8915 },
+            { nome: "Água Fria", cidade: "Recife", regiao: "🌉 Recife", lat: -8.0185, lng: -34.8965 },
+            { nome: "Beberibe", cidade: "Recife", regiao: "🌉 Recife", lat: -8.0115, lng: -34.8955 }
+        ];
+
+        const CATALOGO_ENDERECOS_VIAS = [
+            { nome: "Rua Peixe Agulha, Ouro Preto", bairro: "Ouro Preto", cidade: "Olinda", regiao: "🛣️ Ouro Preto (Olinda)", lat: -7.9942, lng: -34.8648 },
+            { nome: "Estrada de Ouro Preto, Ouro Preto", bairro: "Ouro Preto", cidade: "Olinda", regiao: "🛣️ Ouro Preto (Olinda)", lat: -7.9935, lng: -34.8625 },
+            { nome: "Av. Senador Nilo Coelho (II Perimetral), Ouro Preto", bairro: "Ouro Preto", cidade: "Olinda", regiao: "🛣️ Ouro Preto (Olinda)", lat: -7.9958, lng: -34.8670 },
+            { nome: "Av. Brasil, Maranguape I", bairro: "Maranguape I", cidade: "Olinda", regiao: "🛣️ Maranguape I", lat: -7.9482, lng: -34.8595 },
+            { nome: "Av. F, Maranguape II", bairro: "Maranguape II", cidade: "Olinda", regiao: "🛣️ Maranguape II", lat: -7.9378, lng: -34.8472 },
+            { nome: "Av. Presidente Kennedy, Peixinhos", bairro: "Peixinhos", cidade: "Olinda", regiao: "🛣️ Peixinhos (Olinda)", lat: -8.0128, lng: -34.8694 },
+            { nome: "Av. Getúlio Vargas, Bairro Novo", bairro: "Bairro Novo", cidade: "Olinda", regiao: "🛣️ Bairro Novo (Olinda)", lat: -7.9960, lng: -34.8435 },
+            { nome: "Av. Ministro Marcos Freire (Orla), Bairro Novo", bairro: "Bairro Novo", cidade: "Olinda", regiao: "🛣️ Bairro Novo (Olinda)", lat: -7.9986, lng: -34.8415 },
+            { nome: "Av. Carlos de Lima Cavalcanti, Casa Caiada", bairro: "Casa Caiada", cidade: "Olinda", regiao: "🛣️ Casa Caiada (Olinda)", lat: -7.9865, lng: -34.8415 },
+            { nome: "Rua Dr. Manoel de Barros Lima, Casa Caiada", bairro: "Casa Caiada", cidade: "Olinda", regiao: "🛣️ Casa Caiada (Olinda)", lat: -7.9825, lng: -34.8398 },
+            { nome: "Rua Cândido Pessoa, Bairro Novo", bairro: "Bairro Novo", cidade: "Olinda", regiao: "🛣️ Bairro Novo (Olinda)", lat: -8.0012, lng: -34.8428 },
+            { nome: "Praça do Carmo, Carmo", bairro: "Carmo", cidade: "Olinda", regiao: "🛣️ Carmo (Olinda)", lat: -8.0175, lng: -34.8492 },
+            { nome: "Mercado Eufrásio Barbosa, Varadouro", bairro: "Varadouro", cidade: "Olinda", regiao: "🛣️ Varadouro (Olinda)", lat: -8.0182, lng: -34.8531 },
+            { nome: "Av. Brasil, Rio Doce", bairro: "Rio Doce", cidade: "Olinda", regiao: "🛣️ Rio Doce (Olinda)", lat: -7.9602, lng: -34.8371 },
+            { nome: "Av. Tiradentes, Rio Doce", bairro: "Rio Doce", cidade: "Olinda", regiao: "🛣️ Rio Doce (Olinda)", lat: -7.9642, lng: -34.8401 },
+            { nome: "Av. Fagundes Varela, Jardim Atlântico", bairro: "Jardim Atlântico", cidade: "Olinda", regiao: "🛣️ Jardim Atlântico", lat: -7.9727, lng: -34.8395 },
+            { nome: "Av. Pan Nordestina, Salgadinho", bairro: "Salgadinho", cidade: "Olinda", regiao: "🛣️ Salgadinho (Olinda)", lat: -8.0265, lng: -34.8655 },
+            { nome: "Av. Conde da Boa Vista, Boa Vista", bairro: "Boa Vista", cidade: "Recife", regiao: "🛣️ Boa Vista (Recife)", lat: -8.0575, lng: -34.8899 },
+            { nome: "Rua da Imperatriz, Boa Vista", bairro: "Boa Vista", cidade: "Recife", regiao: "🛣️ Boa Vista (Recife)", lat: -8.0602, lng: -34.8854 },
+            { nome: "Rua da Aurora, Santo Amaro", bairro: "Santo Amaro", cidade: "Recife", regiao: "🛣️ Santo Amaro (Recife)", lat: -8.0485, lng: -34.8780 },
+            { nome: "Rua Araripina, Santo Amaro", bairro: "Santo Amaro", cidade: "Recife", regiao: "🛣️ Santo Amaro (Recife)", lat: -8.0492, lng: -34.8765 },
+            { nome: "Av. Agamenon Magalhães, Santo Amaro", bairro: "Santo Amaro", cidade: "Recife", regiao: "🛣️ Santo Amaro (Recife)", lat: -8.0510, lng: -34.8920 },
+            { nome: "Av. Norte Miguel Arraes, Casa Amarela", bairro: "Casa Amarela", cidade: "Recife", regiao: "🛣️ Casa Amarela (Recife)", lat: -8.0266, lng: -34.9181 },
+            { nome: "Av. Conselheiro Rosa e Silva, Espinheiro", bairro: "Espinheiro", cidade: "Recife", regiao: "🛣️ Espinheiro (Recife)", lat: -8.0402, lng: -34.8960 },
+            { nome: "Rua Real da Torre, Torre", bairro: "Torre", cidade: "Recife", regiao: "🛣️ Torre (Recife)", lat: -8.0452, lng: -34.9110 },
+            { nome: "Av. Boa Viagem, Boa Viagem", bairro: "Boa Viagem", cidade: "Recife", regiao: "🛣️ Boa Viagem (Recife)", lat: -8.1189, lng: -34.9014 },
+            { nome: "Av. Conselheiro Aguiar, Boa Viagem", bairro: "Boa Viagem", cidade: "Recife", regiao: "🛣️ Boa Viagem (Recife)", lat: -8.1180, lng: -34.8990 },
+            { nome: "Av. Mascarenhas de Morais, Imbiribeira", bairro: "Imbiribeira", cidade: "Recife", regiao: "🛣️ Imbiribeira (Recife)", lat: -8.0965, lng: -34.9112 },
+            { nome: "Av. Caxangá, Cordeiro", bairro: "Cordeiro", cidade: "Recife", regiao: "🛣️ Cordeiro (Recife)", lat: -8.0525, lng: -34.9245 }
+        ];
+
+        function normalizarTextoBusca(str) {
+            return String(str || '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase()
+                .trim();
+        }
+
+        function destacarTrechoDigitado(textoOriginal, termo) {
+            const normTexto = normalizarTextoBusca(textoOriginal);
+            const normTermo = normalizarTextoBusca(termo);
+            if (!normTermo) return textoOriginal;
+            const idx = normTexto.indexOf(normTermo);
+            if (idx < 0) return textoOriginal;
+            const inicio = textoOriginal.slice(0, idx);
+            const meio = textoOriginal.slice(idx, idx + termo.length);
+            const fim = textoOriginal.slice(idx + termo.length);
+            return `${inicio}<mark>${meio}</mark>${fim}`;
+        }
+
+        function obterSugestoesLocais(termo, modo) {
+            const norm = normalizarTextoBusca(termo);
+            if (!norm) return [];
+
+            let base = [];
+            if (modo === 'bairro') {
+                base = [...CATALOGO_BAIRROS_REGIOES];
+            } else if (modo === 'endereco') {
+                base = [
+                    ...CATALOGO_ENDERECOS_VIAS,
+                    ...CATALOGO_BAIRROS_REGIOES.map(b => ({
+                        nome: `${b.nome}, ${b.cidade}`,
+                        bairro: b.nome,
+                        cidade: b.cidade,
+                        regiao: b.regiao,
+                        lat: b.lat,
+                        lng: b.lng
+                    }))
+                ];
+            } else {
+                // Busca geral (bairros + vias + pontos/protocolos cadastrados)
+                const dinamicos = [
+                    ...todosOsPontos.map(p => ({ nome: p.nome, bairro: p.bairro, cidade: p.cidade, regiao: '📍 Ponto/Rota', lat: p.latitude, lng: p.longitude })),
+                    ...todosOsCataTrecos.map(c => ({ nome: `${c.protocolo} - ${c.bairro}`, bairro: c.bairro, cidade: c.cidade, regiao: '🛋️ Protocolo', lat: c.latitude, lng: c.longitude }))
+                ];
+                base = [...CATALOGO_BAIRROS_REGIOES, ...CATALOGO_ENDERECOS_VIAS, ...dinamicos];
+            }
+
+            // Prioriza quem começa com o termo digitado (ex: "our" -> "Ouro Preto", "maran" -> "Maranguape I/II")
+            const comecaCom = [];
+            const contem = [];
+            const vistos = new Set();
+
+            base.forEach(item => {
+                const chave = normalizarTextoBusca(item.nome);
+                if (vistos.has(chave)) return;
+                if (chave.startsWith(norm)) {
+                    vistos.add(chave);
+                    comecaCom.push(item);
+                } else if (chave.includes(norm)) {
+                    vistos.add(chave);
+                    contem.push(item);
+                }
+            });
+
+            return [...comecaCom, ...contem].slice(0, 8);
+        }
+
+        function ativarAutocompleteInput(config) {
+            const input = document.getElementById(config.inputId);
+            if (!input || input.dataset.autocompleteReady === '1') return;
+            input.dataset.autocompleteReady = '1';
+            input.setAttribute('autocomplete', 'off');
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'autocomplete-wrap';
+            input.parentNode.insertBefore(wrapper, input);
+            wrapper.appendChild(input);
+
+            const menu = document.createElement('div');
+            menu.className = 'autocomplete-menu';
+            wrapper.appendChild(menu);
+
+            let indiceAtivo = -1;
+            let sugestoesAtuais = [];
+
+            function aplicarEscolha(item) {
+                input.value = item.nome;
+                menu.classList.remove('open');
+                indiceAtivo = -1;
+
+                if (config.cidadeSelectId && item.cidade) {
+                    const selCidade = document.getElementById(config.cidadeSelectId);
+                    if (selCidade) selCidade.value = item.cidade;
+                }
+                if (config.bairroInputId && item.bairro) {
+                    const inpBairro = document.getElementById(config.bairroInputId);
+                    if (inpBairro && !inpBairro.value.trim()) {
+                        inpBairro.value = item.bairro;
+                    }
+                }
+                if (config.latInputId && config.lngInputId && typeof item.lat === 'number' && typeof item.lng === 'number') {
+                    const elLat = document.getElementById(config.latInputId);
+                    const elLng = document.getElementById(config.lngInputId);
+                    if (elLat && elLng) {
+                        elLat.value = item.lat.toFixed(4);
+                        elLng.value = item.lng.toFixed(4);
+                    }
+                    map.setView([item.lat, item.lng], 15, { animate: true });
+                }
+                if (typeof config.onSelectCallback === 'function') {
+                    config.onSelectCallback(item);
+                }
+            }
+
+            function renderizarMenu() {
+                const valor = input.value.trim();
+                sugestoesAtuais = obterSugestoesLocais(valor, config.modo);
+                indiceAtivo = -1;
+
+                if (sugestoesAtuais.length === 0) {
+                    menu.classList.remove('open');
+                    menu.innerHTML = '';
+                    return;
+                }
+
+                menu.innerHTML = sugestoesAtuais
+                    .map((item, idx) => `
+                        <div class="autocomplete-item" data-idx="${idx}">
+                            <span>📍 ${destacarTrechoDigitado(item.nome, valor)}</span>
+                            <span class="autocomplete-tag">${item.regiao || item.cidade || ''}</span>
+                        </div>
+                    `)
+                    .join('');
+
+                menu.querySelectorAll('.autocomplete-item').forEach(el => {
+                    el.addEventListener('mousedown', function (ev) {
+                        ev.preventDefault();
+                        const idx = parseInt(this.getAttribute('data-idx'), 10);
+                        if (sugestoesAtuais[idx]) {
+                            aplicarEscolha(sugestoesAtuais[idx]);
+                        }
+                    });
+                });
+
+                menu.classList.add('open');
+            }
+
+            input.addEventListener('input', renderizarMenu);
+            input.addEventListener('focus', () => {
+                if (input.value.trim().length > 0) renderizarMenu();
+            });
+            input.addEventListener('blur', () => {
+                setTimeout(() => menu.classList.remove('open'), 160);
+            });
+            input.addEventListener('keydown', function (ev) {
+                if (!menu.classList.contains('open') || sugestoesAtuais.length === 0) return;
+                const itens = menu.querySelectorAll('.autocomplete-item');
+                if (ev.key === 'ArrowDown') {
+                    ev.preventDefault();
+                    indiceAtivo = (indiceAtivo + 1) % sugestoesAtuais.length;
+                    itens.forEach((el, i) => el.classList.toggle('active-item', i === indiceAtivo));
+                } else if (ev.key === 'ArrowUp') {
+                    ev.preventDefault();
+                    indiceAtivo = (indiceAtivo - 1 + sugestoesAtuais.length) % sugestoesAtuais.length;
+                    itens.forEach((el, i) => el.classList.toggle('active-item', i === indiceAtivo));
+                } else if (ev.key === 'Enter' && indiceAtivo >= 0) {
+                    ev.preventDefault();
+                    aplicarEscolha(sugestoesAtuais[indiceAtivo]);
+                } else if (ev.key === 'Escape') {
+                    menu.classList.remove('open');
+                }
+            });
+        }
+
+        function inicializarTodosAutocompletesLocais() {
+            // 1. Campos de Bairro nos 3 formulários
+            ativarAutocompleteInput({
+                inputId: 'inp-bairro',
+                modo: 'bairro',
+                cidadeSelectId: 'inp-cidade',
+                latInputId: 'inp-lat',
+                lngInputId: 'inp-lng'
+            });
+            ativarAutocompleteInput({
+                inputId: 'ct-bairro',
+                modo: 'bairro',
+                cidadeSelectId: 'ct-cidade',
+                latInputId: 'ct-lat',
+                lngInputId: 'ct-lng'
+            });
+            ativarAutocompleteInput({
+                inputId: 'den-bairro',
+                modo: 'bairro',
+                cidadeSelectId: 'den-cidade',
+                latInputId: 'den-lat',
+                lngInputId: 'den-lng'
+            });
+
+            // 2. Campos de Endereço / Rua nos 3 formulários
+            ativarAutocompleteInput({
+                inputId: 'inp-endereco',
+                modo: 'endereco',
+                cidadeSelectId: 'inp-cidade',
+                bairroInputId: 'inp-bairro',
+                latInputId: 'inp-lat',
+                lngInputId: 'inp-lng'
+            });
+            ativarAutocompleteInput({
+                inputId: 'ct-endereco',
+                modo: 'endereco',
+                cidadeSelectId: 'ct-cidade',
+                bairroInputId: 'ct-bairro',
+                latInputId: 'ct-lat',
+                lngInputId: 'ct-lng'
+            });
+            ativarAutocompleteInput({
+                inputId: 'den-endereco',
+                modo: 'endereco',
+                cidadeSelectId: 'den-cidade',
+                bairroInputId: 'den-bairro',
+                latInputId: 'den-lat',
+                lngInputId: 'den-lng'
+            });
+
+            // 3. Campos de Busca de Local nas Abas (Ecopontos & Rotas e Cata-Treco)
+            ativarAutocompleteInput({
+                inputId: 'filtro-busca',
+                modo: 'busca',
+                onSelectCallback: () => aplicarFiltros()
+            });
+            ativarAutocompleteInput({
+                inputId: 'filtro-busca-catatreco',
+                modo: 'busca',
+                onSelectCallback: () => renderizarCataTreco()
+            });
         }
 
         // Inicialização
