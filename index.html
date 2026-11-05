@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#14532d" />
     <link rel="manifest" href="/manifest.json" />
-    <title>CittaLixo v3.3.0 — Pontos, Rotas, Cata-Treco, Denúncias e Painel Gestor (Olinda e Recife)</title>
+    <title>CittaLixo v3.4.0 — Pontos, Rotas, Cata-Treco, Denúncias e Painel Gestor (Olinda e Recife)</title>
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
@@ -916,6 +916,129 @@
             white-space: nowrap;
         }
 
+        /* v3.4.0: Stepper de 3 etapas, Assistente Onde Descartar, WhatsApp, Meu Bairro e Impacto Ambiental */
+        .stepper-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            margin: 9px 0;
+            padding: 7px 10px;
+            background: var(--bg-input);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        .step-node {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-muted);
+            opacity: 0.65;
+        }
+        .step-node.done {
+            color: var(--green-dark);
+            opacity: 1;
+        }
+        .step-node.current {
+            color: #d97706;
+            opacity: 1;
+        }
+        .step-divider {
+            flex: 1;
+            height: 2px;
+            background: var(--border-color);
+            min-width: 12px;
+        }
+        .step-divider.done {
+            background: var(--green-primary);
+        }
+        .card-link.whatsapp-btn {
+            background: #dcfce7;
+            border-color: #86efac;
+            color: #166534;
+            font-weight: 700;
+        }
+        .card-link.whatsapp-btn:hover {
+            background: #bbf7d0;
+        }
+        .meu-bairro-banner {
+            background: linear-gradient(90deg, #ecfdf5, #f0f9ff);
+            border-left: 5px solid #16a34a;
+            color: #064e3b;
+            padding: 10px 16px;
+            border-radius: var(--radius);
+            margin-bottom: 12px;
+            font-size: 0.88rem;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+            box-shadow: var(--shadow);
+        }
+        body.dark-mode .meu-bairro-banner {
+            background: #1e293b;
+            color: #e2e8f0;
+        }
+        .assistant-box {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 18px;
+            border-top: 4px solid var(--green-primary);
+        }
+        .assistant-chips {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin: 10px 0;
+        }
+        .assistant-result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+        }
+        .assistant-item-card {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 13px;
+        }
+        .eco-impact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .eco-impact-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 15px;
+            box-shadow: var(--shadow);
+            border-bottom: 4px solid #10b981;
+            text-align: center;
+        }
+        .eco-impact-card .val {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: var(--green-dark);
+            display: block;
+        }
+        .eco-impact-card .lbl {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 700;
+        }
+        .pill-btn.heatmap-active {
+            background: #ea580c !important;
+            color: #ffffff !important;
+            border-color: #c2410c !important;
+        }
+
         footer {
             text-align: center;
             padding: 20px;
@@ -936,8 +1059,11 @@
                 <button class="eco-score-btn user-only" id="btn-eco-score" onclick="abrirModalCidadaoEco()" title="Veja sua pontuação e nível de Cidadão Eco">
                     🏆 Cidadão Eco: 🌱 Iniciante (0 pts)
                 </button>
+                <button class="eco-score-btn user-only" id="btn-meu-bairro" onclick="abrirModalMeuBairro()" title="Salve seu bairro para ver horários e Ecoponto mais próximo automaticamente">
+                    🏠 Meu Bairro: Definir
+                </button>
             </div>
-            <h1>♻️ CittaLixo <span style="font-size:0.88rem; background:rgba(255,255,255,0.22); padding:3px 10px; border-radius:999px; vertical-align:middle;">v3.3.0</span></h1>
+            <h1>♻️ CittaLixo <span style="font-size:0.88rem; background:rgba(255,255,255,0.22); padding:3px 10px; border-radius:999px; vertical-align:middle;">v3.4.0</span></h1>
             <button class="theme-toggle-btn" id="btn-dark-mode" onclick="alternarModoEscuro()">🌙 Modo Escuro</button>
         </div>
 
@@ -974,6 +1100,15 @@
             <div class="stat-card orange">
                 <span class="stat-value" id="stat-denuncias-pendentes">3</span>
                 <span class="stat-label">⚠️ Pontos Críticos Pendentes</span>
+            </div>
+        </div>
+
+        <!-- Resumo Personalizado do Bairro Favorito do Morador -->
+        <div class="meu-bairro-banner user-only" id="banner-meu-bairro">
+            <div id="texto-meu-bairro">🏠 Seu bairro favorito</div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <button type="button" class="pill-btn" onclick="filtrarPeloMeuBairroSalvo()">🎯 Filtrar Meu Bairro no Mapa</button>
+                <button type="button" class="pill-btn" onclick="abrirModalMeuBairro()">✏️ Trocar Bairro</button>
             </div>
         </div>
 
@@ -1088,6 +1223,9 @@
                     <button class="pill-btn" onclick="filtrarDenunciasStatus(this, 'Resolvido')">✅ Resolvidas</button>
                 </div>
                 <div class="filters-row">
+                    <button type="button" class="pill-btn" id="btn-heatmap-denuncias" onclick="alternarHeatmapDenuncias(this)" title="Exibir manchas de concentração crítica de lixo no mapa">
+                        🔥 Ver Mancha de Calor
+                    </button>
                     <button class="btn-action btn-orange" onclick="toggleFormularioDenuncia()">
                         ⚠️ Reportar Ponto Crítico de Lixo no Mapa
                     </button>
@@ -1403,6 +1541,26 @@
                 </div>
             </div>
 
+            <!-- Calculadora de Impacto Ambiental Urbano (CO2, Recicláveis, Volumosos e Água) -->
+            <div class="eco-impact-grid" id="grid-impacto-ambiental">
+                <div class="eco-impact-card">
+                    <span class="val" id="imp-reciclaveis">0 t/mês</span>
+                    <span class="lbl">♻️ Recicláveis Desviados de Canais</span>
+                </div>
+                <div class="eco-impact-card" style="border-bottom-color:#7c3aed;">
+                    <span class="val" id="imp-volumosos">0 m³</span>
+                    <span class="lbl">🛋️ Entulhos e Volumosos Recolhidos</span>
+                </div>
+                <div class="eco-impact-card" style="border-bottom-color:#0284c7;">
+                    <span class="val" id="imp-co2">0 kg</span>
+                    <span class="lbl">🌍 Emissões de CO₂ Evitadas</span>
+                </div>
+                <div class="eco-impact-card" style="border-bottom-color:#eab308;">
+                    <span class="val" id="imp-agua">0 mil L</span>
+                    <span class="lbl">💧 Água Protegida (Óleo &amp; Eletrônicos)</span>
+                </div>
+            </div>
+
             <!-- Fila de Verificação Comunitária para o Admin aprovar com 1 clique -->
             <div class="chart-box" style="margin-bottom: 16px; border-left: 5px solid #10b981;">
                 <h3 style="margin-top:0; color:#065f46;">✨ Verificação Comunitária: Denúncias Relatadas como Limpas pelos Moradores</h3>
@@ -1432,6 +1590,32 @@
 
         <!-- ABA 5: GUIA DE DESCARTE CORRETO + QUIZ INTERATIVO -->
         <div id="visao-educativa" class="tab-panel">
+            <div class="assistant-box">
+                <h2 style="margin-top:0; color: var(--green-dark);">🔍 Assistente Rápido: Onde Descarto Este Item?</h2>
+                <p style="margin-top:0; font-size:0.88rem; color:var(--text-muted);">
+                    Digite qualquer objeto do dia a dia (ex: <em>lâmpada, espelho quebrado, colchão, óleo, pilha, caixa de pizza, isopor</em>) e descubra na hora como preparar e onde levar!
+                </p>
+                <input
+                    type="text"
+                    id="inp-assistente-descarte"
+                    placeholder="🔎 Digite o item... (ex: lâmpada, colchão, óleo, espelho, celular, remédio)"
+                    oninput="filtrarAssistenteDescarte(this.value)"
+                    style="width:100%;"
+                />
+                <div class="assistant-chips">
+                    <button type="button" class="pill-btn" onclick="selecionarChipAssistente('lâmpada')">💡 Lâmpada</button>
+                    <button type="button" class="pill-btn" onclick="selecionarChipAssistente('óleo')">🌻 Óleo de Cozinha</button>
+                    <button type="button" class="pill-btn" onclick="selecionarChipAssistente('colchão')">🛋️ Colchão / Sofá</button>
+                    <button type="button" class="pill-btn" onclick="selecionarChipAssistente('espelho')">🪞 Espelho / Vidro</button>
+                    <button type="button" class="pill-btn" onclick="selecionarChipAssistente('pilha')">🔋 Pilhas / Celular</button>
+                    <button type="button" class="pill-btn" onclick="selecionarChipAssistente('entulho')">🧱 Entulho / Poda</button>
+                    <button type="button" class="pill-btn" onclick="selecionarChipAssistente('remédio')">💊 Remédio Vencido</button>
+                    <button type="button" class="pill-btn" onclick="selecionarChipAssistente('pizza')">🍕 Caixa de Pizza / Isopor</button>
+                    <button type="button" class="pill-btn" onclick="selecionarChipAssistente('')">📋 Ver Todos</button>
+                </div>
+                <div class="assistant-result-grid" id="resultado-assistente-descarte"></div>
+            </div>
+
             <h2 style="text-align:center; color: var(--green-dark); margin-top: 8px;">📚 Guia Rápido: Como Preparar cada Resíduo antes de Descartar</h2>
             <div class="guide-grid">
                 <div class="guide-card">
@@ -1496,8 +1680,27 @@
         </div>
     </div>
 
+    <!-- Modal Salvar Meu Bairro Favorito -->
+    <div class="modal-overlay" id="modal-meu-bairro" onclick="if(event.target===this) fecharModalMeuBairro()">
+        <div class="modal-box">
+            <h2 style="margin-top:0; color:var(--green-dark);">🏠 Definir Meu Bairro Favorito</h2>
+            <p style="font-size:0.88rem; color:var(--text-muted); margin-top:0;">
+                Escolha seu bairro em Olinda, Recife ou divisa para ver automaticamente os horários de coleta e o Ecoponto mais próximo sempre que abrir o CittaLixo:
+            </p>
+            <div class="form-group">
+                <label for="inp-meu-bairro-fav">Digite as primeiras letras do seu bairro:</label>
+                <input type="text" id="inp-meu-bairro-fav" placeholder="Ex: Ouro Preto, Maranguape I, Casa Caiada, Boa Viagem..." />
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+                <button type="button" class="pill-btn" onclick="removerMeuBairroFavorito()">Limpar</button>
+                <button type="button" class="pill-btn" onclick="fecharModalMeuBairro()">Cancelar</button>
+                <button type="button" class="btn-action btn-add" onclick="salvarMeuBairroFavorito()">💾 Salvar Meu Bairro</button>
+            </div>
+        </div>
+    </div>
+
     <footer>
-        CittaLixo v3.3.0 • Dados abertos com OpenStreetMap, Leaflet, Esri Satellite &amp; OSRM (Zero Custo de API) • Instalável como App (PWA) • Olinda e Recife
+        CittaLixo v3.4.0 • Dados abertos com OpenStreetMap, Leaflet, Esri Satellite &amp; OSRM (Zero Custo de API) • Instalável como App (PWA) • Olinda e Recife
     </footer>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1606,6 +1809,8 @@
         const liveTrucksLayer = L.layerGroup().addTo(map);
         const catatrecoLayer = L.layerGroup();
         const denunciasLayer = L.layerGroup();
+        const heatmapDenunciasLayer = L.layerGroup();
+        let heatmapDenunciasAtivo = false;
 
         function fecharTodosOsFormularios() {
             document.getElementById('secao-cadastro').classList.remove('open');
@@ -1621,6 +1826,7 @@
             if (map.hasLayer(liveTrucksLayer)) map.removeLayer(liveTrucksLayer);
             if (map.hasLayer(catatrecoLayer)) map.removeLayer(catatrecoLayer);
             if (map.hasLayer(denunciasLayer)) map.removeLayer(denunciasLayer);
+            if (map.hasLayer(heatmapDenunciasLayer)) map.removeLayer(heatmapDenunciasLayer);
 
             const legEco = document.getElementById('leg-ecoponto');
             const legCol = document.getElementById('leg-coleta');
@@ -1642,6 +1848,7 @@
                 if (legCt) legCt.style.display = 'inline';
                 if (legCri) legCri.style.display = 'none';
             } else if (abaAtual === 'denuncias') {
+                if (heatmapDenunciasAtivo) heatmapDenunciasLayer.addTo(map);
                 denunciasLayer.addTo(map);
                 if (legEco) legEco.style.display = 'none';
                 if (legCol) legCol.style.display = 'none';
@@ -1851,6 +2058,27 @@
                     .join('');
             }
 
+            // Cálculo de Impacto Ambiental Estimado (Painel Gestor)
+            const qtdEcopontos = todosOsPontos.filter(p => p.categoria === 'Ecoponto').length;
+            const qtdRotas = todosOsPontos.filter(p => p.categoria === 'Coleta Domiciliar').length;
+            const qtdDenResolvidas = todasAsDenuncias.filter(d => d.status === 'Resolvido').length;
+            const qtdCtRecolhidos = todosOsCataTrecos.filter(c => c.status === 'Recolhido').length;
+
+            const tonReciclaveis = (qtdEcopontos * 4.2 + qtdRotas * 6.5).toFixed(1);
+            const m3Volumosos = (qtdCtRecolhidos * 2.5 + qtdDenResolvidas * 3.8 + 12.0).toFixed(1);
+            const kgCo2 = Math.round( parseFloat(tonReciclaveis) * 310 + parseFloat(m3Volumosos) * 45 );
+            const milLitrosAgua = Math.round( qtdEcopontos * 18 + qtdDenResolvidas * 12 );
+
+            const elImpRec = document.getElementById('imp-reciclaveis');
+            if (elImpRec) {
+                elImpRec.textContent = `${tonReciclaveis} t/mês`;
+                document.getElementById('imp-volumosos').textContent = `${m3Volumosos} m³`;
+                document.getElementById('imp-co2').textContent = `${kgCo2.toLocaleString('pt-BR')} kg`;
+                document.getElementById('imp-agua').textContent = `${milLitrosAgua} mil L`;
+            }
+
+            atualizarBannerMeuBairro();
+
             const elVerif = document.getElementById('lista-verificacao-comunitaria-admin');
             if (elVerif) {
                 const sugeridasLimpeza = todasAsDenuncias.filter(d => verificarLimpezaComunitariaLogica(d));
@@ -1899,7 +2127,7 @@
 
         function exportarDadosJSON() {
             const dados = {
-                versao: '3.3.0',
+                versao: '3.4.0',
                 exportado_em: new Date().toISOString(),
                 pontos_e_rotas: todosOsPontos,
                 agendamentos_catatreco: todosOsCataTrecos,
@@ -2170,6 +2398,7 @@
                             🧭 Traçar Caminho no Mapa
                         </button>
                         <a class="card-link" href="${urlRota}" target="_blank" rel="noopener">🗺️ Google Maps</a>
+                        <button type="button" class="card-link whatsapp-btn" onclick="compartilharPontoWhatsApp(${ponto.id})" title="Compartilhar horários e localização no WhatsApp">📲 WhatsApp</button>
                         <button type="button" class="card-link admin-only" onclick="prepararEdicaoPonto(${ponto.id})">✏️ Editar</button>
                         <button type="button" class="card-link delete-btn admin-only" onclick="excluirPonto(${ponto.id})">🗑️ Excluir</button>
                     </div>
@@ -2457,15 +2686,23 @@
                             ${recolhido ? '✅ Recolhido pela Equipe' : '🟣 Agendado: ' + ct.data_agendada}
                         </span>
                     </div>
+                    <div class="stepper-bar">
+                        <span class="step-node done">✅ 1. Protocolo</span>
+                        <span class="step-divider done"></span>
+                        <span class="step-node ${recolhido ? 'done' : 'current'}">${recolhido ? '✅' : '🚛'} 2. Na Programação</span>
+                        <span class="step-divider ${recolhido ? 'done' : ''}"></span>
+                        <span class="step-node ${recolhido ? 'done' : ''}">${recolhido ? '✅' : '⏳'} 3. Recolhido</span>
+                    </div>
                     <p><strong>👤 Solicitante:</strong> ${ct.solicitante} • <strong>Turno:</strong> ${ct.turno_preferido}</p>
                     <p><strong>📌 Endereço:</strong> ${ct.endereco}</p>
                     ${ct.observacoes ? `<p>ℹ️ ${ct.observacoes}</p>` : ''}
                     ${ct.foto_base64 ? `<img src="${ct.foto_base64}" class="card-photo-thumb" alt="Foto Cata-Treco" onclick="event.stopPropagation(); abrirFotoAmpliada(this.src, '${(ct.protocolo || '') + ' - ' + (ct.itens_volumosos || '').replace(/'/g, '')}')" title="Clique para ampliar a foto" />` : ''}
-                    <div class="card-actions admin-only" onclick="event.stopPropagation();">
-                        <button type="button" class="card-link" onclick="alternarStatusCataTreco(${ct.id})">
+                    <div class="card-actions" onclick="event.stopPropagation();">
+                        <button type="button" class="card-link whatsapp-btn" onclick="compartilharCataTrecoWhatsApp(${ct.id})">📲 Compartilhar Protocolo no WhatsApp</button>
+                        <button type="button" class="card-link admin-only" onclick="alternarStatusCataTreco(${ct.id})">
                             ${recolhido ? '↩️ Reabrir Agendamento' : '✅ Marcar como Recolhido'}
                         </button>
-                        <button type="button" class="card-link delete-btn" onclick="excluirCataTreco(${ct.id})">🗑️ Excluir</button>
+                        <button type="button" class="card-link delete-btn admin-only" onclick="excluirCataTreco(${ct.id})">🗑️ Excluir</button>
                     </div>
                 `;
                 container.appendChild(card);
@@ -2595,6 +2832,7 @@
 
         function renderizarDenuncias() {
             denunciasLayer.clearLayers();
+            heatmapDenunciasLayer.clearLayers();
             const container = document.getElementById('denuncias-container');
             const contador = document.getElementById('contador-denuncias');
 
@@ -2612,6 +2850,22 @@
                 const qtdConf = den.confirmacoes || 1;
                 const qtdLimpo = den.nao_esta_mais || 0;
                 const votoDoUsuario = obterVotoUsuarioDenuncia(den.id);
+
+                if (!resolvida) {
+                    const peso = (den.gravidade === 'Crítico' ? 2 : 1) + Math.min(5, qtdConf);
+                    L.circle([den.latitude, den.longitude], {
+                        radius: 180 + peso * 55,
+                        color: 'transparent',
+                        fillColor: '#ea580c',
+                        fillOpacity: 0.22
+                    }).addTo(heatmapDenunciasLayer);
+                    L.circle([den.latitude, den.longitude], {
+                        radius: 90 + peso * 25,
+                        color: 'transparent',
+                        fillColor: '#dc2626',
+                        fillOpacity: 0.36
+                    }).addTo(heatmapDenunciasLayer);
+                }
 
                 const marker = L.marker([den.latitude, den.longitude], { icon: icone })
                     .addTo(denunciasLayer)
@@ -2659,12 +2913,20 @@
                         ${qtdLimpo > 0 ? `<span class="badge badge-status-open">✨ ${qtdLimpo} ${qtdLimpo === 1 ? 'relatou que já foi recolhido' : 'relataram que já foi recolhido'}</span>` : ''}
                         ${verificarLimpezaComunitariaLogica(den) ? `<span class="badge badge-comunidade-limpo">✅ Comunidade relata que foi limpo (${qtdLimpo}x${qtdConf}) • Aguardando Admin</span>` : ''}
                     </div>
+                    <div class="stepper-bar">
+                        <span class="step-node done">✅ 1. Reportado</span>
+                        <span class="step-divider ${qtdConf >= 2 || qtdLimpo >= 1 || resolvida ? 'done' : ''}"></span>
+                        <span class="step-node ${resolvida ? 'done' : (qtdConf >= 2 || qtdLimpo >= 1 ? 'current' : '')}">👥 2. Verificado (${qtdConf + qtdLimpo})</span>
+                        <span class="step-divider ${resolvida ? 'done' : ''}"></span>
+                        <span class="step-node ${resolvida ? 'done' : ''}">${resolvida ? '✅' : '⏳'} 3. Limpeza Concluída</span>
+                    </div>
                     <p><strong>🗑️ Resíduo Acumulado:</strong> ${den.tipo_residuo}</p>
                     <p><strong>📌 Local:</strong> ${den.endereco}</p>
                     ${den.descricao ? `<p>ℹ️ ${den.descricao}</p>` : ''}
                     ${den.foto_base64 ? `<img src="${den.foto_base64}" class="card-photo-thumb" alt="Foto da Denúncia" onclick="event.stopPropagation(); abrirFotoAmpliada(this.src, '${(den.titulo || '').replace(/'/g, '')}')" title="Clique para ampliar a foto" />` : ''}
                     <div class="card-actions" onclick="event.stopPropagation();">
                         ${botoesVotacaoHtml}
+                        <button type="button" class="card-link whatsapp-btn" onclick="compartilharDenunciaWhatsApp(${den.id})">📲 WhatsApp</button>
                         <button type="button" class="card-link admin-only" onclick="alternarStatusDenuncia(${den.id})">
                             ${resolvida ? '↩️ Reabrir Alerta (Admin)' : '✅ Marcar como Resolvido (Admin)'}
                         </button>
@@ -2870,6 +3132,9 @@
             visaoMapa.style.display = 'block';
             atualizarBadgeCidadaoEco();
         inicializarTodosAutocompletesLocais();
+        ativarAutocompleteInput({ inputId: 'inp-meu-bairro-fav', modo: 'bairro' });
+        atualizarBannerMeuBairro();
+        filtrarAssistenteDescarte('');
         sincronizarCamadasMapaPorAba();
 
             document.getElementById('toolbar-coleta').style.display = aba === 'coleta' ? 'block' : 'none';
@@ -3082,7 +3347,7 @@
                 marcadorSelecaoCadastro = L.marker([lat, lng], { icon: iconeCataTreco })
                     .addTo(map)
                     .bindPopup('🟣 Local selecionado para retirada Cata-Treco').openPopup();
-                document.getElementById('ct-feedback').textContent = '🟣 Localização capturada no mapa!';
+                preencherEnderecoReversoAutomatico(lat, lng, 'ct-cidade', 'ct-bairro', 'ct-endereco', 'ct-feedback', '🟣 Localização, rua e bairro preenchidos pelo mapa!');
                 return;
             }
 
@@ -3094,7 +3359,7 @@
                 marcadorSelecaoCadastro = L.marker([lat, lng], { icon: iconeCritico })
                     .addTo(map)
                     .bindPopup('🟠 Local selecionado para o Alerta Crítico').openPopup();
-                document.getElementById('den-feedback').textContent = '🟠 Localização crítica capturada no mapa!';
+                preencherEnderecoReversoAutomatico(lat, lng, 'den-cidade', 'den-bairro', 'den-endereco', 'den-feedback', '🟠 Localização, rua e bairro preenchidos pelo mapa!');
                 return;
             }
 
@@ -3130,7 +3395,7 @@
                 if (marcadorSelecaoCadastro) map.removeLayer(marcadorSelecaoCadastro);
                 marcadorSelecaoCadastro = L.marker([lat, lng]).addTo(map)
                     .bindPopup('📌 Local selecionado').openPopup();
-                feedback.textContent = '📌 Coordenada selecionada no mapa!';
+                preencherEnderecoReversoAutomatico(lat, lng, 'inp-cidade', 'inp-bairro', 'inp-endereco', 'form-feedback', '📌 Localização, rua e bairro preenchidos pelo mapa!');
             }
         });
 
@@ -3207,7 +3472,7 @@
         }
 
 
-        // --- GAMIFICAÇÃO CIDADÃO ECO, FOTOS, ROTA ATÉ ECOPONTO E ORDEM DE SERVIÇO (v3.3.0) ---
+        // --- GAMIFICAÇÃO CIDADÃO ECO, FOTOS, ROTA ATÉ ECOPONTO E ORDEM DE SERVIÇO (v3.4.0) ---
         let fotoBase64DenunciaAtual = '';
         let fotoBase64CataTrecoAtual = '';
         let linhaRotaUsuarioEcoponto = null;
@@ -3399,7 +3664,7 @@
                 <html lang="pt-BR">
                 <head>
                     <meta charset="UTF-8" />
-                    <title>Ordem de Serviço Diária - CittaLixo v3.3.0</title>
+                    <title>Ordem de Serviço Diária - CittaLixo v3.4.0</title>
                     <style>
                         body { font-family: Arial, sans-serif; color: #1e293b; padding: 24px; }
                         h1 { color: #15803d; margin-bottom: 4px; }
@@ -3800,6 +4065,318 @@
                 modo: 'busca',
                 onSelectCallback: () => renderizarCataTreco()
             });
+        }
+
+
+        // --- RECURSOS v3.4.0: GEOCODIFICAÇÃO REVERSA NO CLIQUE, MEU BAIRRO, HEATMAP, WHATSAPP E ASSISTENTE ONDE DESCARTAR ---
+
+        // 1. Geocodificação Reversa Inteligente (Base Local Instantânea + Nominatim OpenStreetMap)
+        async function preencherEnderecoReversoAutomatico(lat, lng, cidadeId, bairroId, enderecoId, feedbackId, msgSucesso) {
+            let melhorBairro = null;
+            let menorDistBairro = Infinity;
+            CATALOGO_BAIRROS_REGIOES.forEach(b => {
+                const d = calcularDistanciaKm(lat, lng, b.lat, b.lng);
+                if (d < menorDistBairro) {
+                    menorDistBairro = d;
+                    melhorBairro = b;
+                }
+            });
+
+            let melhorVia = null;
+            let menorDistVia = Infinity;
+            CATALOGO_ENDERECOS_VIAS.forEach(v => {
+                const d = calcularDistanciaKm(lat, lng, v.lat, v.lng);
+                if (d < menorDistVia) {
+                    menorDistVia = d;
+                    melhorVia = v;
+                }
+            });
+
+            const elCidade = document.getElementById(cidadeId);
+            const elBairro = document.getElementById(bairroId);
+            const elEndereco = document.getElementById(enderecoId);
+            const elFeedback = document.getElementById(feedbackId);
+
+            if (melhorBairro) {
+                if (elCidade && melhorBairro.cidade) elCidade.value = melhorBairro.cidade;
+                if (elBairro) elBairro.value = melhorBairro.nome;
+            }
+            if (elEndereco) {
+                if (melhorVia && menorDistVia <= 0.85) {
+                    elEndereco.value = melhorVia.nome;
+                } else if (melhorBairro) {
+                    elEndereco.value = `Próx. a ${melhorBairro.nome} (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+                }
+            }
+            if (elFeedback) {
+                elFeedback.style.color = '#16a34a';
+                elFeedback.textContent = msgSucesso;
+            }
+
+            // Refina com Nominatim Reverse Geocoding se houver internet
+            try {
+                const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=pt-BR`);
+                if (!resp.ok) return;
+                const data = await resp.json();
+                if (data && data.address) {
+                    const addr = data.address;
+                    const rua = addr.road || addr.pedestrian || addr.suburb || '';
+                    const bairroApi = addr.suburb || addr.neighbourhood || addr.city_district || '';
+                    const cidadeApi = (addr.city || addr.town || addr.municipality || '').toLowerCase();
+                    if (elCidade && (cidadeApi.includes('recife') || cidadeApi.includes('olinda'))) {
+                        elCidade.value = cidadeApi.includes('recife') ? 'Recife' : 'Olinda';
+                    }
+                    if (elBairro && bairroApi) {
+                        elBairro.value = bairroApi;
+                    }
+                    if (elEndereco && rua) {
+                        elEndereco.value = bairroApi ? `${rua} - ${bairroApi}` : rua;
+                    }
+                }
+            } catch (_) {}
+        }
+
+        // 2. Mapa de Calor (Heatmap) na aba de Denúncias
+        function alternarHeatmapDenuncias(btn) {
+            heatmapDenunciasAtivo = !heatmapDenunciasAtivo;
+            if (heatmapDenunciasAtivo) {
+                btn.classList.add('heatmap-active');
+                btn.textContent = '🔥 Ocultar Mancha de Calor';
+                if (abaAtual === 'denuncias') {
+                    heatmapDenunciasLayer.addTo(map);
+                }
+            } else {
+                btn.classList.remove('heatmap-active');
+                btn.textContent = '🔥 Ver Mancha de Calor';
+                if (map.hasLayer(heatmapDenunciasLayer)) {
+                    map.removeLayer(heatmapDenunciasLayer);
+                }
+            }
+        }
+
+        // 3. Compartilhamento Rápido no WhatsApp (1 clique)
+        function abrirLinkWhatsApp(texto) {
+            const url = `https://wa.me/?text=${encodeURIComponent(texto)}`;
+            window.open(url, '_blank', 'noopener');
+        }
+
+        function compartilharPontoWhatsApp(id) {
+            const p = todosOsPontos.find(item => item.id === id);
+            if (!p) return;
+            const msg = `♻️ *CittaLixo (${p.cidade} - ${p.bairro})*\n📍 *${p.nome}* (${p.categoria})\n🕒 *Horário:* ${p.horario}\n🗑️ *Aceita:* ${p.tipo}\n📌 *Local:* ${p.endereco}\n🗺️ Mapa: https://www.google.com/maps/dir/?api=1&destination=${p.latitude},${p.longitude}`;
+            abrirLinkWhatsApp(msg);
+        }
+
+        function compartilharCataTrecoWhatsApp(id) {
+            const ct = todosOsCataTrecos.find(item => item.id === id);
+            if (!ct) return;
+            const msg = `🛋️ *CittaLixo — Agendamento Cata-Treco*\n📑 *Protocolo:* ${ct.protocolo}\n📍 *Local:* ${ct.endereco} (${ct.bairro}, ${ct.cidade})\n📦 *Itens:* ${ct.itens_volumosos}\n🕒 *Previsão:* ${ct.data_agendada} (${ct.turno_preferido})\nStatus: *${ct.status}*`;
+            abrirLinkWhatsApp(msg);
+        }
+
+        function compartilharDenunciaWhatsApp(id) {
+            const d = todasAsDenuncias.find(item => item.id === id);
+            if (!d) return;
+            const msg = `⚠️ *Alerta Comunitário CittaLixo (${d.cidade} • ${d.bairro})*\n🚨 *${d.titulo}* (Gravidade: ${d.gravidade})\n🗑️ *Resíduo:* ${d.tipo_residuo}\n📌 *Local:* ${d.endereco}\n👍 ${d.confirmacoes || 1} moradores confirmaram no local | 👎 ${d.nao_esta_mais || 0} relataram limpeza.`;
+            abrirLinkWhatsApp(msg);
+        }
+
+        // 4. Meu Bairro Favorito (Resumo Rápido no Topo)
+        function abrirModalMeuBairro() {
+            const atual = localStorage.getItem('cittalixo_meu_bairro') || '';
+            const inp = document.getElementById('inp-meu-bairro-fav');
+            if (inp) inp.value = atual;
+            document.getElementById('modal-meu-bairro').classList.add('open');
+        }
+
+        function fecharModalMeuBairro() {
+            document.getElementById('modal-meu-bairro').classList.remove('open');
+        }
+
+        function salvarMeuBairroFavorito() {
+            const val = (document.getElementById('inp-meu-bairro-fav')?.value || '').trim();
+            if (!val) {
+                alert('Digite ou escolha um bairro na lista.');
+                return;
+            }
+            localStorage.setItem('cittalixo_meu_bairro', val);
+            fecharModalMeuBairro();
+            atualizarBannerMeuBairro();
+        }
+
+        function removerMeuBairroFavorito() {
+            localStorage.removeItem('cittalixo_meu_bairro');
+            fecharModalMeuBairro();
+            atualizarBannerMeuBairro();
+        }
+
+        function atualizarBannerMeuBairro() {
+            const bairroSalvo = (localStorage.getItem('cittalixo_meu_bairro') || '').trim();
+            const btnTopo = document.getElementById('btn-meu-bairro');
+            const banner = document.getElementById('banner-meu-bairro');
+            const texto = document.getElementById('texto-meu-bairro');
+
+            if (!bairroSalvo) {
+                if (btnTopo) btnTopo.innerHTML = '🏠 Meu Bairro: Definir';
+                if (banner) banner.style.display = 'none';
+                return;
+            }
+
+            if (btnTopo) btnTopo.innerHTML = `🏠 Meu Bairro: ${bairroSalvo}`;
+
+            const normBairro = normalizarTextoBusca(bairroSalvo);
+            const infoCat = CATALOGO_BAIRROS_REGIOES.find(b => normalizarTextoBusca(b.nome) === normBairro)
+                || CATALOGO_BAIRROS_REGIOES.find(b => normalizarTextoBusca(b.nome).includes(normBairro));
+
+            let pontoMaisProx = null;
+            let menorDist = Infinity;
+            todosOsPontos.forEach(p => {
+                if (normalizarTextoBusca(p.bairro).includes(normBairro)) {
+                    if (!pontoMaisProx) pontoMaisProx = p;
+                }
+                if (infoCat) {
+                    const d = calcularDistanciaKm(infoCat.lat, infoCat.lng, p.latitude, p.longitude);
+                    if (d < menorDist) {
+                        menorDist = d;
+                        if (!pontoMaisProx) pontoMaisProx = p;
+                    }
+                }
+            });
+
+            if (banner && texto) {
+                const resumoPonto = pontoMaisProx
+                    ? `Ponto/Rota de referência: <strong>${pontoMaisProx.nome}</strong> (${pontoMaisProx.horario})`
+                    : `Consulte os Ecopontos e rotas disponíveis na região`;
+                texto.innerHTML = `🏠 <strong>Seu Bairro (${bairroSalvo}):</strong> ${resumoPonto}`;
+                banner.style.display = 'flex';
+            }
+        }
+
+        function filtrarPeloMeuBairroSalvo() {
+            const bairroSalvo = (localStorage.getItem('cittalixo_meu_bairro') || '').trim();
+            if (!bairroSalvo) return;
+            if (abaAtual !== 'coleta') alternarAba('coleta');
+            const inpBusca = document.getElementById('filtro-busca');
+            if (inpBusca) {
+                inpBusca.value = bairroSalvo;
+                aplicarFiltros();
+            }
+            const infoCat = CATALOGO_BAIRROS_REGIOES.find(b => normalizarTextoBusca(b.nome).includes(normalizarTextoBusca(bairroSalvo)));
+            if (infoCat) {
+                map.setView([infoCat.lat, infoCat.lng], 14, { animate: true });
+            }
+        }
+
+        // 5. Assistente Inteligente "🔍 Onde Descarto Este Item?"
+        const CATALOGO_ASSISTENTE_ITENS = [
+            {
+                titulo: "💡 Lâmpadas Fluorescentes, LED ou Quebradas",
+                tags: "lampada fluorescente led bocal vidro iluminacao",
+                comoPreparar: "Embalar em papelão ou jornal grosso preso com fita para não quebrar e não liberar vapor de mercúrio.",
+                ondeLevar: "Pontos de Entrega de Eletrônicos / PEVs (Praça do Carmo, Casa Caiada, Torre).",
+                acaoAba: "coleta",
+                filtroTipo: "Eletrônicos"
+            },
+            {
+                titulo: "🌻 Óleo de Cozinha Usado (Fritura)",
+                tags: "oleo cozinha fritura gordura azeite",
+                comoPreparar: "Espere esfriar totalmente e despeje com funil em garrafa PET plástica transparente bem rosqueada.",
+                ondeLevar: "Ecopontos e PEVs com coletor de óleo (Carmo, Boa Vista, Casa Amarela).",
+                acaoAba: "coleta",
+                filtroTipo: "Óleo"
+            },
+            {
+                titulo: "🛋️ Colchão Velho, Sofá, Guarda-Roupa ou Móveis",
+                tags: "colchao sofa movel cama armario cadeira mesa guarda roupa volumoso",
+                comoPreparar: "Desmonte se possível e deixe na calçada apenas no turno agendado para não obstruir a passagem.",
+                ondeLevar: "Agende gratuitamente na aba 🛋️ Cata-Treco ou leve a uma Ecoestação (Peixinhos, Ouro Preto, Imbiribeira).",
+                acaoAba: "catatreco",
+                filtroTipo: ""
+            },
+            {
+                titulo: "🪞 Espelho Quebrado, Copo, Garrafa ou Cacos de Vidro",
+                tags: "espelho vidro quebrado caco copo garrafa janela",
+                comoPreparar: "Envolva em jornal grosso ou dentro de uma caixa de leite/papelão lacrada e escreva 'CUIDADO: VIDRO QUEBRADO'.",
+                ondeLevar: "Ecopontos de Recicláveis (vidros inteiros/garrafas) ou Ecoestações (espelhos planos).",
+                acaoAba: "coleta",
+                filtroTipo: "Recicláveis"
+            },
+            {
+                titulo: "🔋 Pilhas, Baterias, Celular Quebrado, Cabos e Computador",
+                tags: "pilha bateria celular telefone carregador cabo notebook computador tv monitor eletronico",
+                comoPreparar: "Guarde em saco seco separado; nunca jogue no lixo comum devido ao risco de contaminação por metais pesados.",
+                ondeLevar: "PEVs de Lixo Eletrônico (Casa Caiada, Carmo, Boa Vista, Torre).",
+                acaoAba: "coleta",
+                filtroTipo: "Eletrônicos"
+            },
+            {
+                titulo: "🧱 Entulho de Pequena Reforma, Metralha, Cerâmica e Galhos de Poda",
+                tags: "entulho metralha obra tijolo cimento ceramica poda galho arvore folha",
+                comoPreparar: "Ensaque a metralha em sacos resistentes de ráfia e amarre os galhos em feixes de até 1m³ por morador.",
+                ondeLevar: "Ecoestações Municipais (Peixinhos, Ouro Preto, Torre, Imbiribeira) ou agende Cata-Treco.",
+                acaoAba: "coleta",
+                filtroTipo: "Entulho"
+            },
+            {
+                titulo: "🍕 Caixa de Pizza, Papelão, Garrafa PET, Latinha e Isopor Limpo",
+                tags: "pizza caixa papelao pet garrafa lata aluminio isopor plastico sacola embalagem leite",
+                comoPreparar: "Na caixa de pizza, separe a tampa limpa (reciclável) do fundo engordurado (orgânico/rejeito). Passe água rápida nos potes.",
+                ondeLevar: "Ecopontos de Recicláveis Secos e Cooperativas de Olinda e Recife.",
+                acaoAba: "coleta",
+                filtroTipo: "Recicláveis"
+            },
+            {
+                titulo: "💊 Remédios Vencidos, Cartelas de Comprimidos ePomadas",
+                tags: "remedio medicamento vencido comprimido xarope farmacia",
+                comoPreparar: "Nunca jogue no vaso sanitário ou na pia! Mantenha na embalagem original para identificação.",
+                ondeLevar: "Coletores de logística reversa em grandes farmácias e unidades de saúde de Olinda e Recife.",
+                acaoAba: "coleta",
+                filtroTipo: ""
+            }
+        ];
+
+        function selecionarChipAssistente(termo) {
+            const inp = document.getElementById('inp-assistente-descarte');
+            if (inp) inp.value = termo;
+            filtrarAssistenteDescarte(termo);
+        }
+
+        function filtrarAssistenteDescarte(termo) {
+            const container = document.getElementById('resultado-assistente-descarte');
+            if (!container) return;
+            const norm = normalizarTextoBusca(termo);
+
+            const filtrados = !norm
+                ? CATALOGO_ASSISTENTE_ITENS
+                : CATALOGO_ASSISTENTE_ITENS.filter(it =>
+                    normalizarTextoBusca(it.titulo + ' ' + it.tags + ' ' + it.ondeLevar).includes(norm)
+                );
+
+            if (filtrados.length === 0) {
+                container.innerHTML = `<div class="assistant-item-card"><strong>🤔 Item específico não listado:</strong> Se for volumoso (móvel/eletro grande), use a aba <strong>🛋️ Cata-Treco</strong>. Se for reciclável limpo, leve a um <strong>🏢 Ecoponto</strong>!</div>`;
+                return;
+            }
+
+            container.innerHTML = filtrados.map(it => `
+                <div class="assistant-item-card">
+                    <h4 style="margin:0 0 6px 0; color:var(--green-dark);">${it.titulo}</h4>
+                    <p style="font-size:0.83rem; margin:4px 0;"><strong>📦 Como preparar:</strong> ${it.comoPreparar}</p>
+                    <p style="font-size:0.83rem; margin:4px 0;"><strong>📍 Onde levar:</strong> ${it.ondeLevar}</p>
+                    <button type="button" class="card-link rota-btn" style="margin-top:6px;" onclick="irParaMapaPeloAssistente('${it.acaoAba}', '${it.filtroTipo}')">
+                        🗺️ Ver Pontos no Mapa
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function irParaMapaPeloAssistente(abaDestino, filtroTipo) {
+            alternarAba(abaDestino);
+            if (abaDestino === 'coleta') {
+                const selTipo = document.getElementById('filtro-tipo');
+                if (selTipo) selTipo.value = filtroTipo || '';
+                aplicarFiltros();
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         // Inicialização
