@@ -442,6 +442,166 @@ PONTOS_INICIAIS = [
         "longitude": ROTAS_REAIS_OSRM["Coleta Domiciliar - Centro do Recife (Boa Vista / Santo Antônio)"][0][1],
         "rota_coordenadas": ROTAS_REAIS_OSRM["Coleta Domiciliar - Centro do Recife (Boa Vista / Santo Antônio)"],
     },
+    {
+        "nome": "Ecoponto Repense Reuse - Praça do Parcão",
+        "cidade": "Olinda",
+        "bairro": "Bairro Novo",
+        "categoria": "Ecoponto",
+        "tipo": "Recicláveis, Têxteis (Roupas e Calçados), Plástico, Papel",
+        "endereco": "Praça Vitoriano Regueira (Praça do Parcão), Bairro Novo",
+        "horario": "Diariamente: 06h às 22h",
+        "dias_semana": "Dom,Seg,Ter,Qua,Qui,Sex,Sab",
+        "hora_inicio": "06:00",
+        "hora_fim": "22:00",
+        "observacoes": "Ponto oficial da campanha municipal Repense Reuse de Olinda para economia circular e recicláveis.",
+        "latitude": -8.0025,
+        "longitude": -34.8422,
+        "rota_coordenadas": []
+    },
+    {
+        "nome": "Ecoponto Repense Reuse - Praça Dantas Barreto",
+        "cidade": "Olinda",
+        "bairro": "Bairro Novo",
+        "categoria": "Ecoponto",
+        "tipo": "Recicláveis, Têxteis, Papel, Plástico, Metal",
+        "endereco": "Praça Dantas Barreto, Bairro Novo",
+        "horario": "Diariamente: 06h às 22h",
+        "dias_semana": "Dom,Seg,Ter,Qua,Qui,Sex,Sab",
+        "hora_inicio": "06:00",
+        "hora_fim": "22:00",
+        "observacoes": "Contêiner oficial da Prefeitura de Olinda para entrega voluntária de recicláveis e têxteis.",
+        "latitude": -7.9945,
+        "longitude": -34.8428,
+        "rota_coordenadas": []
+    },
+    {
+        "nome": "Ecoponto Repense Reuse - Parque Billy Jackson",
+        "cidade": "Olinda",
+        "bairro": "Casa Caiada",
+        "categoria": "Ecoponto",
+        "tipo": "Recicláveis, Têxteis, Plástico, Vidro, Metal",
+        "endereco": "Parque Billy Jackson, Casa Caiada",
+        "horario": "Diariamente: 06h às 21h",
+        "dias_semana": "Dom,Seg,Ter,Qua,Qui,Sex,Sab",
+        "hora_inicio": "06:00",
+        "hora_fim": "21:00",
+        "observacoes": "Ponto oficial de coleta seletiva e reaproveitamento instalado no Parque Billy Jackson.",
+        "latitude": -7.9818,
+        "longitude": -34.8392,
+        "rota_coordenadas": []
+    },
+    {
+        "nome": "Ecoponto Repense Reuse - Av. das Garças (4ª Etapa)",
+        "cidade": "Olinda",
+        "bairro": "Rio Doce",
+        "categoria": "Ecoponto",
+        "tipo": "Recicláveis, Papel, Plástico, Metal, Têxteis",
+        "endereco": "Praça da Avenida das Garças, 4ª Etapa - Rio Doce",
+        "horario": "Diariamente: 06h às 21h",
+        "dias_semana": "Dom,Seg,Ter,Qua,Qui,Sex,Sab",
+        "hora_inicio": "06:00",
+        "hora_fim": "21:00",
+        "observacoes": "Atende moradores da 4ª Etapa e arredores de Rio Doce para descarte seletivo gratuito.",
+        "latitude": -7.9575,
+        "longitude": -34.8388,
+        "rota_coordenadas": []
+    },
+    {
+        "nome": "Ecoestação Arruda (EMLURB)",
+        "cidade": "Recife",
+        "bairro": "Arruda",
+        "categoria": "Ecoponto",
+        "tipo": "Recicláveis, Entulho, Móveis Velhos, Poda",
+        "endereco": "Av. Professor José dos Anjos - Arruda",
+        "horario": "Seg a Sáb: 08h às 16h",
+        "dias_semana": "Seg,Ter,Qua,Qui,Sex,Sab",
+        "hora_inicio": "08:00",
+        "hora_fim": "16:00",
+        "observacoes": "Ecoestação oficial da EMLURB (RPA 2). Recebe gratuitamente até 1m³/dia de entulho, poda, móveis velhos e recicláveis.",
+        "latitude": -8.0235,
+        "longitude": -34.8915,
+        "rota_coordenadas": []
+    },
+    {
+        "nome": "Ecoestação Nova Descoberta (EMLURB)",
+        "cidade": "Recife",
+        "bairro": "Nova Descoberta",
+        "categoria": "Ecoponto",
+        "tipo": "Recicláveis, Entulho, Móveis Velhos, Poda",
+        "endereco": "Rua Nova Descoberta, 1062 - Nova Descoberta",
+        "horario": "Seg a Sáb: 08h às 16h",
+        "dias_semana": "Seg,Ter,Qua,Qui,Sex,Sab",
+        "hora_inicio": "08:00",
+        "hora_fim": "16:00",
+        "observacoes": "Ecoestação oficial da EMLURB (RPA 3) para descarte correto de pequenos volumes de obra, volumosos e recicláveis.",
+        "latitude": -8.0068,
+        "longitude": -34.9255,
+        "rota_coordenadas": []
+    },
+    {
+        "nome": "Ecoestação Santo Amaro / Jayme da Fonte (EMLURB)",
+        "cidade": "Recife",
+        "bairro": "Santo Amaro",
+        "categoria": "Ecoponto",
+        "tipo": "Recicláveis, Entulho, Móveis Velhos, Poda, Eletrônicos",
+        "endereco": "Av. Dr. Jayme da Fonte, 149 - Santo Amaro",
+        "horario": "Seg a Sáb: 08h às 16h",
+        "dias_semana": "Seg,Ter,Qua,Qui,Sex,Sab",
+        "hora_inicio": "08:00",
+        "hora_fim": "16:00",
+        "observacoes": "Ecoestação oficial da EMLURB na região central (Santo Amaro).",
+        "latitude": -8.0485,
+        "longitude": -34.881,
+        "rota_coordenadas": []
+    },
+    {
+        "nome": "Ecoestação Torrões (EMLURB)",
+        "cidade": "Recife",
+        "bairro": "Torrões",
+        "categoria": "Ecoponto",
+        "tipo": "Recicláveis, Entulho, Móveis Velhos, Poda",
+        "endereco": "Rua Maestro Jones Johnson - Torrões",
+        "horario": "Seg a Sáb: 08h às 16h",
+        "dias_semana": "Seg,Ter,Qua,Qui,Sex,Sab",
+        "hora_inicio": "08:00",
+        "hora_fim": "16:00",
+        "observacoes": "Ecoestação oficial da EMLURB (RPA 4) atendendo Torrões, Cordeiro e Zona Oeste.",
+        "latitude": -8.0598,
+        "longitude": -34.9385,
+        "rota_coordenadas": []
+    },
+    {
+        "nome": "Ecoestação Totó (EMLURB)",
+        "cidade": "Recife",
+        "bairro": "Totó",
+        "categoria": "Ecoponto",
+        "tipo": "Recicláveis, Entulho, Móveis Velhos, Poda",
+        "endereco": "Rua Onze de Agosto - Totó",
+        "horario": "Seg a Sáb: 08h às 16h",
+        "dias_semana": "Seg,Ter,Qua,Qui,Sex,Sab",
+        "hora_inicio": "08:00",
+        "hora_fim": "16:00",
+        "observacoes": "Ecoestação oficial da EMLURB (RPA 5) para recebimento gratuito de volumosos, podas e recicláveis.",
+        "latitude": -8.0815,
+        "longitude": -34.962,
+        "rota_coordenadas": []
+    },
+    {
+        "nome": "Ecoestação Ibura (EMLURB)",
+        "cidade": "Recife",
+        "bairro": "Ibura",
+        "categoria": "Ecoponto",
+        "tipo": "Recicláveis, Entulho, Móveis Velhos, Poda",
+        "endereco": "Rua Rio Tapado - Ibura",
+        "horario": "Seg a Sáb: 08h às 16h",
+        "dias_semana": "Seg,Ter,Qua,Qui,Sex,Sab",
+        "hora_inicio": "08:00",
+        "hora_fim": "16:00",
+        "observacoes": "Ecoestação oficial da EMLURB (RPA 6) atendendo moradores do Ibura, Jordão e Cohab.",
+        "latitude": -8.1195,
+        "longitude": -34.938,
+        "rota_coordenadas": []
+    },
 ]
 
 
@@ -517,6 +677,30 @@ def init_db() -> None:
                 )
             conn.commit()
         else:
+            # Garante que novos pontos reais de PONTOS_INICIAIS sejam adicionados se ainda não existirem no banco
+            nomes_existentes = {
+                r["nome"] for r in cursor.execute("SELECT nome FROM pontos").fetchall()
+            }
+            for item in PONTOS_INICIAIS:
+                if item["nome"] not in nomes_existentes:
+                    dados_novo = dict(item)
+                    dados_novo["rota_coordenadas"] = json.dumps(dados_novo.get("rota_coordenadas", []))
+                    cursor.execute(
+                        """
+                        INSERT INTO pontos (
+                            nome, cidade, bairro, categoria, tipo, endereco,
+                            horario, dias_semana, hora_inicio, hora_fim, observacoes,
+                            latitude, longitude, rota_coordenadas
+                        ) VALUES (
+                            :nome, :cidade, :bairro, :categoria, :tipo, :endereco,
+                            :horario, :dias_semana, :hora_inicio, :hora_fim, :observacoes,
+                            :latitude, :longitude, :rota_coordenadas
+                        )
+                        """,
+                        dados_novo,
+                    )
+            conn.commit()
+
             # Sincroniza as rotas padrão com a geometria real de rua (OSRM)
             for item in PONTOS_INICIAIS:
                 if item.get("rota_coordenadas"):
