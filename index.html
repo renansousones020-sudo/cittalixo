@@ -1513,6 +1513,9 @@
                         <h2 style="color: var(--purple-primary);">🛋️ Coletas de Volumosos (Cata-Treco)</h2>
                         <span id="contador-catatreco" class="count-badge" style="background: var(--purple-light); color: #5b21b6;">0 pedidos</span>
                     </div>
+                    <p style="font-size:0.78rem; color:var(--text-muted); margin: -6px 0 10px 0;">
+                        ℹ️ <em>Dados de demonstração/estimativa baseados em solicitações comunitárias nas regiões de Olinda e Recife.</em>
+                    </p>
                     <div id="catatreco-container"></div>
                 </div>
 
@@ -1522,6 +1525,9 @@
                         <h2 style="color: var(--orange-critical);">⚠️ Pontos Críticos de Lixo Reportados</h2>
                         <span id="contador-denuncias" class="count-badge" style="background: var(--orange-light); color: #9a3412;">0 alertas</span>
                     </div>
+                    <p style="font-size:0.78rem; color:var(--text-muted); margin: -6px 0 10px 0;">
+                        ℹ️ <em>Ocorrências colaborativas e dados ilustrativos/estimados para monitoramento urbano em Olinda e Recife.</em>
+                    </p>
                     <div id="denuncias-container"></div>
                 </div>
             </div>
@@ -1542,22 +1548,25 @@
             </div>
 
             <!-- Calculadora de Impacto Ambiental Urbano (CO2, Recicláveis, Volumosos e Água) -->
+            <div style="background: #fffbeb; border: 1px solid #fcd34d; border-left: 5px solid #f59e0b; color: #92400e; padding: 10px 14px; border-radius: 10px; margin-bottom: 12px; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span>⚠️ <strong>Aviso de Estimativa Técnica:</strong> Os indicadores de impacto ambiental abaixo são <strong>valores estimados (projeções matemáticas)</strong> calculados com base na capacidade média mensal dos Ecopontos, rotas de coleta, agendamentos Cata-Treco e denúncias resolvidas cadastrados na plataforma.</span>
+            </div>
             <div class="eco-impact-grid" id="grid-impacto-ambiental">
-                <div class="eco-impact-card">
-                    <span class="val" id="imp-reciclaveis">0 t/mês</span>
-                    <span class="lbl">♻️ Recicláveis Desviados de Canais</span>
+                <div class="eco-impact-card" title="Estimativa técnica em toneladas por mês baseada nos Ecopontos e rotas ativas">
+                    <span class="val" id="imp-reciclaveis">0 ton/mês</span>
+                    <span class="lbl">♻️ Recicláveis Desviados de Canais (Estimativa em Toneladas)</span>
                 </div>
-                <div class="eco-impact-card" style="border-bottom-color:#7c3aed;">
+                <div class="eco-impact-card" style="border-bottom-color:#7c3aed;" title="Estimativa técnica em metros cúbicos baseada nos recolhimentos de volumosos e denúncias resolvidas">
                     <span class="val" id="imp-volumosos">0 m³</span>
-                    <span class="lbl">🛋️ Entulhos e Volumosos Recolhidos</span>
+                    <span class="lbl">🛋️ Entulhos e Volumosos Recolhidos (Estimativa)</span>
                 </div>
-                <div class="eco-impact-card" style="border-bottom-color:#0284c7;">
+                <div class="eco-impact-card" style="border-bottom-color:#0284c7;" title="Estimativa técnica de emissões de CO₂ evitadas pela reciclagem e desvio de aterro">
                     <span class="val" id="imp-co2">0 kg</span>
-                    <span class="lbl">🌍 Emissões de CO₂ Evitadas</span>
+                    <span class="lbl">🌍 Emissões de CO₂ Evitadas (Estimativa)</span>
                 </div>
-                <div class="eco-impact-card" style="border-bottom-color:#eab308;">
+                <div class="eco-impact-card" style="border-bottom-color:#eab308;" title="Estimativa técnica de litros de água preservados pelo descarte correto de óleo e eletrônicos">
                     <span class="val" id="imp-agua">0 mil L</span>
-                    <span class="lbl">💧 Água Protegida (Óleo &amp; Eletrônicos)</span>
+                    <span class="lbl">💧 Água Protegida — Óleo &amp; Eletrônicos (Estimativa)</span>
                 </div>
             </div>
 
@@ -2080,10 +2089,10 @@
 
             const elImpRec = document.getElementById('imp-reciclaveis');
             if (elImpRec) {
-                elImpRec.textContent = `${tonReciclaveis} t/mês`;
-                document.getElementById('imp-volumosos').textContent = `${m3Volumosos} m³`;
-                document.getElementById('imp-co2').textContent = `${kgCo2.toLocaleString('pt-BR')} kg`;
-                document.getElementById('imp-agua').textContent = `${milLitrosAgua} mil L`;
+                elImpRec.textContent = `~${tonReciclaveis} ton/mês`;
+                document.getElementById('imp-volumosos').textContent = `~${m3Volumosos} m³`;
+                document.getElementById('imp-co2').textContent = `~${kgCo2.toLocaleString('pt-BR')} kg`;
+                document.getElementById('imp-agua').textContent = `~${milLitrosAgua} mil L`;
             }
 
             atualizarBannerMeuBairro();
