@@ -166,6 +166,104 @@ CATATRECO_INICIAIS = [
         "latitude": -8.0602,
         "longitude": -34.8854,
     },
+    {
+        "protocolo": "CT-2026-004",
+        "solicitante": "Morador - Ouro Preto",
+        "cidade": "Olinda",
+        "bairro": "Ouro Preto",
+        "endereco": "Estrada de Ouro Preto, 410 - Ouro Preto",
+        "itens_volumosos": "1 Guarda-roupa de 6 portas desmontado e 2 cadeiras",
+        "turno_preferido": "Manhã (08h às 12h)",
+        "data_agendada": "Segunda-feira",
+        "observacoes": "Em frente ao mercadinho local, madeira já amarrada.",
+        "status": "Agendado",
+        "latitude": -7.9935,
+        "longitude": -34.8625
+    },
+    {
+        "protocolo": "CT-2026-005",
+        "solicitante": "Moradora - Rio Doce (2ª Etapa)",
+        "cidade": "Olinda",
+        "bairro": "Rio Doce",
+        "endereco": "Av. Brasil, 580 - Rio Doce",
+        "itens_volumosos": "1 Fogão 4 bocas enferrujado e 1 Colchão de solteiro",
+        "turno_preferido": "Tarde (13h às 17h)",
+        "data_agendada": "Terça-feira",
+        "observacoes": "Deixarei na calçada após as 12h30.",
+        "status": "Agendado",
+        "latitude": -7.9622,
+        "longitude": -34.8395
+    },
+    {
+        "protocolo": "CT-2026-006",
+        "solicitante": "Morador - Peixinhos",
+        "cidade": "Olinda",
+        "bairro": "Peixinhos",
+        "endereco": "Av. Presidente Kennedy, 1120 - Peixinhos",
+        "itens_volumosos": "1 Poltrona rasgada e tábuas de cama antiga",
+        "turno_preferido": "Manhã (08h às 12h)",
+        "data_agendada": "Quarta-feira",
+        "observacoes": "Recolhimento concluído pela equipe municipal.",
+        "status": "Recolhido",
+        "latitude": -8.0135,
+        "longitude": -34.868
+    },
+    {
+        "protocolo": "CT-2026-007",
+        "solicitante": "Edifício Mar de Boa Viagem",
+        "cidade": "Recife",
+        "bairro": "Boa Viagem",
+        "endereco": "Av. Conselheiro Aguiar, 2350 - Boa Viagem",
+        "itens_volumosos": "1 Sofá retrátil de 3 lugares e 1 Mesa de centro quebrada",
+        "turno_preferido": "Tarde (13h às 17h)",
+        "data_agendada": "Quinta-feira",
+        "observacoes": "Zelador acompanha a retirada no recuo do prédio.",
+        "status": "Agendado",
+        "latitude": -8.118,
+        "longitude": -34.899
+    },
+    {
+        "protocolo": "CT-2026-008",
+        "solicitante": "Moradora - Casa Amarela",
+        "cidade": "Recife",
+        "bairro": "Casa Amarela",
+        "endereco": "Av. Norte Miguel Arraes, 3100 - Casa Amarela",
+        "itens_volumosos": "1 Máquina de lavar inoperante e feixes de poda",
+        "turno_preferido": "Manhã (08h às 12h)",
+        "data_agendada": "Sexta-feira",
+        "observacoes": "Ao lado da parada de ônibus.",
+        "status": "Agendado",
+        "latitude": -8.0266,
+        "longitude": -34.9181
+    },
+    {
+        "protocolo": "CT-2026-009",
+        "solicitante": "Morador - Torre",
+        "cidade": "Recife",
+        "bairro": "Torre",
+        "endereco": "Rua Real da Torre, 690 - Torre",
+        "itens_volumosos": "2 Colchões velhos e 1 Estante de MDF desmontada",
+        "turno_preferido": "Tarde (13h às 17h)",
+        "data_agendada": "Quarta-feira",
+        "observacoes": "Retirado pela equipe da EMLURB.",
+        "status": "Recolhido",
+        "latitude": -8.0452,
+        "longitude": -34.911
+    },
+    {
+        "protocolo": "CT-2026-010",
+        "solicitante": "Morador - Imbiribeira",
+        "cidade": "Recife",
+        "bairro": "Imbiribeira",
+        "endereco": "Av. Mascarenhas de Morais, 1800 - Imbiribeira",
+        "itens_volumosos": "1 Geladeira antiga sem motor e 3 caixotes de madeira",
+        "turno_preferido": "Manhã (08h às 12h)",
+        "data_agendada": "Sábado",
+        "observacoes": "Próximo à passarela.",
+        "status": "Agendado",
+        "latitude": -8.0965,
+        "longitude": -34.9112
+    },
 ]
 
 
@@ -208,6 +306,125 @@ DENUNCIAS_INICIAIS = [
         "data_registro": "Relato comunitário recente",
         "latitude": -8.0492,
         "longitude": -34.8765,
+    },
+    {
+        "titulo": "Metralha e restos de cerâmica descartados na esquina",
+        "cidade": "Olinda",
+        "bairro": "Ouro Preto",
+        "endereco": "Rua Peixe Agulha, próx. à Cohab - Ouro Preto",
+        "tipo_residuo": "Entulho de obra, tijolos e sacos plásticos",
+        "gravidade": "Crítico",
+        "descricao": "Descarte feito na madrugada obstruindo metade da passagem de pedestres.",
+        "status": "Pendente",
+        "data_registro": "Relato comunitário recente",
+        "confirmacoes": 5,
+        "nao_esta_mais": 1,
+        "ultimo_voto_ainda_la_em": "2026-11-09T10:30:00",
+        "ultimo_voto_recolhido_em": "2026-11-09T09:00:00",
+        "latitude": -7.9948,
+        "longitude": -34.8655
+    },
+    {
+        "titulo": "Garrafas PET e sacolas acumuladas na margem do canal",
+        "cidade": "Olinda",
+        "bairro": "Rio Doce",
+        "endereco": "Av. Tiradentes, próx. à ponte do canal - Rio Doce",
+        "tipo_residuo": "Plásticos, garrafas PET e isopor",
+        "gravidade": "Crítico",
+        "descricao": "Risco de entupimento da drenagem em dias de chuva forte.",
+        "status": "Pendente",
+        "data_registro": "Relato comunitário recente",
+        "confirmacoes": 6,
+        "nao_esta_mais": 0,
+        "ultimo_voto_ainda_la_em": "2026-11-09T11:00:00",
+        "ultimo_voto_recolhido_em": "",
+        "latitude": -7.9642,
+        "longitude": -34.8401
+    },
+    {
+        "titulo": "Galhos de poda e colchão velho na calçada",
+        "cidade": "Olinda",
+        "bairro": "Casa Caiada",
+        "endereco": "Rua Dr. Manoel de Barros Lima, próx. à Praça 12 de Março",
+        "tipo_residuo": "Poda de árvore e volumoso",
+        "gravidade": "Alto",
+        "descricao": "Moradores relataram que o caminhão de coleta passou hoje pela manhã.",
+        "status": "Pendente",
+        "data_registro": "Relato comunitário recente",
+        "confirmacoes": 2,
+        "nao_esta_mais": 4,
+        "ultimo_voto_ainda_la_em": "2026-11-08T14:00:00",
+        "ultimo_voto_recolhido_em": "2026-11-09T11:20:00",
+        "latitude": -7.9832,
+        "longitude": -34.8404
+    },
+    {
+        "titulo": "Sacos de lixo rasgados fora do horário na orla",
+        "cidade": "Olinda",
+        "bairro": "Bairro Novo",
+        "endereco": "Rua Cândido Pessoa, próx. à Av. Beira-Mar - Bairro Novo",
+        "tipo_residuo": "Lixo domiciliar e orgânico",
+        "gravidade": "Moderado",
+        "descricao": "Ponto já limpo pela equipe noturna da prefeitura.",
+        "status": "Resolvido",
+        "data_registro": "Resolvido recentemente",
+        "confirmacoes": 3,
+        "nao_esta_mais": 5,
+        "ultimo_voto_ainda_la_em": "2026-11-07T18:00:00",
+        "ultimo_voto_recolhido_em": "2026-11-08T09:00:00",
+        "latitude": -8.0005,
+        "longitude": -34.842
+    },
+    {
+        "titulo": "Sacos de ráfia com entulho de reforma na calçada",
+        "cidade": "Recife",
+        "bairro": "Boa Viagem",
+        "endereco": "Av. Conselheiro Aguiar, esquina próx. à pracinha - Boa Viagem",
+        "tipo_residuo": "Metralha ensacada e restos de gesso",
+        "gravidade": "Alto",
+        "descricao": "Deixado sem caçamba estacionária há mais de 48h.",
+        "status": "Pendente",
+        "data_registro": "Relato comunitário recente",
+        "confirmacoes": 4,
+        "nao_esta_mais": 1,
+        "ultimo_voto_ainda_la_em": "2026-11-09T10:45:00",
+        "ultimo_voto_recolhido_em": "2026-11-09T08:15:00",
+        "latitude": -8.1165,
+        "longitude": -34.8998
+    },
+    {
+        "titulo": "Caixotes quebrados e resíduos orgânicos pós-feira",
+        "cidade": "Recife",
+        "bairro": "Casa Amarela",
+        "endereco": "Arredores do Largo de Casa Amarela",
+        "tipo_residuo": "Madeira, papelão molhado e orgânicos",
+        "gravidade": "Crítico",
+        "descricao": "Atraindo insetos e obstruindo a sarjeta.",
+        "status": "Pendente",
+        "data_registro": "Relato comunitário recente",
+        "confirmacoes": 7,
+        "nao_esta_mais": 1,
+        "ultimo_voto_ainda_la_em": "2026-11-09T12:00:00",
+        "ultimo_voto_recolhido_em": "2026-11-09T09:30:00",
+        "latitude": -8.0274,
+        "longitude": -34.9172
+    },
+    {
+        "titulo": "Restos de móveis de MDF e papelão na esquina",
+        "cidade": "Recife",
+        "bairro": "Torre",
+        "endereco": "Próx. à Rua Real da Torre, 450 - Torre",
+        "tipo_residuo": "Móveis desmontados e papelão",
+        "gravidade": "Moderado",
+        "descricao": "Vizinhos informaram que a equipe de limpeza já recolheu os itens.",
+        "status": "Pendente",
+        "data_registro": "Relato comunitário recente",
+        "confirmacoes": 1,
+        "nao_esta_mais": 3,
+        "ultimo_voto_ainda_la_em": "2026-11-08T16:00:00",
+        "ultimo_voto_recolhido_em": "2026-11-09T11:40:00",
+        "latitude": -8.0468,
+        "longitude": -34.9095
     },
 ]
 
@@ -758,24 +975,34 @@ def init_db() -> None:
             cursor.execute("ALTER TABLE denuncias ADD COLUMN foto_base64 TEXT NOT NULL DEFAULT ''")
             conn.commit()
 
-        total_denuncias = cursor.execute("SELECT COUNT(*) as c FROM denuncias").fetchone()["c"]
-        if total_denuncias == 0:
-            for d_item in DENUNCIAS_INICIAIS:
+        titulos_den_existentes = {
+            r["titulo"] for r in cursor.execute("SELECT titulo FROM denuncias").fetchall()
+        }
+        for d_item in DENUNCIAS_INICIAIS:
+            if d_item["titulo"] not in titulos_den_existentes:
                 d_copy = dict(d_item)
                 d_copy.setdefault("confirmacoes", 3)
+                d_copy.setdefault("nao_esta_mais", 0)
+                d_copy.setdefault("ultimo_voto_ainda_la_em", "")
+                d_copy.setdefault("ultimo_voto_recolhido_em", "")
+                d_copy.setdefault("foto_base64", "")
                 cursor.execute(
                     """
                     INSERT INTO denuncias (
                         titulo, cidade, bairro, endereco, tipo_residuo,
-                        gravidade, descricao, status, data_registro, confirmacoes, latitude, longitude
+                        gravidade, descricao, status, data_registro,
+                        confirmacoes, nao_esta_mais, ultimo_voto_ainda_la_em, ultimo_voto_recolhido_em, foto_base64,
+                        latitude, longitude
                     ) VALUES (
                         :titulo, :cidade, :bairro, :endereco, :tipo_residuo,
-                        :gravidade, :descricao, :status, :data_registro, :confirmacoes, :latitude, :longitude
+                        :gravidade, :descricao, :status, :data_registro,
+                        :confirmacoes, :nao_esta_mais, :ultimo_voto_ainda_la_em, :ultimo_voto_recolhido_em, :foto_base64,
+                        :latitude, :longitude
                     )
                     """,
                     d_copy,
                 )
-            conn.commit()
+        conn.commit()
 
         # Tabela de Solicitações de Coleta de Volumosos / Cata-Treco
         cursor.execute(
@@ -802,23 +1029,28 @@ def init_db() -> None:
             cursor.execute("ALTER TABLE catatreco ADD COLUMN foto_base64 TEXT NOT NULL DEFAULT ''")
             conn.commit()
 
-        total_ct = cursor.execute("SELECT COUNT(*) as c FROM catatreco").fetchone()["c"]
-        if total_ct == 0:
-            cursor.executemany(
-                """
-                INSERT INTO catatreco (
-                    protocolo, solicitante, cidade, bairro, endereco,
-                    itens_volumosos, turno_preferido, data_agendada,
-                    observacoes, status, latitude, longitude
-                ) VALUES (
-                    :protocolo, :solicitante, :cidade, :bairro, :endereco,
-                    :itens_volumosos, :turno_preferido, :data_agendada,
-                    :observacoes, :status, :latitude, :longitude
+        protocolos_existentes = {
+            r["protocolo"] for r in cursor.execute("SELECT protocolo FROM catatreco").fetchall()
+        }
+        for ct_item in CATATRECO_INICIAIS:
+            if ct_item["protocolo"] not in protocolos_existentes:
+                ct_copy = dict(ct_item)
+                ct_copy.setdefault("foto_base64", "")
+                cursor.execute(
+                    """
+                    INSERT INTO catatreco (
+                        protocolo, solicitante, cidade, bairro, endereco,
+                        itens_volumosos, turno_preferido, data_agendada,
+                        observacoes, status, foto_base64, latitude, longitude
+                    ) VALUES (
+                        :protocolo, :solicitante, :cidade, :bairro, :endereco,
+                        :itens_volumosos, :turno_preferido, :data_agendada,
+                        :observacoes, :status, :foto_base64, :latitude, :longitude
+                    )
+                    """,
+                    ct_copy,
                 )
-                """,
-                CATATRECO_INICIAIS,
-            )
-            conn.commit()
+        conn.commit()
     finally:
         conn.close()
 
