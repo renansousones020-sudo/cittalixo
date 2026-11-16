@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cittalixo-v3.1';
+const CACHE_NAME = 'cittalixo-v3.4.0';
 const ASSETS = ['/', '/manifest.json'];
 
 self.addEventListener('install', event => {
@@ -31,7 +31,13 @@ self.addEventListener('fetch', event => {
         fetch(event.request)
             .then(resp => {
                 const clone = resp.clone();
-                if (url.pathname.includes('/pontos') || url.pathname === '/') {
+                if (
+                    url.pathname.includes('/pontos') ||
+                    url.pathname.includes('/catatreco') ||
+                    url.pathname.includes('/denuncias') ||
+                    url.pathname === '/' ||
+                    url.pathname === '/manifest.json'
+                ) {
                     caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
                 }
                 return resp;

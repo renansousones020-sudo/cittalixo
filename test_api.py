@@ -10,10 +10,10 @@ def test_health():
     assert response.status_code == 200
     dados = response.json()
     assert dados["status"] == "ok"
-    assert dados["versao"] == "3.2.0"
+    assert dados["versao"] == "3.4.0"
     assert "Olinda" in dados["cidades_atendidas"]
     assert "Recife" in dados["cidades_atendidas"]
-    assert dados["total_pontos"] >= 1
+    assert dados["total_pontos"] >= 20
 
 
 def test_listar_pontos():
@@ -189,3 +189,59 @@ def test_ciclo_catatreco_agendamento_e_protocolo():
     # 4. Excluir agendamento de Cata-Treco (Admin)
     resp_del = client.delete(f"/catatreco/{ct_id}")
     assert resp_del.status_code == 200
+
+
+def test_busca_sem_acento_votacao_unica_e_seguranca():
+    # 1. Busca sem acento no backend (ex: 'sitio historico' encontra 'Sítio Histórico', 'torroes' encontra 'Torrões')
+    resp_busca = client.get("/pontos", params={"busca": "torroes"})
+    assert resp_busca.status_code == 200
+    assert any("Torrões" in p["bairro"] or "Torrões" in p["nome"] for p in resp_busca.json())
+
+    # 2. Rejeição de token de Admin inválido (403 Forbidden)
+    resp_forb = client.delete("/pontos/1", headers={"X-Admin-Token": "token_invalido"})
+    assert resp_forb.status_code == 403
+
+    # 3. Validação de foto_base64 contra URI malicioso (422 Unprocessable Entity)
+    den_invalida = {
+        "titulo": "Teste foto maliciosa",
+        "cidade": "Olinda",
+        "bairro": "Bairro Novo",
+        "endereco": "Rua Teste, 10",
+        "foto_base64": "javascript:alert(1)",
+        "latitude": -8.001,
+        "longitude": -34.842,
+    }
+    assert client.post("/denuncias", json=den_invalida).status_code == 422
+
+    # 4. Ciclo de voto único aberto (/denuncias/{id}/votar) com idempotência
+    den_valida = {
+        "titulo": "Teste votação única",
+        "cidade": "Recife",
+        "bairro": "Boa Vista",
+        "endereco": "Rua do Sol, 50",
+        "latitude": -8.062,
+        "longitude": -34.881,
+    }
+    criada = client.post("/denuncias", json=den_valida).json()
+    den_id = criada["id"]
+    try:
+        # Votar 'ainda_la'
+        r1 = client.put(f"/denuncias/{den_id}/votar", json={"voto_anterior": None, "voto_novo": "ainda_la"}).json()
+        assert r1["confirmacoes"] == 2
+        assert r1["nao_esta_mais"] == 0
+
+        # Idempotência se repetir o mesmo payload (voto_anterior == voto_novo)
+        r_idem = client.put(f"/denuncias/{den_id}/votar", json={"voto_anterior": "ainda_la", "voto_novo": "ainda_la"}).json()
+        assert r_idem["confirmacoes"] == 2
+
+        # Trocar voto de 'ainda_la' para 'ja_recolhido'
+        r2 = client.put(f"/denuncias/{den_id}/votar", json={"voto_anterior": "ainda_la", "voto_novo": "ja_recolhido"}).json()
+        assert r2["confirmacoes"] == 1
+        assert r2["nao_esta_mais"] == 1
+
+        # Desfazer voto ('ja_recolhido' -> None)
+        r3 = client.put(f"/denuncias/{den_id}/votar", json={"voto_anterior": "ja_recolhido", "voto_novo": None}).json()
+        assert r3["confirmacoes"] == 1
+        assert r3["nao_esta_mais"] == 0
+    finally:
+        client.delete(f"/denuncias/{den_id}", headers={"X-Admin-Token": "admin123"})

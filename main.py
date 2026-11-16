@@ -2,14 +2,56 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 import json
+import os
+import re
 import sqlite3
-from fastapi import FastAPI, HTTPException, Query, status
+import unicodedata
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "cittalixo.db"
+ADMIN_TOKEN_PADRAO = os.environ.get("CITTA_ADMIN_TOKEN", "admin123")
+
+
+def normalizar_texto_sql(texto: Optional[str]) -> str:
+    if not texto:
+        return ""
+    sem_acento = "".join(
+        ch for ch in unicodedata.normalize("NFD", str(texto)) if unicodedata.category(ch) != "Mn"
+    )
+    return sem_acento.lower().strip()
+
+
+def verificar_token_admin(
+    x_admin_token: Optional[str] = Header(default=None, alias="X-Admin-Token")
+) -> None:
+    strict_mode = os.environ.get("CITTA_STRICT_ADMIN", "0") == "1"
+    if x_admin_token is not None:
+        if x_admin_token != ADMIN_TOKEN_PADRAO:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Token de administrador inválido.",
+            )
+    elif strict_mode:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cabeçalho X-Admin-Token obrigatório para esta operação.",
+        )
+
+
+def _validar_foto_base64(valor: str) -> str:
+    if not valor:
+        return ""
+    v = valor.strip()
+    if len(v) > 550_000:
+        raise ValueError("A imagem comprimida excede o tamanho máximo permitido (550 KB em Base64).")
+    if not re.match(r"^data:image/(jpeg|jpg|png|webp|gif);base64,[A-Za-z0-9+/=\s]+$", v):
+        raise ValueError("Formato de imagem inválido. Envie um Data URI data:image/*;base64 válido.")
+    return v
+
 
 app = FastAPI(
     title="CittaLixo API - Recife & Olinda",
@@ -17,7 +59,7 @@ app = FastAPI(
         "API gratuita para consulta e gerenciamento de Ecopontos/Ecoestações "
         "e rotas/horários de coleta domiciliar em Recife e Olinda."
     ),
-    version="3.2.0",
+    version="3.4.0",
 )
 
 app.add_middleware(
@@ -85,9 +127,14 @@ class DenunciaBase(BaseModel):
     nao_esta_mais: int = Field(default=0, ge=0, description="Quantidade de moradores que relataram que já foi limpo ('Não está mais lá')")
     ultimo_voto_ainda_la_em: str = Field(default="", description="Timestamp ISO do último voto 'Ainda está lá'")
     ultimo_voto_recolhido_em: str = Field(default="", description="Timestamp ISO do último voto 'Já foi recolhido'")
-    foto_base64: str = Field(default="", description="Foto opcional comprimida em Base64")
+    foto_base64: str = Field(default="", max_length=550_000, description="Foto opcional comprimida em Base64")
     latitude: float = Field(..., ge=-90.0, le=90.0)
     longitude: float = Field(..., ge=-180.0, le=180.0)
+
+    @field_validator("foto_base64")
+    @classmethod
+    def validar_foto_denuncia(cls, v: str) -> str:
+        return _validar_foto_base64(v)
 
 
 class DenunciaCreate(DenunciaBase):
@@ -109,9 +156,14 @@ class CataTrecoBase(BaseModel):
     data_agendada: str = Field(default="Próxima semana", description="Data solicitada")
     observacoes: str = Field(default="", description="Referência ou observações")
     status: str = Field(default="Agendado", description="Status: 'Agendado' ou 'Recolhido'")
-    foto_base64: str = Field(default="", description="Foto opcional do item volumoso em Base64")
+    foto_base64: str = Field(default="", max_length=550_000, description="Foto opcional do item volumoso em Base64")
     latitude: float = Field(..., ge=-90.0, le=90.0)
     longitude: float = Field(..., ge=-180.0, le=180.0)
+
+    @field_validator("foto_base64")
+    @classmethod
+    def validar_foto_catatreco(cls, v: str) -> str:
+        return _validar_foto_base64(v)
 
 
 class CataTrecoCreate(CataTrecoBase):
@@ -836,8 +888,11 @@ def _row_to_dict(row: sqlite3.Row) -> dict:
 
 
 def get_db_connection() -> sqlite3.Connection:
-    conn = sqlite3.connect(str(DB_PATH))
+    conn = sqlite3.connect(str(DB_PATH), timeout=15.0)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA synchronous=NORMAL;")
+    conn.create_function("norm_txt", 1, normalizar_texto_sql)
     return conn
 
 
@@ -918,21 +973,17 @@ def init_db() -> None:
                     )
             conn.commit()
 
-            # Sincroniza as rotas padrão com a geometria real de rua (OSRM)
+            # Preenche rota_coordenadas apenas se estiver vazia, preservando edições manuais do Admin
             for item in PONTOS_INICIAIS:
                 if item.get("rota_coordenadas"):
                     cursor.execute(
                         """
                         UPDATE pontos
-                        SET rota_coordenadas = ?, latitude = ?, longitude = ?, endereco = ?, observacoes = ?
-                        WHERE nome = ?
+                        SET rota_coordenadas = ?
+                        WHERE nome = ? AND (rota_coordenadas IS NULL OR rota_coordenadas = '' OR rota_coordenadas = '[]')
                         """,
                         (
                             json.dumps(item["rota_coordenadas"]),
-                            item["latitude"],
-                            item["longitude"],
-                            item["endereco"],
-                            item["observacoes"],
                             item["nome"],
                         ),
                     )
@@ -1050,6 +1101,11 @@ def init_db() -> None:
                     """,
                     ct_copy,
                 )
+
+        # Índices para acelerar filtros e buscas concorrentes
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_pontos_cidade_cat_bairro ON pontos(cidade, categoria, bairro)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_denuncias_status_cidade ON denuncias(status, cidade)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_catatreco_status_proto ON catatreco(status, protocolo)")
         conn.commit()
     finally:
         conn.close()
@@ -1085,13 +1141,13 @@ def health():
     return {
         "status": "ok",
         "aplicacao": "CittaLixo",
-        "versao": "3.2.0",
+        "versao": "3.4.0",
         "cidades_atendidas": ["Olinda", "Recife"],
         "total_pontos": total,
     }
 
 
-# Listar todos os pontos (com filtros opcionais gratuitos)
+# Listar todos os pontos (com filtros opcionais gratuitos e busca sem acento)
 @app.get("/pontos", response_model=List[PontoResponse])
 def listar_pontos(
     cidade: Optional[str] = Query(None, description="Filtrar por cidade (Olinda ou Recife)"),
@@ -1105,25 +1161,25 @@ def listar_pontos(
     params: list = []
 
     if cidade:
-        query += " AND LOWER(cidade) = LOWER(?)"
+        query += " AND norm_txt(cidade) = norm_txt(?)"
         params.append(cidade.strip())
     if bairro:
-        query += " AND LOWER(bairro) LIKE LOWER(?)"
+        query += " AND norm_txt(bairro) LIKE norm_txt(?)"
         params.append(f"%{bairro.strip()}%")
     if categoria:
-        query += " AND LOWER(categoria) = LOWER(?)"
+        query += " AND norm_txt(categoria) = norm_txt(?)"
         params.append(categoria.strip())
     if tipo:
-        query += " AND LOWER(tipo) LIKE LOWER(?)"
+        query += " AND norm_txt(tipo) LIKE norm_txt(?)"
         params.append(f"%{tipo.strip()}%")
     if dia_semana:
-        query += " AND LOWER(dias_semana) LIKE LOWER(?)"
+        query += " AND norm_txt(dias_semana) LIKE norm_txt(?)"
         params.append(f"%{dia_semana.strip()}%")
     if busca:
         termo = f"%{busca.strip()}%"
         query += (
-            " AND (LOWER(nome) LIKE LOWER(?) OR LOWER(endereco) LIKE LOWER(?) "
-            "OR LOWER(bairro) LIKE LOWER(?) OR LOWER(tipo) LIKE LOWER(?))"
+            " AND (norm_txt(nome) LIKE norm_txt(?) OR norm_txt(endereco) LIKE norm_txt(?) "
+            "OR norm_txt(bairro) LIKE norm_txt(?) OR norm_txt(tipo) LIKE norm_txt(?))"
         )
         params.extend([termo, termo, termo, termo])
 
@@ -1154,7 +1210,7 @@ def buscar_ponto(id: int):
 
 
 # Criar ponto
-@app.post("/pontos", response_model=PontoResponse, status_code=status.HTTP_201_CREATED)
+@app.post("/pontos", response_model=PontoResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(verificar_token_admin)])
 def criar_ponto(ponto: PontoCreate):
     conn = get_db_connection()
     try:
@@ -1193,7 +1249,7 @@ def criar_ponto(ponto: PontoCreate):
 
 
 # Atualizar ponto
-@app.put("/pontos/{id}", response_model=PontoResponse)
+@app.put("/pontos/{id}", response_model=PontoResponse, dependencies=[Depends(verificar_token_admin)])
 def atualizar_ponto(id: int, ponto_atualizado: PontoCreate):
     conn = get_db_connection()
     try:
@@ -1240,7 +1296,7 @@ def atualizar_ponto(id: int, ponto_atualizado: PontoCreate):
 
 
 # Remover ponto
-@app.delete("/pontos/{id}")
+@app.delete("/pontos/{id}", dependencies=[Depends(verificar_token_admin)])
 def remover_ponto(id: int):
     conn = get_db_connection()
     try:
@@ -1269,10 +1325,10 @@ def listar_denuncias(
     query = "SELECT * FROM denuncias WHERE 1=1"
     params: list = []
     if cidade:
-        query += " AND LOWER(cidade) = LOWER(?)"
+        query += " AND norm_txt(cidade) = norm_txt(?)"
         params.append(cidade.strip())
     if status_filtro:
-        query += " AND LOWER(status) = LOWER(?)"
+        query += " AND norm_txt(status) = norm_txt(?)"
         params.append(status_filtro.strip())
     query += " ORDER BY CASE WHEN status = 'Pendente' THEN 0 ELSE 1 END, confirmacoes DESC, id DESC"
 
@@ -1378,6 +1434,13 @@ class DenunciaVotoPayload(BaseModel):
     voto_anterior: Optional[str] = None
     voto_novo: Optional[str] = None
 
+    @field_validator("voto_anterior", "voto_novo")
+    @classmethod
+    def validar_opcao_voto(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in ("ainda_la", "ja_recolhido"):
+            raise ValueError("Opção de voto inválida. Use 'ainda_la', 'ja_recolhido' ou null.")
+        return v
+
 
 @app.put("/denuncias/{id}/votar", response_model=DenunciaResponse)
 def votar_denuncia_unico(id: int, payload: DenunciaVotoPayload):
@@ -1390,11 +1453,15 @@ def votar_denuncia_unico(id: int, payload: DenunciaVotoPayload):
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Denúncia não encontrada",
             )
+        # Se voto_anterior == voto_novo, operação idempotente (evita manipulação de contadores)
+        if payload.voto_anterior == payload.voto_novo:
+            return dict(row)
+
         conf = row["confirmacoes"] if row["confirmacoes"] is not None else 1
         limpo = row["nao_esta_mais"] if row["nao_esta_mais"] is not None else 0
 
         if payload.voto_anterior == "ainda_la":
-            conf = max(0, conf - 1)
+            conf = max(1, conf - 1)
         elif payload.voto_anterior == "ja_recolhido":
             limpo = max(0, limpo - 1)
 
@@ -1420,7 +1487,7 @@ def votar_denuncia_unico(id: int, payload: DenunciaVotoPayload):
         conn.close()
 
 
-@app.put("/denuncias/{id}/resolver", response_model=DenunciaResponse)
+@app.put("/denuncias/{id}/resolver", response_model=DenunciaResponse, dependencies=[Depends(verificar_token_admin)])
 def resolver_denuncia(id: int):
     conn = get_db_connection()
     try:
@@ -1440,7 +1507,7 @@ def resolver_denuncia(id: int):
         conn.close()
 
 
-@app.delete("/denuncias/{id}")
+@app.delete("/denuncias/{id}", dependencies=[Depends(verificar_token_admin)])
 def remover_denuncia(id: int):
     conn = get_db_connection()
     try:
@@ -1468,10 +1535,10 @@ def listar_catatreco(
     query = "SELECT * FROM catatreco WHERE 1=1"
     params: list = []
     if cidade:
-        query += " AND LOWER(cidade) = LOWER(?)"
+        query += " AND norm_txt(cidade) = norm_txt(?)"
         params.append(cidade.strip())
     if status_filtro:
-        query += " AND LOWER(status) = LOWER(?)"
+        query += " AND norm_txt(status) = norm_txt(?)"
         params.append(status_filtro.strip())
     query += " ORDER BY CASE WHEN status = 'Agendado' THEN 0 ELSE 1 END, id DESC"
 
@@ -1488,7 +1555,15 @@ def criar_catatreco(pedido: CataTrecoCreate):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        prox_num = cursor.execute("SELECT COALESCE(MAX(id), 0) + 1 as n FROM catatreco").fetchone()["n"]
+        max_id = cursor.execute("SELECT COALESCE(MAX(id), 0) as n FROM catatreco").fetchone()["n"]
+        # Também verifica o maior sufixo numérico de protocolo existente para evitar colisão após exclusões
+        protos = [r["protocolo"] for r in cursor.execute("SELECT protocolo FROM catatreco").fetchall()]
+        max_proto = 0
+        for p in protos:
+            m = re.search(r"(\d+)$", str(p or ""))
+            if m:
+                max_proto = max(max_proto, int(m.group(1)))
+        prox_num = max(max_id + 1, max_proto + 1)
         protocolo = f"CT-2026-{prox_num:03d}"
         cursor.execute(
             """
@@ -1522,7 +1597,7 @@ def criar_catatreco(pedido: CataTrecoCreate):
         conn.close()
 
 
-@app.put("/catatreco/{id}/recolher", response_model=CataTrecoResponse)
+@app.put("/catatreco/{id}/recolher", response_model=CataTrecoResponse, dependencies=[Depends(verificar_token_admin)])
 def recolher_catatreco(id: int):
     conn = get_db_connection()
     try:
@@ -1542,7 +1617,7 @@ def recolher_catatreco(id: int):
         conn.close()
 
 
-@app.delete("/catatreco/{id}")
+@app.delete("/catatreco/{id}", dependencies=[Depends(verificar_token_admin)])
 def remover_catatreco(id: int):
     conn = get_db_connection()
     try:
