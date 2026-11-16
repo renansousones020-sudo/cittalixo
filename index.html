@@ -2188,10 +2188,10 @@
             const elMod = document.getElementById('lista-moderacao-admin');
             const btnAprovarTodos = document.getElementById('btn-aprovar-todos-admin');
             const tabGestorBtn = document.getElementById('tab-btn-gestor');
-            const pontosPend = todosOsPontos.filter(p => p.aprovado_admin === 0);
-            const ctPend = todosOsCataTrecos.filter(c => c.aprovado_admin === 0);
-            const denPend = todasAsDenuncias.filter(d => d.aprovado_admin === 0);
-            const totalPendMod = pontosPend.length + ctPend.length + denPend.length;
+            const pontosModPend = todosOsPontos.filter(p => p.aprovado_admin === 0);
+            const ctModPend = todosOsCataTrecos.filter(c => c.aprovado_admin === 0);
+            const denModPend = todasAsDenuncias.filter(d => d.aprovado_admin === 0);
+            const totalPendMod = pontosModPend.length + ctModPend.length + denModPend.length;
 
             if (tabGestorBtn) {
                 tabGestorBtn.innerHTML = totalPendMod > 0
@@ -2206,7 +2206,7 @@
                     elMod.innerHTML = `<p style="font-size:0.86rem; color:var(--text-muted); margin:4px 0;">✅ Todos os pontos, agendamentos Cata-Treco e denúncias já foram validados pelo Admin.</p>`;
                 } else {
                     const cardsMod = [
-                        ...pontosPend.map(p => `
+                        ...pontosModPend.map(p => `
                             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; padding:9px 12px; background:var(--bg-input); border-radius:8px; margin-bottom:6px; border:1px solid #f59e0b;">
                                 <div>
                                     <span class="badge badge-cat-ecoponto">🏢 Ponto/Rota Sugerido</span>
@@ -2219,7 +2219,7 @@
                                 </div>
                             </div>
                         `),
-                        ...ctPend.map(c => `
+                        ...ctModPend.map(c => `
                             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; padding:9px 12px; background:var(--bg-input); border-radius:8px; margin-bottom:6px; border:1px solid #a855f7;">
                                 <div>
                                     <span class="badge badge-cat-purple">🛋️ Cata-Treco (${escaparHtml(c.protocolo)})</span>
@@ -2232,7 +2232,7 @@
                                 </div>
                             </div>
                         `),
-                        ...denPend.map(d => `
+                        ...denModPend.map(d => `
                             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; padding:9px 12px; background:var(--bg-input); border-radius:8px; margin-bottom:6px; border:1px solid #ea580c;">
                                 <div>
                                     <span class="badge badge-cat-critico">⚠️ Denúncia Crítica</span>
