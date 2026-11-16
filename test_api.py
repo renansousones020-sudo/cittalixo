@@ -245,3 +245,60 @@ def test_busca_sem_acento_votacao_unica_e_seguranca():
         assert r3["nao_esta_mais"] == 0
     finally:
         client.delete(f"/denuncias/{den_id}", headers={"X-Admin-Token": "admin123"})
+
+
+def test_validacao_geografica_e_moderacao_admin():
+    # 1. Rejeita coordenada no meio do Oceano Atlântico (422 Unprocessable Entity)
+    ponto_oceano = {
+        "nome": "Ponto em Alto Mar",
+        "cidade": "Olinda",
+        "bairro": "Bairro Novo",
+        "categoria": "Ecoponto",
+        "tipo": "Recicláveis",
+        "endereco": "Oceano Atlântico",
+        "latitude": -8.0010,
+        "longitude": -34.7800,
+    }
+    resp_oceano = client.post("/pontos", json=ponto_oceano)
+    assert resp_oceano.status_code == 422
+
+    # 2. Rejeita coordenada fora da Região Metropolitana de Olinda/Recife (ex: São Paulo)
+    den_fora = {
+        "titulo": "Denúncia fora de cobertura",
+        "cidade": "Recife",
+        "bairro": "Boa Vista",
+        "endereco": "Av. Paulista, 1000",
+        "latitude": -23.5614,
+        "longitude": -46.6558,
+    }
+    resp_fora = client.post("/denuncias", json=den_fora)
+    assert resp_fora.status_code == 422
+
+    # 3. Envio de cidadão (X-User-Role: usuario) entra com aprovado_admin = 0 até o Admin aprovar
+    sugestao_cidadao = {
+        "nome": "PEV Sugerido pelo Morador",
+        "cidade": "Olinda",
+        "bairro": "Casa Caiada",
+        "categoria": "Ecoponto",
+        "tipo": "Recicláveis e Óleo",
+        "endereco": "Av. Carlos de Lima Cavalcanti, 500",
+        "latitude": -7.9855,
+        "longitude": -34.8412,
+    }
+    resp_sug = client.post("/pontos", json=sugestao_cidadao, headers={"X-User-Role": "usuario"})
+    assert resp_sug.status_code == 201
+    ponto_sug = resp_sug.json()
+    ponto_sug_id = ponto_sug["id"]
+    try:
+        assert ponto_sug["aprovado_admin"] == 0
+
+        # Filtrar apenas aprovados não deve incluir o pendente
+        aprovados = client.get("/pontos", params={"aprovado_admin": 1}).json()
+        assert all(p["id"] != ponto_sug_id for p in aprovados)
+
+        # Admin aprova o ponto sugerido
+        resp_aprov = client.put(f"/pontos/{ponto_sug_id}/aprovar", headers={"X-Admin-Token": "admin123"})
+        assert resp_aprov.status_code == 200
+        assert resp_aprov.json()["aprovado_admin"] == 1
+    finally:
+        client.delete(f"/pontos/{ponto_sug_id}", headers={"X-Admin-Token": "admin123"})

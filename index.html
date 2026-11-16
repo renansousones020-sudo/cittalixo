@@ -1171,8 +1171,8 @@
                             📍 Perto de Mim
                         </button>
 
-                        <button class="btn-action btn-add admin-only" id="btn-cadastrar-ponto" onclick="abrirNovoCadastroPonto()">
-                            ➕ Cadastrar Ponto/Rota
+                        <button class="btn-action btn-add" id="btn-cadastrar-ponto" onclick="abrirNovoCadastroPonto()">
+                            💡 Sugerir Ponto/Rota
                         </button>
                     </div>
                 </div>
@@ -1570,6 +1570,22 @@
                 </div>
             </div>
 
+            <!-- Central de Moderação do Admin: Aprovar Pontos, Cata-Treco e Denúncias enviados por Cidadãos -->
+            <div class="chart-box" style="margin-bottom: 16px; border-left: 5px solid #f59e0b;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                    <div>
+                        <h3 style="margin:0; color:#b45309;">🛡️ Central de Moderação: Envios de Cidadãos Aguardando Validação</h3>
+                        <p style="font-size:0.84rem; color:var(--text-muted); margin:4px 0 0 0;">
+                            Novos pontos, agendamentos Cata-Treco e denúncias enviados no <strong>Modo Cidadão</strong> ficam retidos aqui até sua validação antes de aparecerem para todos:
+                        </p>
+                    </div>
+                    <button type="button" class="btn-action btn-add" id="btn-aprovar-todos-admin" onclick="aprovarTodosPendentesAdmin()" style="display:none;">
+                        ✅ Aprovar Todos os Pendentes
+                    </button>
+                </div>
+                <div id="lista-moderacao-admin" style="margin-top:10px;"></div>
+            </div>
+
             <!-- Fila de Verificação Comunitária para o Admin aprovar com 1 clique -->
             <div class="chart-box" style="margin-bottom: 16px; border-left: 5px solid #10b981;">
                 <h3 style="margin-top:0; color:#065f46;">✨ Verificação Comunitária: Denúncias Relatadas como Limpas pelos Moradores</h3>
@@ -1736,22 +1752,29 @@
 
         function aplicarNivelAcessoNaInterface() {
             const btnRole = document.getElementById('btn-role-mode');
+            const btnCad = document.getElementById('btn-cadastrar-ponto');
             if (nivelAcessoAtual === 'admin') {
                 document.body.classList.remove('role-user');
                 document.body.classList.add('role-admin');
                 btnRole.classList.add('is-admin');
                 btnRole.innerHTML = '🛡️ Modo Admin (Gestor)';
+                if (btnCad) btnCad.textContent = '➕ Cadastrar Ponto/Rota';
             } else {
                 document.body.classList.remove('role-admin');
                 document.body.classList.add('role-user');
                 btnRole.classList.remove('is-admin');
                 btnRole.innerHTML = '👤 Modo Cidadão (Usuário)';
+                if (btnCad) btnCad.textContent = '💡 Sugerir Ponto/Rota';
                 // Se estava na aba Painel Gestor ou com formulário de cadastro de ponto aberto, volta para a aba principal e fecha
                 document.getElementById('secao-cadastro').classList.remove('open');
                 if (abaAtual === 'gestor') {
                     alternarAba('coleta');
                 }
             }
+            if (typeof aplicarFiltros === 'function') aplicarFiltros();
+            if (typeof renderizarCataTreco === 'function') renderizarCataTreco();
+            if (typeof renderizarDenuncias === 'function') renderizarDenuncias();
+            if (typeof atualizarDashboard === 'function') atualizarDashboard();
         }
 
         function alternarNivelAcesso() {
@@ -1902,9 +1925,30 @@
             return '';
         }
 
+        function validarCoordenadaOlindaRecifeFrontend(lat, lng) {
+            if (Number.isNaN(lat) || Number.isNaN(lng)) {
+                return { ok: false, msg: '⚠️ Coordenadas inválidas! Clique no mapa dentro de Olinda ou Recife.' };
+            }
+            if (lat < -8.1650 || lat > -7.9350 || lng < -35.0200 || lng > -34.8250) {
+                return {
+                    ok: false,
+                    msg: `📍 Coordenada (${lat.toFixed(4)}, ${lng.toFixed(4)}) fora do perímetro de Olinda e Recife! Clique dentro da área urbana.`
+                };
+            }
+            const lngLimiteMar = -34.8250 + Math.min(0.0, lat - (-7.9500)) * 0.28;
+            if (lng > lngLimiteMar) {
+                return {
+                    ok: false,
+                    msg: `🌊 Coordenada (${lat.toFixed(4)}, ${lng.toFixed(4)}) está no Oceano Atlântico! Clique em terra firme em Olinda ou Recife.`
+                };
+            }
+            return { ok: true, msg: '' };
+        }
+
         function apiFetch(caminho, opcoes = {}) {
             const opts = { ...opcoes };
             const headers = { ...(opts.headers || {}) };
+            headers['X-User-Role'] = nivelAcessoAtual;
             if (nivelAcessoAtual === 'admin') {
                 headers['X-Admin-Token'] = 'admin123';
             }
@@ -2139,6 +2183,114 @@
                     `).join('');
                 }
             }
+
+            // Central de Moderação do Admin: Pontos, Cata-Trecos e Denúncias com aprovado_admin === 0
+            const elMod = document.getElementById('lista-moderacao-admin');
+            const btnAprovarTodos = document.getElementById('btn-aprovar-todos-admin');
+            const tabGestorBtn = document.getElementById('tab-btn-gestor');
+            const pontosPend = todosOsPontos.filter(p => p.aprovado_admin === 0);
+            const ctPend = todosOsCataTrecos.filter(c => c.aprovado_admin === 0);
+            const denPend = todasAsDenuncias.filter(d => d.aprovado_admin === 0);
+            const totalPendMod = pontosPend.length + ctPend.length + denPend.length;
+
+            if (tabGestorBtn) {
+                tabGestorBtn.innerHTML = totalPendMod > 0
+                    ? `🛡️ Painel Gestor &amp; Dados <span style="background:#f59e0b; color:#fff; border-radius:999px; padding:1px 7px; font-size:0.75rem; margin-left:4px;">${totalPendMod}</span>`
+                    : `🛡️ Painel Gestor &amp; Dados`;
+            }
+            if (btnAprovarTodos) {
+                btnAprovarTodos.style.display = totalPendMod > 0 ? 'inline-flex' : 'none';
+            }
+            if (elMod) {
+                if (totalPendMod === 0) {
+                    elMod.innerHTML = `<p style="font-size:0.86rem; color:var(--text-muted); margin:4px 0;">✅ Todos os pontos, agendamentos Cata-Treco e denúncias já foram validados pelo Admin.</p>`;
+                } else {
+                    const cardsMod = [
+                        ...pontosPend.map(p => `
+                            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; padding:9px 12px; background:var(--bg-input); border-radius:8px; margin-bottom:6px; border:1px solid #f59e0b;">
+                                <div>
+                                    <span class="badge badge-cat-ecoponto">🏢 Ponto/Rota Sugerido</span>
+                                    <strong>${escaparHtml(p.nome)}</strong> <span style="font-size:0.82rem; color:var(--text-muted);">(${escaparHtml(p.cidade)} • ${escaparHtml(p.bairro)} — ${escaparHtml(p.endereco)})</span>
+                                </div>
+                                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                                    <button type="button" class="card-link" onclick="verItemModeracaoNoMapa('coleta', ${Number(p.latitude)}, ${Number(p.longitude)})">🗺️ Ver no Mapa</button>
+                                    <button type="button" class="btn-action btn-add" onclick="aprovarItemAdmin('ponto', ${Number(p.id)})">✅ Aprovar e Publicar</button>
+                                    <button type="button" class="card-link delete-btn" onclick="excluirPonto(${Number(p.id)})">🗑️ Recusar</button>
+                                </div>
+                            </div>
+                        `),
+                        ...ctPend.map(c => `
+                            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; padding:9px 12px; background:var(--bg-input); border-radius:8px; margin-bottom:6px; border:1px solid #a855f7;">
+                                <div>
+                                    <span class="badge badge-cat-purple">🛋️ Cata-Treco (${escaparHtml(c.protocolo)})</span>
+                                    <strong>${escaparHtml(c.itens_volumosos)}</strong> <span style="font-size:0.82rem; color:var(--text-muted);">(${escaparHtml(c.cidade)} • ${escaparHtml(c.bairro)} — ${escaparHtml(c.solicitante)})</span>
+                                </div>
+                                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                                    <button type="button" class="card-link" onclick="verItemModeracaoNoMapa('catatreco', ${Number(c.latitude)}, ${Number(c.longitude)})">🗺️ Ver no Mapa</button>
+                                    <button type="button" class="btn-action btn-add" onclick="aprovarItemAdmin('catatreco', ${Number(c.id)})">✅ Aprovar e Publicar</button>
+                                    <button type="button" class="card-link delete-btn" onclick="excluirCataTreco(${Number(c.id)})">🗑️ Recusar</button>
+                                </div>
+                            </div>
+                        `),
+                        ...denPend.map(d => `
+                            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; padding:9px 12px; background:var(--bg-input); border-radius:8px; margin-bottom:6px; border:1px solid #ea580c;">
+                                <div>
+                                    <span class="badge badge-cat-critico">⚠️ Denúncia Crítica</span>
+                                    <strong>${escaparHtml(d.titulo)}</strong> <span style="font-size:0.82rem; color:var(--text-muted);">(${escaparHtml(d.cidade)} • ${escaparHtml(d.bairro)} — ${escaparHtml(d.endereco)})</span>
+                                </div>
+                                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                                    <button type="button" class="card-link" onclick="verItemModeracaoNoMapa('denuncias', ${Number(d.latitude)}, ${Number(d.longitude)})">🗺️ Ver no Mapa</button>
+                                    <button type="button" class="btn-action btn-add" onclick="aprovarItemAdmin('denuncia', ${Number(d.id)})">✅ Aprovar e Publicar</button>
+                                    <button type="button" class="card-link delete-btn" onclick="excluirDenuncia(${Number(d.id)})">🗑️ Recusar</button>
+                                </div>
+                            </div>
+                        `)
+                    ];
+                    elMod.innerHTML = cardsMod.join('');
+                }
+            }
+        }
+
+        function verItemModeracaoNoMapa(abaDestino, lat, lng) {
+            alternarAba(abaDestino);
+            setTimeout(() => {
+                map.setView([lat, lng], 16, { animate: true });
+            }, 150);
+        }
+
+        async function aprovarItemAdmin(tipo, id) {
+            const rota = tipo === 'ponto' ? `/pontos/${id}/aprovar` : (tipo === 'catatreco' ? `/catatreco/${id}/aprovar` : `/denuncias/${id}/aprovar`);
+            try {
+                const resp = await apiFetch(rota, { method: 'PUT' });
+                if (!resp.ok) throw new Error();
+                if (tipo === 'ponto') await carregarPontosDaAPI();
+                else if (tipo === 'catatreco') await carregarCataTrecoDaAPI();
+                else await carregarDenunciasDaAPI();
+            } catch (e) {
+                if (tipo === 'ponto') {
+                    const it = todosOsPontos.find(x => x.id === id);
+                    if (it) it.aprovado_admin = 1;
+                    aplicarFiltros();
+                } else if (tipo === 'catatreco') {
+                    const it = todosOsCataTrecos.find(x => x.id === id);
+                    if (it) it.aprovado_admin = 1;
+                    renderizarCataTreco();
+                } else {
+                    const it = todasAsDenuncias.find(x => x.id === id);
+                    if (it) it.aprovado_admin = 1;
+                    renderizarDenuncias();
+                }
+                atualizarDashboard();
+            }
+        }
+
+        async function aprovarTodosPendentesAdmin() {
+            const pontosPend = todosOsPontos.filter(p => p.aprovado_admin === 0);
+            const ctPend = todosOsCataTrecos.filter(c => c.aprovado_admin === 0);
+            const denPend = todasAsDenuncias.filter(d => d.aprovado_admin === 0);
+            for (const p of pontosPend) await aprovarItemAdmin('ponto', p.id);
+            for (const c of ctPend) await aprovarItemAdmin('catatreco', c.id);
+            for (const d of denPend) await aprovarItemAdmin('denuncia', d.id);
         }
 
         // Exportação gratuita de CSV (compatível com Excel UTF-8 BOM) e JSON
@@ -2414,11 +2566,13 @@
                     ? `<span class="badge badge-distance">📏 ${ponto.distanciaKm.toFixed(1)} km de você</span>`
                     : '';
 
+                const pendenteMod = ponto.aprovado_admin === 0;
                 card.innerHTML = `
                     <div class="card-top">
                         <h3>${escaparHtml(ponto.nome)}</h3>
                     </div>
                     <div class="badges">
+                        ${pendenteMod ? `<span class="badge" style="background:#fef3c7; color:#b45309; border:1px solid #f59e0b;">⏳ Pendente de Aprovação do Admin</span>` : ''}
                         <span class="badge badge-city">📍 ${escaparHtml(ponto.cidade)} • ${escaparHtml(ponto.bairro)}</span>
                         <span class="badge ${isColeta ? 'badge-cat-coleta' : 'badge-cat-ecoponto'}">
                             ${isColeta ? '🚛 Rota do Caminhão' : '🏢 Ecoponto Fixo'}
@@ -2434,6 +2588,7 @@
                     ${isColeta ? `<p style="font-size:0.8rem; color:#92400e;">⚠️ Simulação estimada por horário: o caminhão pode passar antes ou depois.</p>` : ''}
                     ${ponto.observacoes ? `<p style="font-size:0.83rem;">ℹ️ ${escaparHtml(ponto.observacoes)}</p>` : ''}
                     <div class="card-actions" onclick="event.stopPropagation();">
+                        ${pendenteMod ? `<button type="button" class="card-link admin-only" style="background:#16a34a; color:#fff;" onclick="aprovarItemAdmin('ponto', ${Number(ponto.id)})">✅ Aprovar e Publicar</button>` : ''}
                         <button type="button" class="card-link ${temRota ? 'rota-btn' : ''}" onclick="focarPontoNoMapa(${ponto.id})">
                             ${temRota ? '🛣️ Ver Rota' : '🔍 Mapa'}
                         </button>
@@ -2463,7 +2618,6 @@
 
         // --- CRUD: EDITAR E EXCLUIR DIRETO NOS CARDS ---
         function abrirNovoCadastroPonto() {
-            if (nivelAcessoAtual !== 'admin') return;
             fecharTodosOsFormularios();
             document.getElementById('inp-id-edicao').value = '';
             document.getElementById('form-ponto').reset();
@@ -2473,8 +2627,12 @@
             document.getElementById('inp-fim').value = '16:00';
             document.getElementById('inp-lat').value = '-8.0014';
             document.getElementById('inp-lng').value = '-34.8553';
-            document.getElementById('titulo-form-ponto').textContent = '➕ Cadastrar Novo Ecoponto ou Rota do Caminhão';
-            document.getElementById('btn-salvar-ponto').textContent = '💾 Salvar no Mapa';
+            document.getElementById('titulo-form-ponto').textContent = nivelAcessoAtual === 'admin'
+                ? '➕ Cadastrar Novo Ecoponto ou Rota do Caminhão'
+                : '💡 Sugerir Novo Ecoponto ou Rota (Sujeito à Validação do Admin)';
+            document.getElementById('btn-salvar-ponto').textContent = nivelAcessoAtual === 'admin'
+                ? '💾 Salvar no Mapa'
+                : '📨 Enviar para Validação do Admin';
             limparRotaDesenhada();
             document.getElementById('secao-cadastro').classList.add('open');
             document.getElementById('secao-cadastro').scrollIntoView({ behavior: 'smooth' });
@@ -2567,6 +2725,13 @@
                 return;
             }
 
+            const validGeo = validarCoordenadaOlindaRecifeFrontend(latitude, longitude);
+            if (!validGeo.ok) {
+                feedback.textContent = validGeo.msg;
+                return;
+            }
+
+            const aprovado_admin = nivelAcessoAtual === 'admin' ? 1 : 0;
             const payload = {
                 nome,
                 cidade,
@@ -2581,6 +2746,7 @@
                 observacoes,
                 latitude,
                 longitude,
+                aprovado_admin,
                 rota_coordenadas: pontosRotaCadastro
             };
 
@@ -2624,10 +2790,12 @@
 
                 const salvo = await resp.json();
                 feedback.style.color = '#16a34a';
-                feedback.textContent = idEdicao ? '✅ Registro atualizado com sucesso!' : '✅ Cadastrado com sucesso!';
+                feedback.textContent = idEdicao
+                    ? '✅ Registro atualizado com sucesso!'
+                    : (nivelAcessoAtual === 'admin' ? '✅ Cadastrado com sucesso!' : '⏳ Sugestão enviada! Ficará visível para todos assim que o Admin validar.');
                 await carregarPontosDaAPI();
-                focarPontoNoMapa(salvo.id);
-                setTimeout(() => fecharFormularioPonto(), 900);
+                if (nivelAcessoAtual === 'admin') focarPontoNoMapa(salvo.id);
+                setTimeout(() => fecharFormularioPonto(), 1300);
             } catch (err) {
                 // Fallback local: se o usuário abriu o HTML sem servidor Python rodando, salva na sessão e no localStorage!
                 const novoId = idEdicao ? parseInt(idEdicao, 10) : (Math.max(0, ...todosOsPontos.map(p => p.id || 0)) + 1);
@@ -2640,11 +2808,13 @@
                 }
                 localStorage.setItem('cittalixo_pontos_offline', JSON.stringify(todosOsPontos));
                 feedback.style.color = '#16a34a';
-                feedback.textContent = idEdicao ? '✅ Registro atualizado no mapa!' : '✅ Cadastrado com sucesso no mapa!';
+                feedback.textContent = idEdicao
+                    ? '✅ Registro atualizado no mapa!'
+                    : (nivelAcessoAtual === 'admin' ? '✅ Cadastrado com sucesso no mapa!' : '⏳ Sugestão enviada para validação do Admin!');
                 aplicarFiltros();
                 atualizarDashboard();
-                focarPontoNoMapa(novoId);
-                setTimeout(() => fecharFormularioPonto(), 900);
+                if (nivelAcessoAtual === 'admin') focarPontoNoMapa(novoId);
+                setTimeout(() => fecharFormularioPonto(), 1300);
             }
         }
 
@@ -2681,6 +2851,7 @@
 
             const termoBuscaCt = (document.getElementById('filtro-busca-catatreco')?.value || '').trim().toLowerCase();
             const filtrados = todosOsCataTrecos.filter(c => {
+                if (nivelAcessoAtual !== 'admin' && c.aprovado_admin === 0) return false;
                 if (statusCataTrecoFiltro && c.status !== statusCataTrecoFiltro) return false;
                 if (termoBuscaCt) {
                     const strBusca = `${c.protocolo || ''} ${c.bairro || ''} ${c.cidade || ''} ${c.solicitante || ''} ${c.endereco || ''} ${c.itens_volumosos || ''}`.toLowerCase();
@@ -2694,6 +2865,7 @@
 
             filtrados.forEach(ct => {
                 const recolhido = ct.status === 'Recolhido';
+                const pendenteModCt = ct.aprovado_admin === 0;
                 const icone = recolhido ? iconeResolvido : iconeCataTreco;
 
                 const marker = L.marker([ct.latitude, ct.longitude], { icon: icone })
@@ -2724,6 +2896,7 @@
                         <h3>🛋️ ${escaparHtml(ct.itens_volumosos)}</h3>
                     </div>
                     <div class="badges">
+                        ${pendenteModCt ? `<span class="badge" style="background:#fef3c7; color:#b45309; border:1px solid #f59e0b;">⏳ Pendente de Aprovação do Admin</span>` : ''}
                         <span class="badge badge-cat-purple">📑 Protocolo: ${escaparHtml(ct.protocolo)}</span>
                         <span class="badge badge-city">📍 ${escaparHtml(ct.cidade)} • ${escaparHtml(ct.bairro)}</span>
                         <span class="badge ${recolhido ? 'badge-status-open' : 'badge-status-closed'}">
@@ -2742,6 +2915,7 @@
                     ${ct.observacoes ? `<p>ℹ️ ${escaparHtml(ct.observacoes)}</p>` : ''}
                     ${fotoCtSegura ? `<img src="${fotoCtSegura}" class="card-photo-thumb" alt="Foto Cata-Treco" onclick="event.stopPropagation(); abrirFotoAmpliada(this.src, '${escaparHtml((ct.protocolo || '') + ' - ' + (ct.itens_volumosos || ''))}')" title="Clique para ampliar a foto" />` : ''}
                     <div class="card-actions" onclick="event.stopPropagation();">
+                        ${pendenteModCt ? `<button type="button" class="card-link admin-only" style="background:#16a34a; color:#fff;" onclick="aprovarItemAdmin('catatreco', ${Number(ct.id)})">✅ Aprovar e Publicar</button>` : ''}
                         <button type="button" class="card-link whatsapp-btn" onclick="compartilharCataTrecoWhatsApp(${Number(ct.id)})">📲 Compartilhar Protocolo no WhatsApp</button>
                         <button type="button" class="card-link admin-only" onclick="alternarStatusCataTreco(${Number(ct.id)})">
                             ${recolhido ? '↩️ Reabrir Agendamento' : '✅ Marcar como Recolhido'}
@@ -2792,6 +2966,12 @@
                 return;
             }
 
+            const validGeoCt = validarCoordenadaOlindaRecifeFrontend(latitude, longitude);
+            if (!validGeoCt.ok) {
+                fb.textContent = validGeoCt.msg;
+                return;
+            }
+
             const payload = {
                 solicitante,
                 cidade,
@@ -2803,6 +2983,7 @@
                 observacoes,
                 status: 'Agendado',
                 foto_base64: fotoBase64CataTrecoAtual || '',
+                aprovado_admin: nivelAcessoAtual === 'admin' ? 1 : 0,
                 latitude,
                 longitude
             };
@@ -2817,7 +2998,11 @@
                 const criado = await resp.json();
                 adicionarPontosEco(20);
                 limparFotoFormulario('ct-foto', 'ct-foto-preview', 'ct');
-                alert(`✅ Agendamento Cata-Treco confirmado! (+20 pts Cidadão Eco)\nSeu protocolo de atendimento é: ${criado.protocolo}`);
+                alert(
+                    nivelAcessoAtual === 'admin'
+                        ? `✅ Agendamento Cata-Treco confirmado!\nSeu protocolo de atendimento é: ${criado.protocolo}`
+                        : `✅ Agendamento Cata-Treco recebido! (+20 pts Cidadão Eco)\nProtocolo: ${criado.protocolo}\n⏳ Seu pedido está aguardando validação do Admin antes de aparecer no mapa público.`
+                );
                 document.getElementById('form-catatreco').reset();
                 document.getElementById('ct-lat').value = '-7.9918';
                 document.getElementById('ct-lng').value = '-34.8427';
@@ -2827,7 +3012,11 @@
                 const proxId = Math.max(0, ...todosOsCataTrecos.map(c => c.id || 0)) + 1;
                 const protocolo = `CT-2026-${String(proxId).padStart(3, '0')}`;
                 todosOsCataTrecos.unshift({ ...payload, id: proxId, protocolo });
-                alert(`✅ Agendamento Cata-Treco confirmado!\nSeu protocolo de atendimento é: ${protocolo}`);
+                alert(
+                    nivelAcessoAtual === 'admin'
+                        ? `✅ Agendamento Cata-Treco confirmado!\nSeu protocolo de atendimento é: ${protocolo}`
+                        : `✅ Agendamento Cata-Treco recebido!\nProtocolo: ${protocolo}\n⏳ Aguardando validação do Admin antes de aparecer no mapa público.`
+                );
                 document.getElementById('form-catatreco').reset();
                 document.getElementById('ct-lat').value = '-7.9918';
                 document.getElementById('ct-lng').value = '-34.8427';
@@ -2881,6 +3070,7 @@
             const contador = document.getElementById('contador-denuncias');
 
             const filtradas = todasAsDenuncias.filter(d => {
+                if (nivelAcessoAtual !== 'admin' && d.aprovado_admin === 0) return false;
                 if (statusDenunciaFiltro && d.status !== statusDenunciaFiltro) return false;
                 return true;
             });
@@ -2890,6 +3080,7 @@
 
             filtradas.forEach(den => {
                 const resolvida = den.status === 'Resolvido';
+                const pendenteModDen = den.aprovado_admin === 0;
                 const icone = resolvida ? iconeResolvido : iconeCritico;
                 const qtdConf = den.confirmacoes || 1;
                 const qtdLimpo = den.nao_esta_mais || 0;
@@ -2950,6 +3141,7 @@
                         <h3>${escaparHtml(den.titulo)}</h3>
                     </div>
                     <div class="badges">
+                        ${pendenteModDen ? `<span class="badge" style="background:#fef3c7; color:#b45309; border:1px solid #f59e0b;">⏳ Pendente de Aprovação do Admin</span>` : ''}
                         <span class="badge badge-city">📍 ${escaparHtml(den.cidade)} • ${escaparHtml(den.bairro)}</span>
                         <span class="badge ${resolvida ? 'badge-status-open' : 'badge-cat-critico'}">
                             ${resolvida ? '✅ Limpeza Concluída / Resolvido' : `🟠 Gravidade: ${escaparHtml(den.gravidade)}`}
@@ -2970,6 +3162,7 @@
                     ${den.descricao ? `<p>ℹ️ ${escaparHtml(den.descricao)}</p>` : ''}
                     ${fotoDenSegura ? `<img src="${fotoDenSegura}" class="card-photo-thumb" alt="Foto da Denúncia" onclick="event.stopPropagation(); abrirFotoAmpliada(this.src, '${escaparHtml(den.titulo || '')}')" title="Clique para ampliar a foto" />` : ''}
                     <div class="card-actions" onclick="event.stopPropagation();">
+                        ${pendenteModDen ? `<button type="button" class="card-link admin-only" style="background:#16a34a; color:#fff;" onclick="aprovarItemAdmin('denuncia', ${Number(den.id)})">✅ Aprovar e Publicar</button>` : ''}
                         ${botoesVotacaoHtml}
                         <button type="button" class="card-link whatsapp-btn" onclick="compartilharDenunciaWhatsApp(${Number(den.id)})">📲 WhatsApp</button>
                         <button type="button" class="card-link admin-only" onclick="alternarStatusDenuncia(${Number(den.id)})">
@@ -3085,6 +3278,12 @@
                 return;
             }
 
+            const validGeoDen = validarCoordenadaOlindaRecifeFrontend(latitude, longitude);
+            if (!validGeoDen.ok) {
+                fb.textContent = validGeoDen.msg;
+                return;
+            }
+
             const payload = {
                 titulo,
                 cidade,
@@ -3100,6 +3299,7 @@
                 ultimo_voto_ainda_la_em: new Date().toISOString(),
                 ultimo_voto_recolhido_em: '',
                 foto_base64: fotoBase64DenunciaAtual || '',
+                aprovado_admin: nivelAcessoAtual === 'admin' ? 1 : 0,
                 latitude,
                 longitude
             };
@@ -3113,6 +3313,9 @@
                 if (!resp.ok) throw new Error('Erro HTTP ' + resp.status);
                 adicionarPontosEco(25);
                 limparFotoFormulario('den-foto', 'den-foto-preview', 'den');
+                if (nivelAcessoAtual !== 'admin') {
+                    alert('✅ Denúncia registrada com sucesso! (+25 pts Cidadão Eco)\n⏳ Seu relato foi enviado para validação do Admin antes de ficar visível no mapa público.');
+                }
                 document.getElementById('form-denuncia').reset();
                 document.getElementById('den-lat').value = '-8.0128';
                 document.getElementById('den-lng').value = '-34.8694';
@@ -3121,6 +3324,9 @@
             } catch (e) {
                 const proxId = Math.max(0, ...todasAsDenuncias.map(d => d.id || 0)) + 1;
                 todasAsDenuncias.unshift({ ...payload, id: proxId });
+                if (nivelAcessoAtual !== 'admin') {
+                    alert('✅ Denúncia registrada!\n⏳ Aguardando validação do Admin antes de aparecer no mapa público.');
+                }
                 document.getElementById('form-denuncia').reset();
                 document.getElementById('den-lat').value = '-8.0128';
                 document.getElementById('den-lng').value = '-34.8694';
@@ -3224,6 +3430,9 @@
             const busca = document.getElementById('filtro-busca').value.trim().toLowerCase();
 
             let filtrados = todosOsPontos.filter(p => {
+                if (nivelAcessoAtual !== 'admin' && p.aprovado_admin === 0) {
+                    return false;
+                }
                 if (cidadeSelecionada && (p.cidade || '').toLowerCase() !== cidadeSelecionada.toLowerCase()) {
                     return false;
                 }
@@ -3385,6 +3594,27 @@
             const lng = parseFloat(e.latlng.lng.toFixed(5));
 
             const secCataTreco = document.getElementById('secao-catatreco-form');
+            const secDenuncia = document.getElementById('secao-denuncia-form');
+            const secCadastro = document.getElementById('secao-cadastro');
+            const algumFormAberto = secCataTreco.classList.contains('open') || secDenuncia.classList.contains('open') || secCadastro.classList.contains('open');
+
+            if (algumFormAberto) {
+                const validGeoClique = validarCoordenadaOlindaRecifeFrontend(lat, lng);
+                if (!validGeoClique.ok) {
+                    L.popup()
+                        .setLatLng([lat, lng])
+                        .setContent(`<div style="color:#dc2626; font-weight:700; max-width:230px;">${validGeoClique.msg}</div>`)
+                        .openOn(map);
+                    const idFb = secCataTreco.classList.contains('open') ? 'ct-feedback' : (secDenuncia.classList.contains('open') ? 'den-feedback' : 'form-feedback');
+                    const fbEl = document.getElementById(idFb);
+                    if (fbEl) {
+                        fbEl.style.color = '#dc2626';
+                        fbEl.textContent = validGeoClique.msg;
+                    }
+                    return;
+                }
+            }
+
             if (secCataTreco.classList.contains('open')) {
                 document.getElementById('ct-lat').value = lat;
                 document.getElementById('ct-lng').value = lng;

@@ -9,11 +9,32 @@ import unicodedata
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "cittalixo.db"
 ADMIN_TOKEN_PADRAO = os.environ.get("CITTA_ADMIN_TOKEN", "admin123")
+
+# Limites geográficos da Região Metropolitana de Olinda & Recife
+LAT_MIN_COBERTURA = -8.1650
+LAT_MAX_COBERTURA = -7.9350
+LNG_MIN_COBERTURA = -35.0200
+LNG_MAX_COBERTURA = -34.8250
+
+
+def validar_coordenada_olinda_recife(lat: float, lng: float) -> None:
+    if not (LAT_MIN_COBERTURA <= lat <= LAT_MAX_COBERTURA) or not (LNG_MIN_COBERTURA <= lng <= LNG_MAX_COBERTURA):
+        raise ValueError(
+            f"Coordenada ({lat:.4f}, {lng:.4f}) fora do perímetro de cobertura de Olinda e Recife "
+            f"(Lat entre {LAT_MIN_COBERTURA} e {LAT_MAX_COBERTURA}, Lng entre {LNG_MIN_COBERTURA} e {LNG_MAX_COBERTURA})."
+        )
+    # Linha costeira inclinada de Rio Doce (-7.95, -34.825) até Boa Viagem (-8.14, -34.878) para bloquear pontos em alto-mar
+    lng_limite_mar = -34.8250 + min(0.0, lat - (-7.9500)) * 0.28
+    if lng > lng_limite_mar:
+        raise ValueError(
+            f"Coordenada ({lat:.4f}, {lng:.4f}) localizada no Oceano Atlântico! "
+            "Selecione um ponto em terra firme dentro de Olinda ou Recife."
+        )
 
 
 def normalizar_texto_sql(texto: Optional[str]) -> str:
@@ -98,10 +119,24 @@ class PontoBase(BaseModel):
     )
     latitude: float = Field(..., ge=-90.0, le=90.0, description="Latitude geográfica inicial")
     longitude: float = Field(..., ge=-180.0, le=180.0, description="Longitude geográfica inicial")
+    aprovado_admin: int = Field(
+        default=1,
+        ge=0,
+        le=1,
+        description="1 = Validado/Publicado pelo Admin; 0 = Aguardando validação do Admin",
+    )
     rota_coordenadas: List[List[float]] = Field(
         default_factory=list,
         description="Lista de coordenadas [[lat, lng], ...] seguindo o traçado real das ruas (OSRM/OpenStreetMap)",
     )
+
+    @model_validator(mode="after")
+    def validar_geografia_ponto(self) -> "PontoBase":
+        validar_coordenada_olinda_recife(self.latitude, self.longitude)
+        for coord in self.rota_coordenadas or []:
+            if isinstance(coord, list) and len(coord) >= 2:
+                validar_coordenada_olinda_recife(float(coord[0]), float(coord[1]))
+        return self
 
 
 class PontoCreate(PontoBase):
@@ -128,6 +163,12 @@ class DenunciaBase(BaseModel):
     ultimo_voto_ainda_la_em: str = Field(default="", description="Timestamp ISO do último voto 'Ainda está lá'")
     ultimo_voto_recolhido_em: str = Field(default="", description="Timestamp ISO do último voto 'Já foi recolhido'")
     foto_base64: str = Field(default="", max_length=550_000, description="Foto opcional comprimida em Base64")
+    aprovado_admin: int = Field(
+        default=1,
+        ge=0,
+        le=1,
+        description="1 = Validado/Publicado pelo Admin; 0 = Aguardando validação do Admin",
+    )
     latitude: float = Field(..., ge=-90.0, le=90.0)
     longitude: float = Field(..., ge=-180.0, le=180.0)
 
@@ -135,6 +176,11 @@ class DenunciaBase(BaseModel):
     @classmethod
     def validar_foto_denuncia(cls, v: str) -> str:
         return _validar_foto_base64(v)
+
+    @model_validator(mode="after")
+    def validar_geografia_denuncia(self) -> "DenunciaBase":
+        validar_coordenada_olinda_recife(self.latitude, self.longitude)
+        return self
 
 
 class DenunciaCreate(DenunciaBase):
@@ -157,6 +203,12 @@ class CataTrecoBase(BaseModel):
     observacoes: str = Field(default="", description="Referência ou observações")
     status: str = Field(default="Agendado", description="Status: 'Agendado' ou 'Recolhido'")
     foto_base64: str = Field(default="", max_length=550_000, description="Foto opcional do item volumoso em Base64")
+    aprovado_admin: int = Field(
+        default=1,
+        ge=0,
+        le=1,
+        description="1 = Validado/Publicado pelo Admin; 0 = Aguardando validação do Admin",
+    )
     latitude: float = Field(..., ge=-90.0, le=90.0)
     longitude: float = Field(..., ge=-180.0, le=180.0)
 
@@ -164,6 +216,11 @@ class CataTrecoBase(BaseModel):
     @classmethod
     def validar_foto_catatreco(cls, v: str) -> str:
         return _validar_foto_base64(v)
+
+    @model_validator(mode="after")
+    def validar_geografia_catatreco(self) -> "CataTrecoBase":
+        validar_coordenada_olinda_recife(self.latitude, self.longitude)
+        return self
 
 
 class CataTrecoCreate(CataTrecoBase):
@@ -926,6 +983,9 @@ def init_db() -> None:
         if "rota_coordenadas" not in colunas:
             cursor.execute("ALTER TABLE pontos ADD COLUMN rota_coordenadas TEXT NOT NULL DEFAULT '[]'")
             conn.commit()
+        if "aprovado_admin" not in colunas:
+            cursor.execute("ALTER TABLE pontos ADD COLUMN aprovado_admin INTEGER NOT NULL DEFAULT 1")
+            conn.commit()
 
         cursor.execute("SELECT COUNT(*) as total FROM pontos")
         total = cursor.fetchone()["total"]
@@ -1025,6 +1085,9 @@ def init_db() -> None:
         if "foto_base64" not in colunas_den:
             cursor.execute("ALTER TABLE denuncias ADD COLUMN foto_base64 TEXT NOT NULL DEFAULT ''")
             conn.commit()
+        if "aprovado_admin" not in colunas_den:
+            cursor.execute("ALTER TABLE denuncias ADD COLUMN aprovado_admin INTEGER NOT NULL DEFAULT 1")
+            conn.commit()
 
         titulos_den_existentes = {
             r["titulo"] for r in cursor.execute("SELECT titulo FROM denuncias").fetchall()
@@ -1078,6 +1141,9 @@ def init_db() -> None:
         colunas_ct = [c["name"] for c in cursor.execute("PRAGMA table_info(catatreco)").fetchall()]
         if "foto_base64" not in colunas_ct:
             cursor.execute("ALTER TABLE catatreco ADD COLUMN foto_base64 TEXT NOT NULL DEFAULT ''")
+            conn.commit()
+        if "aprovado_admin" not in colunas_ct:
+            cursor.execute("ALTER TABLE catatreco ADD COLUMN aprovado_admin INTEGER NOT NULL DEFAULT 1")
             conn.commit()
 
         protocolos_existentes = {
@@ -1156,6 +1222,7 @@ def listar_pontos(
     tipo: Optional[str] = Query(None, description="Filtrar por tipo de resíduo"),
     dia_semana: Optional[str] = Query(None, description="Filtrar por dia da semana (Seg, Ter, Qua, Qui, Sex, Sab, Dom)"),
     busca: Optional[str] = Query(None, description="Busca textual em nome, endereço, bairro ou tipo"),
+    aprovado_admin: Optional[int] = Query(None, ge=0, le=1, description="Filtrar por aprovação do Admin (1 = aprovado, 0 = pendente)"),
 ):
     query = "SELECT * FROM pontos WHERE 1=1"
     params: list = []
@@ -1182,8 +1249,11 @@ def listar_pontos(
             "OR norm_txt(bairro) LIKE norm_txt(?) OR norm_txt(tipo) LIKE norm_txt(?))"
         )
         params.extend([termo, termo, termo, termo])
+    if aprovado_admin is not None:
+        query += " AND aprovado_admin = ?"
+        params.append(aprovado_admin)
 
-    query += " ORDER BY cidade ASC, bairro ASC, nome ASC"
+    query += " ORDER BY aprovado_admin ASC, cidade ASC, bairro ASC, nome ASC"
 
     conn = get_db_connection()
     try:
@@ -1209,19 +1279,24 @@ def buscar_ponto(id: int):
         conn.close()
 
 
-# Criar ponto
+# Criar ponto (Admin cria já aprovado; Cidadão pode sugerir ponto com aprovado_admin=0)
 @app.post("/pontos", response_model=PontoResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(verificar_token_admin)])
-def criar_ponto(ponto: PontoCreate):
+def criar_ponto(
+    ponto: PontoCreate,
+    x_admin_token: Optional[str] = Header(default=None, alias="X-Admin-Token"),
+    x_user_role: Optional[str] = Header(default=None, alias="X-User-Role"),
+):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
+        aprovado = 0 if (ponto.aprovado_admin == 0 or (x_user_role == "usuario" and x_admin_token != ADMIN_TOKEN_PADRAO)) else 1
         cursor.execute(
             """
             INSERT INTO pontos (
                 nome, cidade, bairro, categoria, tipo, endereco,
                 horario, dias_semana, hora_inicio, hora_fim, observacoes,
-                latitude, longitude, rota_coordenadas
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                latitude, longitude, rota_coordenadas, aprovado_admin
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 ponto.nome,
@@ -1238,12 +1313,33 @@ def criar_ponto(ponto: PontoCreate):
                 ponto.latitude,
                 ponto.longitude,
                 json.dumps(ponto.rota_coordenadas or []),
+                aprovado,
             ),
         )
         conn.commit()
         novo_id = cursor.lastrowid
         row = conn.execute("SELECT * FROM pontos WHERE id = ?", (novo_id,)).fetchone()
         return _row_to_dict(row)
+    finally:
+        conn.close()
+
+
+# Aprovar ponto sugerido por cidadão (Admin)
+@app.put("/pontos/{id}/aprovar", response_model=PontoResponse, dependencies=[Depends(verificar_token_admin)])
+def aprovar_ponto_admin(id: int):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        row = cursor.execute("SELECT * FROM pontos WHERE id = ?", (id,)).fetchone()
+        if not row:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Ponto não encontrado",
+            )
+        cursor.execute("UPDATE pontos SET aprovado_admin = 1 WHERE id = ?", (id,))
+        conn.commit()
+        atualizado = cursor.execute("SELECT * FROM pontos WHERE id = ?", (id,)).fetchone()
+        return _row_to_dict(atualizado)
     finally:
         conn.close()
 
@@ -1267,7 +1363,7 @@ def atualizar_ponto(id: int, ponto_atualizado: PontoCreate):
             SET nome = ?, cidade = ?, bairro = ?, categoria = ?, tipo = ?,
                 endereco = ?, horario = ?, dias_semana = ?, hora_inicio = ?,
                 hora_fim = ?, observacoes = ?, latitude = ?, longitude = ?,
-                rota_coordenadas = ?
+                rota_coordenadas = ?, aprovado_admin = ?
             WHERE id = ?
             """,
             (
@@ -1285,6 +1381,7 @@ def atualizar_ponto(id: int, ponto_atualizado: PontoCreate):
                 ponto_atualizado.latitude,
                 ponto_atualizado.longitude,
                 json.dumps(ponto_atualizado.rota_coordenadas or []),
+                ponto_atualizado.aprovado_admin,
                 id,
             ),
         )
@@ -1321,6 +1418,7 @@ def remover_ponto(id: int):
 def listar_denuncias(
     cidade: Optional[str] = Query(None, description="Filtrar por cidade (Olinda ou Recife)"),
     status_filtro: Optional[str] = Query(None, alias="status", description="Filtrar por status (Pendente ou Resolvido)"),
+    aprovado_admin: Optional[int] = Query(None, ge=0, le=1, description="Filtrar por aprovação do Admin (1 = aprovado, 0 = pendente)"),
 ):
     query = "SELECT * FROM denuncias WHERE 1=1"
     params: list = []
@@ -1330,7 +1428,10 @@ def listar_denuncias(
     if status_filtro:
         query += " AND norm_txt(status) = norm_txt(?)"
         params.append(status_filtro.strip())
-    query += " ORDER BY CASE WHEN status = 'Pendente' THEN 0 ELSE 1 END, confirmacoes DESC, id DESC"
+    if aprovado_admin is not None:
+        query += " AND aprovado_admin = ?"
+        params.append(aprovado_admin)
+    query += " ORDER BY aprovado_admin ASC, CASE WHEN status = 'Pendente' THEN 0 ELSE 1 END, confirmacoes DESC, id DESC"
 
     conn = get_db_connection()
     try:
@@ -1341,19 +1442,24 @@ def listar_denuncias(
 
 
 @app.post("/denuncias", response_model=DenunciaResponse, status_code=status.HTTP_201_CREATED)
-def criar_denuncia(denuncia: DenunciaCreate):
+def criar_denuncia(
+    denuncia: DenunciaCreate,
+    x_admin_token: Optional[str] = Header(default=None, alias="X-Admin-Token"),
+    x_user_role: Optional[str] = Header(default=None, alias="X-User-Role"),
+):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
         agora_iso = datetime.now().isoformat()
+        aprovado = 0 if (denuncia.aprovado_admin == 0 or (x_user_role == "usuario" and x_admin_token != ADMIN_TOKEN_PADRAO)) else 1
         cursor.execute(
             """
             INSERT INTO denuncias (
                 titulo, cidade, bairro, endereco, tipo_residuo,
                 gravidade, descricao, status, data_registro, confirmacoes,
                 nao_esta_mais, ultimo_voto_ainda_la_em, ultimo_voto_recolhido_em, foto_base64,
-                latitude, longitude
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                latitude, longitude, aprovado_admin
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 denuncia.titulo,
@@ -1372,12 +1478,32 @@ def criar_denuncia(denuncia: DenunciaCreate):
                 denuncia.foto_base64,
                 denuncia.latitude,
                 denuncia.longitude,
+                aprovado,
             ),
         )
         conn.commit()
         novo_id = cursor.lastrowid
         row = conn.execute("SELECT * FROM denuncias WHERE id = ?", (novo_id,)).fetchone()
         return dict(row)
+    finally:
+        conn.close()
+
+
+@app.put("/denuncias/{id}/aprovar", response_model=DenunciaResponse, dependencies=[Depends(verificar_token_admin)])
+def aprovar_denuncia_admin(id: int):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        row = cursor.execute("SELECT * FROM denuncias WHERE id = ?", (id,)).fetchone()
+        if not row:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Denúncia não encontrada",
+            )
+        cursor.execute("UPDATE denuncias SET aprovado_admin = 1 WHERE id = ?", (id,))
+        conn.commit()
+        atualizado = cursor.execute("SELECT * FROM denuncias WHERE id = ?", (id,)).fetchone()
+        return dict(atualizado)
     finally:
         conn.close()
 
@@ -1531,6 +1657,7 @@ def remover_denuncia(id: int):
 def listar_catatreco(
     cidade: Optional[str] = Query(None, description="Filtrar por cidade (Olinda ou Recife)"),
     status_filtro: Optional[str] = Query(None, alias="status", description="Filtrar por status (Agendado ou Recolhido)"),
+    aprovado_admin: Optional[int] = Query(None, ge=0, le=1, description="Filtrar por aprovação do Admin (1 = aprovado, 0 = pendente)"),
 ):
     query = "SELECT * FROM catatreco WHERE 1=1"
     params: list = []
@@ -1540,7 +1667,10 @@ def listar_catatreco(
     if status_filtro:
         query += " AND norm_txt(status) = norm_txt(?)"
         params.append(status_filtro.strip())
-    query += " ORDER BY CASE WHEN status = 'Agendado' THEN 0 ELSE 1 END, id DESC"
+    if aprovado_admin is not None:
+        query += " AND aprovado_admin = ?"
+        params.append(aprovado_admin)
+    query += " ORDER BY aprovado_admin ASC, CASE WHEN status = 'Agendado' THEN 0 ELSE 1 END, id DESC"
 
     conn = get_db_connection()
     try:
@@ -1551,7 +1681,11 @@ def listar_catatreco(
 
 
 @app.post("/catatreco", response_model=CataTrecoResponse, status_code=status.HTTP_201_CREATED)
-def criar_catatreco(pedido: CataTrecoCreate):
+def criar_catatreco(
+    pedido: CataTrecoCreate,
+    x_admin_token: Optional[str] = Header(default=None, alias="X-Admin-Token"),
+    x_user_role: Optional[str] = Header(default=None, alias="X-User-Role"),
+):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
@@ -1565,13 +1699,14 @@ def criar_catatreco(pedido: CataTrecoCreate):
                 max_proto = max(max_proto, int(m.group(1)))
         prox_num = max(max_id + 1, max_proto + 1)
         protocolo = f"CT-2026-{prox_num:03d}"
+        aprovado = 0 if (pedido.aprovado_admin == 0 or (x_user_role == "usuario" and x_admin_token != ADMIN_TOKEN_PADRAO)) else 1
         cursor.execute(
             """
             INSERT INTO catatreco (
                 protocolo, solicitante, cidade, bairro, endereco,
                 itens_volumosos, turno_preferido, data_agendada,
-                observacoes, status, foto_base64, latitude, longitude
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                observacoes, status, foto_base64, latitude, longitude, aprovado_admin
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 protocolo,
@@ -1587,12 +1722,32 @@ def criar_catatreco(pedido: CataTrecoCreate):
                 pedido.foto_base64,
                 pedido.latitude,
                 pedido.longitude,
+                aprovado,
             ),
         )
         conn.commit()
         novo_id = cursor.lastrowid
         row = conn.execute("SELECT * FROM catatreco WHERE id = ?", (novo_id,)).fetchone()
         return dict(row)
+    finally:
+        conn.close()
+
+
+@app.put("/catatreco/{id}/aprovar", response_model=CataTrecoResponse, dependencies=[Depends(verificar_token_admin)])
+def aprovar_catatreco_admin(id: int):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        row = cursor.execute("SELECT * FROM catatreco WHERE id = ?", (id,)).fetchone()
+        if not row:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Agendamento Cata-Treco não encontrado",
+            )
+        cursor.execute("UPDATE catatreco SET aprovado_admin = 1 WHERE id = ?", (id,))
+        conn.commit()
+        atualizado = cursor.execute("SELECT * FROM catatreco WHERE id = ?", (id,)).fetchone()
+        return dict(atualizado)
     finally:
         conn.close()
 
