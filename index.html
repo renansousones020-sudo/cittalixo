@@ -3626,7 +3626,6 @@
                 return;
             }
 
-            const secDenuncia = document.getElementById('secao-denuncia-form');
             if (secDenuncia.classList.contains('open')) {
                 document.getElementById('den-lat').value = lat;
                 document.getElementById('den-lng').value = lng;
@@ -3638,7 +3637,6 @@
                 return;
             }
 
-            const secCadastro = document.getElementById('secao-cadastro');
             if (!secCadastro.classList.contains('open')) return;
 
             const categoria = document.getElementById('inp-categoria').value;
