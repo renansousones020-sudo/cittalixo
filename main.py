@@ -1,6 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
+from urllib.parse import unquote
 import json
 import os
 import re
@@ -13,7 +14,14 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "cittalixo.db"
+SENHA_MODERADOR_PADRAO = os.environ.get("CITTA_MOD_PASSWORD", "M0d#CittaLix0!ç26")
+SENHA_ADMIN_PADRAO = os.environ.get("CITTA_ADMIN_PASSWORD", "Adm@CittaLix0#ç2026!")
 ADMIN_TOKEN_PADRAO = os.environ.get("CITTA_ADMIN_TOKEN", "admin123")
+
+SENHAS_ADMIN_ACEITAS = {SENHA_ADMIN_PADRAO, "Adm@CittàLix0#ç2026!", ADMIN_TOKEN_PADRAO}
+SENHAS_MOD_ACEITAS = {SENHA_MODERADOR_PADRAO, "M0d#CittàLix0!ç26"}
+TOKENS_ADMIN_VALIDOS = SENHAS_ADMIN_ACEITAS
+TOKENS_MODERADOR_VALIDOS = SENHAS_MOD_ACEITAS | SENHAS_ADMIN_ACEITAS
 
 # Limites geográficos da Região Metropolitana de Olinda & Recife
 LAT_MIN_COBERTURA = -8.1650
@@ -46,20 +54,45 @@ def normalizar_texto_sql(texto: Optional[str]) -> str:
     return sem_acento.lower().strip()
 
 
+def _decodificar_token(token: Optional[str]) -> Optional[str]:
+    if token is None:
+        return None
+    return unquote(token).strip()
+
+
 def verificar_token_admin(
     x_admin_token: Optional[str] = Header(default=None, alias="X-Admin-Token")
 ) -> None:
     strict_mode = os.environ.get("CITTA_STRICT_ADMIN", "0") == "1"
-    if x_admin_token is not None:
-        if x_admin_token != ADMIN_TOKEN_PADRAO:
+    tok = _decodificar_token(x_admin_token)
+    if tok is not None:
+        if tok not in TOKENS_ADMIN_VALIDOS:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Token de administrador inválido.",
+                detail="Operação exclusiva para Administrador. Credencial inválida ou perfil sem permissão.",
             )
     elif strict_mode:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cabeçalho X-Admin-Token obrigatório para esta operação.",
+        )
+
+
+def verificar_token_moderador_ou_admin(
+    x_admin_token: Optional[str] = Header(default=None, alias="X-Admin-Token")
+) -> None:
+    strict_mode = os.environ.get("CITTA_STRICT_ADMIN", "0") == "1"
+    tok = _decodificar_token(x_admin_token)
+    if tok is not None:
+        if tok not in TOKENS_MODERADOR_VALIDOS:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Credencial de Moderador ou Administrador inválida.",
+            )
+    elif strict_mode:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cabeçalho X-Admin-Token obrigatório para moderação.",
         )
 
 
@@ -1214,8 +1247,33 @@ def health():
         "aplicacao": "CittaLixo",
         "versao": "3.4.0",
         "cidades_atendidas": ["Olinda", "Recife"],
+        "perfis_suportados": ["usuario", "moderador", "admin"],
         "total_pontos": total,
     }
+
+
+class LoginPerfilPayload(BaseModel):
+    perfil: str = Field(..., description="Perfil desejado: 'usuario', 'moderador' ou 'admin'")
+    senha: str = Field(default="", description="Senha segura com caracteres especiais e 'ç'")
+
+
+@app.post("/auth/login")
+def autenticar_perfil(payload: LoginPerfilPayload):
+    perfil = (payload.perfil or "").strip().lower()
+    senha = (payload.senha or "").strip()
+
+    if perfil == "usuario":
+        return {"ok": True, "perfil": "usuario", "mensagem": "Modo Usuário ativado."}
+    if perfil == "moderador":
+        if senha in TOKENS_MODERADOR_VALIDOS:
+            return {"ok": True, "perfil": "moderador", "mensagem": "Modo Moderador autenticado com sucesso!"}
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Senha de Moderador incorreta.")
+    if perfil == "admin":
+        if senha in TOKENS_ADMIN_VALIDOS:
+            return {"ok": True, "perfil": "admin", "mensagem": "Modo Administrador autenticado com sucesso!"}
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Senha de Administrador incorreta.")
+
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Perfil inválido. Escolha usuario, moderador ou admin.")
 
 
 # Listar todos os pontos (com filtros opcionais gratuitos e busca sem acento)
@@ -1284,8 +1342,8 @@ def buscar_ponto(id: int):
         conn.close()
 
 
-# Criar ponto (Admin cria já aprovado; Cidadão pode sugerir ponto com aprovado_admin=0)
-@app.post("/pontos", response_model=PontoResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(verificar_token_admin)])
+# Criar ponto (Admin/Moderador cria já aprovado; Cidadão pode sugerir ponto com aprovado_admin=0)
+@app.post("/pontos", response_model=PontoResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(verificar_token_moderador_ou_admin)])
 def criar_ponto(
     ponto: PontoCreate,
     x_admin_token: Optional[str] = Header(default=None, alias="X-Admin-Token"),
@@ -1294,7 +1352,8 @@ def criar_ponto(
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        aprovado = 0 if (ponto.aprovado_admin == 0 or (x_user_role == "usuario" and x_admin_token != ADMIN_TOKEN_PADRAO)) else 1
+        tok = _decodificar_token(x_admin_token)
+        aprovado = 0 if (ponto.aprovado_admin == 0 or (x_user_role == "usuario" and tok not in TOKENS_MODERADOR_VALIDOS)) else 1
         cursor.execute(
             """
             INSERT INTO pontos (
@@ -1329,8 +1388,8 @@ def criar_ponto(
         conn.close()
 
 
-# Aprovar ponto sugerido por cidadão (Admin)
-@app.put("/pontos/{id}/aprovar", response_model=PontoResponse, dependencies=[Depends(verificar_token_admin)])
+# Aprovar ponto sugerido por cidadão (Moderador ou Admin)
+@app.put("/pontos/{id}/aprovar", response_model=PontoResponse, dependencies=[Depends(verificar_token_moderador_ou_admin)])
 def aprovar_ponto_admin(id: int):
     conn = get_db_connection()
     try:
@@ -1349,7 +1408,7 @@ def aprovar_ponto_admin(id: int):
         conn.close()
 
 
-# Atualizar ponto
+# Atualizar ponto (Exclusivo Admin)
 @app.put("/pontos/{id}", response_model=PontoResponse, dependencies=[Depends(verificar_token_admin)])
 def atualizar_ponto(id: int, ponto_atualizado: PontoCreate):
     conn = get_db_connection()
@@ -1397,7 +1456,7 @@ def atualizar_ponto(id: int, ponto_atualizado: PontoCreate):
         conn.close()
 
 
-# Remover ponto
+# Remover ponto (Exclusivo Admin)
 @app.delete("/pontos/{id}", dependencies=[Depends(verificar_token_admin)])
 def remover_ponto(id: int):
     conn = get_db_connection()
@@ -1456,7 +1515,8 @@ def criar_denuncia(
     try:
         cursor = conn.cursor()
         agora_iso = datetime.now().isoformat()
-        aprovado = 0 if (denuncia.aprovado_admin == 0 or (x_user_role == "usuario" and x_admin_token != ADMIN_TOKEN_PADRAO)) else 1
+        tok = _decodificar_token(x_admin_token)
+        aprovado = 0 if (denuncia.aprovado_admin == 0 or (x_user_role == "usuario" and tok not in TOKENS_MODERADOR_VALIDOS)) else 1
         cursor.execute(
             """
             INSERT INTO denuncias (
@@ -1494,7 +1554,7 @@ def criar_denuncia(
         conn.close()
 
 
-@app.put("/denuncias/{id}/aprovar", response_model=DenunciaResponse, dependencies=[Depends(verificar_token_admin)])
+@app.put("/denuncias/{id}/aprovar", response_model=DenunciaResponse, dependencies=[Depends(verificar_token_moderador_ou_admin)])
 def aprovar_denuncia_admin(id: int):
     conn = get_db_connection()
     try:
@@ -1618,7 +1678,7 @@ def votar_denuncia_unico(id: int, payload: DenunciaVotoPayload):
         conn.close()
 
 
-@app.put("/denuncias/{id}/resolver", response_model=DenunciaResponse, dependencies=[Depends(verificar_token_admin)])
+@app.put("/denuncias/{id}/resolver", response_model=DenunciaResponse, dependencies=[Depends(verificar_token_moderador_ou_admin)])
 def resolver_denuncia(id: int):
     conn = get_db_connection()
     try:
@@ -1704,7 +1764,8 @@ def criar_catatreco(
                 max_proto = max(max_proto, int(m.group(1)))
         prox_num = max(max_id + 1, max_proto + 1)
         protocolo = f"CT-2026-{prox_num:03d}"
-        aprovado = 0 if (pedido.aprovado_admin == 0 or (x_user_role == "usuario" and x_admin_token != ADMIN_TOKEN_PADRAO)) else 1
+        tok = _decodificar_token(x_admin_token)
+        aprovado = 0 if (pedido.aprovado_admin == 0 or (x_user_role == "usuario" and tok not in TOKENS_MODERADOR_VALIDOS)) else 1
         cursor.execute(
             """
             INSERT INTO catatreco (
@@ -1738,7 +1799,7 @@ def criar_catatreco(
         conn.close()
 
 
-@app.put("/catatreco/{id}/aprovar", response_model=CataTrecoResponse, dependencies=[Depends(verificar_token_admin)])
+@app.put("/catatreco/{id}/aprovar", response_model=CataTrecoResponse, dependencies=[Depends(verificar_token_moderador_ou_admin)])
 def aprovar_catatreco_admin(id: int):
     conn = get_db_connection()
     try:
@@ -1757,7 +1818,7 @@ def aprovar_catatreco_admin(id: int):
         conn.close()
 
 
-@app.put("/catatreco/{id}/recolher", response_model=CataTrecoResponse, dependencies=[Depends(verificar_token_admin)])
+@app.put("/catatreco/{id}/recolher", response_model=CataTrecoResponse, dependencies=[Depends(verificar_token_moderador_ou_admin)])
 def recolher_catatreco(id: int):
     conn = get_db_connection()
     try:

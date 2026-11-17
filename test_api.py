@@ -302,3 +302,56 @@ def test_validacao_geografica_e_moderacao_admin():
         assert resp_aprov.json()["aprovado_admin"] == 1
     finally:
         client.delete(f"/pontos/{ponto_sug_id}", headers={"X-Admin-Token": "admin123"})
+
+
+def test_perfis_usuario_moderador_e_admin_com_senhas_especiais():
+    from urllib.parse import quote
+
+    # 1. Login livre para Usuário
+    r_user = client.post("/auth/login", json={"perfil": "usuario", "senha": ""})
+    assert r_user.status_code == 200
+    assert r_user.json()["perfil"] == "usuario"
+
+    # 2. Login Moderador com senha segura contendo 'ç' e caracteres especiais
+    senha_mod = "M0d#CittaLix0!ç26"
+    r_mod = client.post("/auth/login", json={"perfil": "moderador", "senha": senha_mod})
+    assert r_mod.status_code == 200
+    assert r_mod.json()["perfil"] == "moderador"
+
+    # 3. Senha incorreta para Moderador ou Admin deve retornar 401
+    assert client.post("/auth/login", json={"perfil": "moderador", "senha": "errada"}).status_code == 401
+    assert client.post("/auth/login", json={"perfil": "admin", "senha": senha_mod}).status_code == 401
+
+    # 4. Login Admin com senha segura contendo 'ç' e '@'
+    senha_adm = "Adm@CittaLix0#ç2026!"
+    r_adm = client.post("/auth/login", json={"perfil": "admin", "senha": senha_adm})
+    assert r_adm.status_code == 200
+    assert r_adm.json()["perfil"] == "admin"
+
+    # 5. Moderador pode aprovar sugestão, mas NÃO pode deletar ponto oficial (403 Forbidden)
+    sugestao = {
+        "nome": "PEV Teste Moderador",
+        "cidade": "Olinda",
+        "bairro": "Bairro Novo",
+        "categoria": "Ecoponto",
+        "tipo": "Recicláveis",
+        "endereco": "Av. Getúlio Vargas, 100",
+        "latitude": -7.9950,
+        "longitude": -34.8420,
+    }
+    criado = client.post("/pontos", json=sugestao, headers={"X-User-Role": "usuario"}).json()
+    pid = criado["id"]
+    try:
+        assert criado["aprovado_admin"] == 0
+        # Moderador aprova com cabeçalho codificado (suportando 'ç')
+        r_aprov_mod = client.put(f"/pontos/{pid}/aprovar", headers={"X-Admin-Token": quote(senha_mod)})
+        assert r_aprov_mod.status_code == 200
+        assert r_aprov_mod.json()["aprovado_admin"] == 1
+
+        # Moderador tenta excluir ponto -> bloqueado com 403
+        r_del_mod = client.delete(f"/pontos/{pid}", headers={"X-Admin-Token": quote(senha_mod)})
+        assert r_del_mod.status_code == 403
+    finally:
+        # Admin exclui ponto -> permitido com 200
+        r_del_adm = client.delete(f"/pontos/{pid}", headers={"X-Admin-Token": quote(senha_adm)})
+        assert r_del_adm.status_code == 200

@@ -119,8 +119,25 @@
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
         }
 
-        /* Oculta automaticamente qualquer botão ou aba exclusiva de Admin quando estiver no Modo Cidadão (Usuário) */
-        body.role-user .admin-only {
+        .role-toggle-btn.is-moderator {
+            background: #e0f2fe;
+            color: #0369a1;
+            border-color: #7dd3fc;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
+        }
+
+        /* Controle de visibilidade por perfil: Usuário, Moderador e Admin */
+        body.role-user .admin-only,
+        body.role-user .mod-or-admin {
+            display: none !important;
+        }
+
+        body.role-moderator .admin-only {
+            display: none !important;
+        }
+
+        body.role-moderator .user-only,
+        body.role-admin .user-only {
             display: none !important;
         }
 
@@ -1053,8 +1070,8 @@
     <header>
         <div class="header-top-bar">
             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                <button class="role-toggle-btn" id="btn-role-mode" onclick="alternarNivelAcesso()" title="Clique para alternar entre visão de Cidadão (Usuário) e Gestor (Admin)">
-                    👤 Modo Cidadão (Usuário)
+                <button class="role-toggle-btn" id="btn-role-mode" onclick="abrirModalAcessoPerfil()" title="Autenticar como Moderador ou Administrador">
+                    🔐 Perfil: 👤 Usuário
                 </button>
                 <button class="eco-score-btn user-only" id="btn-eco-score" onclick="abrirModalCidadaoEco()" title="Veja sua pontuação e nível de Cidadão Eco">
                     🏆 Cidadão Eco: 🌱 Iniciante (0 pts)
@@ -1073,7 +1090,7 @@
             <button class="tab-btn active" id="tab-btn-coleta" onclick="alternarAba('coleta')">🗺️ Ecopontos &amp; Rotas</button>
             <button class="tab-btn" id="tab-btn-catatreco" onclick="alternarAba('catatreco')">🛋️ Cata-Treco (Volumosos)</button>
             <button class="tab-btn" id="tab-btn-denuncias" onclick="alternarAba('denuncias')">⚠️ Denúncias de Lixo</button>
-            <button class="tab-btn admin-only" id="tab-btn-gestor" onclick="alternarAba('gestor')">🛡️ Painel Gestor &amp; Dados</button>
+            <button class="tab-btn mod-or-admin" id="tab-btn-gestor" onclick="alternarAba('gestor')">🛡️ Painel Gestor &amp; Dados</button>
             <button class="tab-btn" id="tab-btn-guia" onclick="alternarAba('guia')">📚 Guia &amp; Quiz</button>
         </div>
     </header>
@@ -1541,10 +1558,10 @@
                     <span style="font-size:0.86rem; color:var(--text-muted);">Exporte os dados em CSV (compatível com Excel) ou JSON para relatórios acadêmicos e gestão pública.</span>
                 </div>
                 <div class="filters-row">
-                    <a href="/equipe" target="_blank" class="btn-action" style="text-decoration:none;">👥 Painel de Tarefas da Equipe</a>
+                    <a href="/equipe" target="_blank" class="btn-action admin-only" style="text-decoration:none;">👥 Painel de Tarefas da Equipe</a>
                     <button class="btn-action btn-purple" onclick="imprimirOrdemDeServicoDiaria()">🖨️ Imprimir Ordem de Serviço Diária</button>
-                    <button class="btn-action btn-add" onclick="exportarDadosCSV()">📥 Baixar Planilha CSV (Excel)</button>
-                    <button class="btn-action" onclick="exportarDadosJSON()">📄 Baixar Dados JSON</button>
+                    <button class="btn-action btn-add admin-only" onclick="exportarDadosCSV()">📥 Baixar Planilha CSV (Excel)</button>
+                    <button class="btn-action admin-only" onclick="exportarDadosJSON()">📄 Baixar Dados JSON</button>
                 </div>
             </div>
 
@@ -1734,6 +1751,38 @@
         </div>
     </div>
 
+    <!-- Modal de Autenticação de Perfil (Usuário, Moderador e Admin) -->
+    <div class="modal-overlay" id="modal-acesso-perfil" onclick="if(event.target===this) fecharModalAcessoPerfil()">
+        <div class="modal-box" style="max-width:460px;">
+            <h2 style="margin-top:0; color:var(--green-dark);">🔐 Controle de Acesso por Perfil</h2>
+            <p style="font-size:0.86rem; color:var(--text-muted); margin-top:0;">
+                Selecione o perfil de acesso. O perfil <strong>👤 Usuário</strong> é livre; os perfis <strong>🕵️ Moderador</strong> e <strong>🛡️ Administrador</strong> exigem autenticação por senha segura:
+            </p>
+            <form onsubmit="autenticarPerfilNoModal(event)" novalidate>
+                <div class="form-group">
+                    <label for="sel-perfil-acesso">Perfil Desejado</label>
+                    <select id="sel-perfil-acesso" onchange="aoMudarSelectPerfilModal()">
+                        <option value="usuario">👤 Usuário (Acesso Livre — Consulta, Voto e Sugestões)</option>
+                        <option value="moderador">🕵️ Moderador (Aprovar Envios e Atualizar Status)</option>
+                        <option value="admin">🛡️ Administrador (Acesso Total — CRUD, Exclusões e Relatórios)</option>
+                    </select>
+                </div>
+                <div class="form-group" id="grupo-senha-perfil" style="margin-top:12px; display:none;">
+                    <label for="inp-senha-perfil">Senha de Acesso *</label>
+                    <div style="display:flex; gap:6px;">
+                        <input type="password" id="inp-senha-perfil" placeholder="Digite a senha do perfil selecionado..." style="flex:1;" autocomplete="current-password" />
+                        <button type="button" class="pill-btn" onclick="alternarVisibilidadeSenhaModal()" title="Mostrar ou ocultar senha">👁️</button>
+                    </div>
+                </div>
+                <p id="feedback-acesso-perfil" style="font-size:0.84rem; font-weight:700; min-height:20px; margin:10px 0 4px 0;"></p>
+                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
+                    <button type="button" class="pill-btn" onclick="fecharModalAcessoPerfil()">Cancelar</button>
+                    <button type="submit" class="btn-action btn-add" id="btn-confirmar-perfil">✅ Confirmar Perfil</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <footer>
         CittaLixo v3.4.0 • Dados abertos com OpenStreetMap, Leaflet, Esri Satellite &amp; OSRM (Zero Custo de API) • Instalável como App (PWA) • Olinda e Recife
     </footer>
@@ -1748,25 +1797,38 @@
             navigator.serviceWorker.register('/sw.js?v=3.4.0').catch(() => {});
         }
 
-        // Controle de Nível de Acesso: 'usuario' (Cidadão - padrão) ou 'admin' (Gestor)
+        // Controle de Nível de Acesso: 'usuario' (padrão), 'moderador' ou 'admin'
         let nivelAcessoAtual = 'usuario';
+        let tokenAcessoAtual = '';
+
+        function temPermissaoModerador() {
+            return nivelAcessoAtual === 'moderador' || nivelAcessoAtual === 'admin';
+        }
+
+        function temPermissaoAdmin() {
+            return nivelAcessoAtual === 'admin';
+        }
 
         function aplicarNivelAcessoNaInterface() {
             const btnRole = document.getElementById('btn-role-mode');
             const btnCad = document.getElementById('btn-cadastrar-ponto');
+            document.body.classList.remove('role-user', 'role-moderator', 'role-admin');
+            btnRole.classList.remove('is-admin', 'is-moderator');
+
             if (nivelAcessoAtual === 'admin') {
-                document.body.classList.remove('role-user');
                 document.body.classList.add('role-admin');
                 btnRole.classList.add('is-admin');
-                btnRole.innerHTML = '🛡️ Modo Admin (Gestor)';
+                btnRole.innerHTML = '🛡️ Perfil: Admin (Trocar)';
+                if (btnCad) btnCad.textContent = '➕ Cadastrar Ponto/Rota';
+            } else if (nivelAcessoAtual === 'moderador') {
+                document.body.classList.add('role-moderator');
+                btnRole.classList.add('is-moderator');
+                btnRole.innerHTML = '🕵️ Perfil: Moderador (Trocar)';
                 if (btnCad) btnCad.textContent = '➕ Cadastrar Ponto/Rota';
             } else {
-                document.body.classList.remove('role-admin');
                 document.body.classList.add('role-user');
-                btnRole.classList.remove('is-admin');
-                btnRole.innerHTML = '👤 Modo Cidadão (Usuário)';
+                btnRole.innerHTML = '🔐 Perfil: 👤 Usuário';
                 if (btnCad) btnCad.textContent = '💡 Sugerir Ponto/Rota';
-                // Se estava na aba Painel Gestor ou com formulário de cadastro de ponto aberto, volta para a aba principal e fecha
                 document.getElementById('secao-cadastro').classList.remove('open');
                 if (abaAtual === 'gestor') {
                     alternarAba('coleta');
@@ -1778,9 +1840,96 @@
             if (typeof atualizarDashboard === 'function') atualizarDashboard();
         }
 
-        function alternarNivelAcesso() {
-            nivelAcessoAtual = nivelAcessoAtual === 'usuario' ? 'admin' : 'usuario';
-            aplicarNivelAcessoNaInterface();
+        function abrirModalAcessoPerfil() {
+            const sel = document.getElementById('sel-perfil-acesso');
+            const inp = document.getElementById('inp-senha-perfil');
+            const fb = document.getElementById('feedback-acesso-perfil');
+            if (sel) sel.value = nivelAcessoAtual;
+            if (inp) {
+                inp.value = '';
+                inp.type = 'password';
+            }
+            if (fb) fb.textContent = '';
+            aoMudarSelectPerfilModal();
+            document.getElementById('modal-acesso-perfil').classList.add('open');
+            if (sel && sel.value !== 'usuario' && inp) {
+                setTimeout(() => inp.focus(), 80);
+            }
+        }
+
+        function fecharModalAcessoPerfil() {
+            document.getElementById('modal-acesso-perfil').classList.remove('open');
+        }
+
+        function aoMudarSelectPerfilModal() {
+            const sel = document.getElementById('sel-perfil-acesso');
+            const grp = document.getElementById('grupo-senha-perfil');
+            const fb = document.getElementById('feedback-acesso-perfil');
+            if (fb) fb.textContent = '';
+            if (sel && grp) {
+                grp.style.display = sel.value === 'usuario' ? 'none' : 'block';
+            }
+        }
+
+        function alternarVisibilidadeSenhaModal() {
+            const inp = document.getElementById('inp-senha-perfil');
+            if (inp) {
+                inp.type = inp.type === 'password' ? 'text' : 'password';
+            }
+        }
+
+        async function autenticarPerfilNoModal(event) {
+            event.preventDefault();
+            const sel = document.getElementById('sel-perfil-acesso');
+            const inp = document.getElementById('inp-senha-perfil');
+            const fb = document.getElementById('feedback-acesso-perfil');
+            const perfilEscolhido = sel ? sel.value : 'usuario';
+            const senhaDigitada = (inp ? inp.value : '').trim();
+
+            if (perfilEscolhido === 'usuario') {
+                nivelAcessoAtual = 'usuario';
+                tokenAcessoAtual = '';
+                aplicarNivelAcessoNaInterface();
+                fecharModalAcessoPerfil();
+                return;
+            }
+
+            if (!senhaDigitada) {
+                fb.style.color = '#dc2626';
+                fb.textContent = '⚠️ Digite a senha de acesso.';
+                return;
+            }
+
+            try {
+                const resp = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ perfil: perfilEscolhido, senha: senhaDigitada })
+                });
+                if (!resp.ok) {
+                    const errJson = await resp.json().catch(() => ({}));
+                    fb.style.color = '#dc2626';
+                    fb.textContent = '❌ ' + (errJson.detail || 'Senha incorreta para este perfil.');
+                    return;
+                }
+                nivelAcessoAtual = perfilEscolhido;
+                tokenAcessoAtual = encodeURIComponent(senhaDigitada);
+                aplicarNivelAcessoNaInterface();
+                fecharModalAcessoPerfil();
+            } catch (_) {
+                // Fallback offline se o servidor Python estiver desligado
+                const okMod = (senhaDigitada === 'M0d#CittaLix0!ç26' || senhaDigitada === 'M0d#CittàLix0!ç26' || senhaDigitada === 'Adm@CittaLix0#ç2026!' || senhaDigitada === 'Adm@CittàLix0#ç2026!');
+                const okAdm = (senhaDigitada === 'Adm@CittaLix0#ç2026!' || senhaDigitada === 'Adm@CittàLix0#ç2026!');
+                if ((perfilEscolhido === 'moderador' && okMod) || (perfilEscolhido === 'admin' && okAdm)) {
+                    nivelAcessoAtual = perfilEscolhido;
+                    tokenAcessoAtual = encodeURIComponent(senhaDigitada);
+                    aplicarNivelAcessoNaInterface();
+                    fecharModalAcessoPerfil();
+                } else {
+                    fb.style.color = '#dc2626';
+                    fb.textContent = '❌ Senha incorreta para este perfil.';
+                }
+            }
         }
 
         // Modo Escuro com persistência em localStorage
@@ -1950,8 +2099,8 @@
             const opts = { ...opcoes };
             const headers = { ...(opts.headers || {}) };
             headers['X-User-Role'] = nivelAcessoAtual;
-            if (nivelAcessoAtual === 'admin') {
-                headers['X-Admin-Token'] = 'admin123';
+            if (temPermissaoModerador()) {
+                headers['X-Admin-Token'] = tokenAcessoAtual || 'admin123';
             }
             opts.headers = headers;
             return fetch(`${API_BASE}${caminho}`, opts);
@@ -2216,7 +2365,7 @@
                                 <div style="display:flex; gap:6px; flex-wrap:wrap;">
                                     <button type="button" class="card-link" onclick="verItemModeracaoNoMapa('coleta', ${Number(p.latitude)}, ${Number(p.longitude)})">🗺️ Ver no Mapa</button>
                                     <button type="button" class="btn-action btn-add" onclick="aprovarItemAdmin('ponto', ${Number(p.id)})">✅ Aprovar e Publicar</button>
-                                    <button type="button" class="card-link delete-btn" onclick="excluirPonto(${Number(p.id)})">🗑️ Recusar</button>
+                                    <button type="button" class="card-link delete-btn admin-only" onclick="excluirPonto(${Number(p.id)})">🗑️ Recusar</button>
                                 </div>
                             </div>
                         `),
@@ -2229,7 +2378,7 @@
                                 <div style="display:flex; gap:6px; flex-wrap:wrap;">
                                     <button type="button" class="card-link" onclick="verItemModeracaoNoMapa('catatreco', ${Number(c.latitude)}, ${Number(c.longitude)})">🗺️ Ver no Mapa</button>
                                     <button type="button" class="btn-action btn-add" onclick="aprovarItemAdmin('catatreco', ${Number(c.id)})">✅ Aprovar e Publicar</button>
-                                    <button type="button" class="card-link delete-btn" onclick="excluirCataTreco(${Number(c.id)})">🗑️ Recusar</button>
+                                    <button type="button" class="card-link delete-btn admin-only" onclick="excluirCataTreco(${Number(c.id)})">🗑️ Recusar</button>
                                 </div>
                             </div>
                         `),
@@ -2242,7 +2391,7 @@
                                 <div style="display:flex; gap:6px; flex-wrap:wrap;">
                                     <button type="button" class="card-link" onclick="verItemModeracaoNoMapa('denuncias', ${Number(d.latitude)}, ${Number(d.longitude)})">🗺️ Ver no Mapa</button>
                                     <button type="button" class="btn-action btn-add" onclick="aprovarItemAdmin('denuncia', ${Number(d.id)})">✅ Aprovar e Publicar</button>
-                                    <button type="button" class="card-link delete-btn" onclick="excluirDenuncia(${Number(d.id)})">🗑️ Recusar</button>
+                                    <button type="button" class="card-link delete-btn admin-only" onclick="excluirDenuncia(${Number(d.id)})">🗑️ Recusar</button>
                                 </div>
                             </div>
                         `)
@@ -2589,7 +2738,7 @@
                     ${isColeta ? `<p style="font-size:0.8rem; color:#92400e;">⚠️ Simulação estimada por horário: o caminhão pode passar antes ou depois.</p>` : ''}
                     ${ponto.observacoes ? `<p style="font-size:0.83rem;">ℹ️ ${escaparHtml(ponto.observacoes)}</p>` : ''}
                     <div class="card-actions" onclick="event.stopPropagation();">
-                        ${pendenteMod ? `<button type="button" class="card-link admin-only" style="background:#16a34a; color:#fff;" onclick="aprovarItemAdmin('ponto', ${Number(ponto.id)})">✅ Aprovar e Publicar</button>` : ''}
+                        ${pendenteMod ? `<button type="button" class="card-link mod-or-admin" style="background:#16a34a; color:#fff;" onclick="aprovarItemAdmin('ponto', ${Number(ponto.id)})">✅ Aprovar e Publicar</button>` : ''}
                         <button type="button" class="card-link ${temRota ? 'rota-btn' : ''}" onclick="focarPontoNoMapa(${ponto.id})">
                             ${temRota ? '🛣️ Ver Rota' : '🔍 Mapa'}
                         </button>
@@ -2628,12 +2777,12 @@
             document.getElementById('inp-fim').value = '16:00';
             document.getElementById('inp-lat').value = '-8.0014';
             document.getElementById('inp-lng').value = '-34.8553';
-            document.getElementById('titulo-form-ponto').textContent = nivelAcessoAtual === 'admin'
+            document.getElementById('titulo-form-ponto').textContent = temPermissaoModerador()
                 ? '➕ Cadastrar Novo Ecoponto ou Rota do Caminhão'
-                : '💡 Sugerir Novo Ecoponto ou Rota (Sujeito à Validação do Admin)';
-            document.getElementById('btn-salvar-ponto').textContent = nivelAcessoAtual === 'admin'
+                : '💡 Sugerir Novo Ecoponto ou Rota (Sujeito à Validação do Moderador/Admin)';
+            document.getElementById('btn-salvar-ponto').textContent = temPermissaoModerador()
                 ? '💾 Salvar no Mapa'
-                : '📨 Enviar para Validação do Admin';
+                : '📨 Enviar para Validação';
             limparRotaDesenhada();
             document.getElementById('secao-cadastro').classList.add('open');
             document.getElementById('secao-cadastro').scrollIntoView({ behavior: 'smooth' });
@@ -2732,7 +2881,7 @@
                 return;
             }
 
-            const aprovado_admin = nivelAcessoAtual === 'admin' ? 1 : 0;
+            const aprovado_admin = temPermissaoModerador() ? 1 : 0;
             const payload = {
                 nome,
                 cidade,
@@ -2793,9 +2942,9 @@
                 feedback.style.color = '#16a34a';
                 feedback.textContent = idEdicao
                     ? '✅ Registro atualizado com sucesso!'
-                    : (nivelAcessoAtual === 'admin' ? '✅ Cadastrado com sucesso!' : '⏳ Sugestão enviada! Ficará visível para todos assim que o Admin validar.');
+                    : (temPermissaoModerador() ? '✅ Cadastrado com sucesso!' : '⏳ Sugestão enviada! Ficará visível para todos assim que o Moderador/Admin validar.');
                 await carregarPontosDaAPI();
-                if (nivelAcessoAtual === 'admin') focarPontoNoMapa(salvo.id);
+                if (temPermissaoModerador()) focarPontoNoMapa(salvo.id);
                 setTimeout(() => fecharFormularioPonto(), 1300);
             } catch (err) {
                 // Fallback local: se o usuário abriu o HTML sem servidor Python rodando, salva na sessão e no localStorage!
@@ -2811,10 +2960,10 @@
                 feedback.style.color = '#16a34a';
                 feedback.textContent = idEdicao
                     ? '✅ Registro atualizado no mapa!'
-                    : (nivelAcessoAtual === 'admin' ? '✅ Cadastrado com sucesso no mapa!' : '⏳ Sugestão enviada para validação do Admin!');
+                    : (temPermissaoModerador() ? '✅ Cadastrado com sucesso no mapa!' : '⏳ Sugestão enviada para validação!');
                 aplicarFiltros();
                 atualizarDashboard();
-                if (nivelAcessoAtual === 'admin') focarPontoNoMapa(novoId);
+                if (temPermissaoModerador()) focarPontoNoMapa(novoId);
                 setTimeout(() => fecharFormularioPonto(), 1300);
             }
         }
@@ -2852,7 +3001,7 @@
 
             const termoBuscaCt = (document.getElementById('filtro-busca-catatreco')?.value || '').trim().toLowerCase();
             const filtrados = todosOsCataTrecos.filter(c => {
-                if (nivelAcessoAtual !== 'admin' && c.aprovado_admin === 0) return false;
+                if (!temPermissaoModerador() && c.aprovado_admin === 0) return false;
                 if (statusCataTrecoFiltro && c.status !== statusCataTrecoFiltro) return false;
                 if (termoBuscaCt) {
                     const strBusca = `${c.protocolo || ''} ${c.bairro || ''} ${c.cidade || ''} ${c.solicitante || ''} ${c.endereco || ''} ${c.itens_volumosos || ''}`.toLowerCase();
@@ -2916,9 +3065,9 @@
                     ${ct.observacoes ? `<p>ℹ️ ${escaparHtml(ct.observacoes)}</p>` : ''}
                     ${fotoCtSegura ? `<img src="${fotoCtSegura}" class="card-photo-thumb" alt="Foto Cata-Treco" onclick="event.stopPropagation(); abrirFotoAmpliada(this.src, '${escaparHtml((ct.protocolo || '') + ' - ' + (ct.itens_volumosos || ''))}')" title="Clique para ampliar a foto" />` : ''}
                     <div class="card-actions" onclick="event.stopPropagation();">
-                        ${pendenteModCt ? `<button type="button" class="card-link admin-only" style="background:#16a34a; color:#fff;" onclick="aprovarItemAdmin('catatreco', ${Number(ct.id)})">✅ Aprovar e Publicar</button>` : ''}
+                        ${pendenteModCt ? `<button type="button" class="card-link mod-or-admin" style="background:#16a34a; color:#fff;" onclick="aprovarItemAdmin('catatreco', ${Number(ct.id)})">✅ Aprovar e Publicar</button>` : ''}
                         <button type="button" class="card-link whatsapp-btn" onclick="compartilharCataTrecoWhatsApp(${Number(ct.id)})">📲 Compartilhar Protocolo no WhatsApp</button>
-                        <button type="button" class="card-link admin-only" onclick="alternarStatusCataTreco(${Number(ct.id)})">
+                        <button type="button" class="card-link mod-or-admin" onclick="alternarStatusCataTreco(${Number(ct.id)})">
                             ${recolhido ? '↩️ Reabrir Agendamento' : '✅ Marcar como Recolhido'}
                         </button>
                         <button type="button" class="card-link delete-btn admin-only" onclick="excluirCataTreco(${Number(ct.id)})">🗑️ Excluir</button>
@@ -2984,7 +3133,7 @@
                 observacoes,
                 status: 'Agendado',
                 foto_base64: fotoBase64CataTrecoAtual || '',
-                aprovado_admin: nivelAcessoAtual === 'admin' ? 1 : 0,
+                aprovado_admin: temPermissaoModerador() ? 1 : 0,
                 latitude,
                 longitude
             };
@@ -3000,9 +3149,9 @@
                 adicionarPontosEco(20);
                 limparFotoFormulario('ct-foto', 'ct-foto-preview', 'ct');
                 alert(
-                    nivelAcessoAtual === 'admin'
+                    temPermissaoModerador()
                         ? `✅ Agendamento Cata-Treco confirmado!\nSeu protocolo de atendimento é: ${criado.protocolo}`
-                        : `✅ Agendamento Cata-Treco recebido! (+20 pts Cidadão Eco)\nProtocolo: ${criado.protocolo}\n⏳ Seu pedido está aguardando validação do Admin antes de aparecer no mapa público.`
+                        : `✅ Agendamento Cata-Treco recebido! (+20 pts Cidadão Eco)\nProtocolo: ${criado.protocolo}\n⏳ Seu pedido está aguardando validação do Moderador/Admin antes de aparecer no mapa público.`
                 );
                 document.getElementById('form-catatreco').reset();
                 document.getElementById('ct-lat').value = '-7.9918';
@@ -3014,9 +3163,9 @@
                 const protocolo = `CT-2026-${String(proxId).padStart(3, '0')}`;
                 todosOsCataTrecos.unshift({ ...payload, id: proxId, protocolo });
                 alert(
-                    nivelAcessoAtual === 'admin'
+                    temPermissaoModerador()
                         ? `✅ Agendamento Cata-Treco confirmado!\nSeu protocolo de atendimento é: ${protocolo}`
-                        : `✅ Agendamento Cata-Treco recebido!\nProtocolo: ${protocolo}\n⏳ Aguardando validação do Admin antes de aparecer no mapa público.`
+                        : `✅ Agendamento Cata-Treco recebido!\nProtocolo: ${protocolo}\n⏳ Aguardando validação do Moderador/Admin antes de aparecer no mapa público.`
                 );
                 document.getElementById('form-catatreco').reset();
                 document.getElementById('ct-lat').value = '-7.9918';
@@ -3071,7 +3220,7 @@
             const contador = document.getElementById('contador-denuncias');
 
             const filtradas = todasAsDenuncias.filter(d => {
-                if (nivelAcessoAtual !== 'admin' && d.aprovado_admin === 0) return false;
+                if (!temPermissaoModerador() && d.aprovado_admin === 0) return false;
                 if (statusDenunciaFiltro && d.status !== statusDenunciaFiltro) return false;
                 return true;
             });
@@ -3163,11 +3312,11 @@
                     ${den.descricao ? `<p>ℹ️ ${escaparHtml(den.descricao)}</p>` : ''}
                     ${fotoDenSegura ? `<img src="${fotoDenSegura}" class="card-photo-thumb" alt="Foto da Denúncia" onclick="event.stopPropagation(); abrirFotoAmpliada(this.src, '${escaparHtml(den.titulo || '')}')" title="Clique para ampliar a foto" />` : ''}
                     <div class="card-actions" onclick="event.stopPropagation();">
-                        ${pendenteModDen ? `<button type="button" class="card-link admin-only" style="background:#16a34a; color:#fff;" onclick="aprovarItemAdmin('denuncia', ${Number(den.id)})">✅ Aprovar e Publicar</button>` : ''}
+                        ${pendenteModDen ? `<button type="button" class="card-link mod-or-admin" style="background:#16a34a; color:#fff;" onclick="aprovarItemAdmin('denuncia', ${Number(den.id)})">✅ Aprovar e Publicar</button>` : ''}
                         ${botoesVotacaoHtml}
                         <button type="button" class="card-link whatsapp-btn" onclick="compartilharDenunciaWhatsApp(${Number(den.id)})">📲 WhatsApp</button>
-                        <button type="button" class="card-link admin-only" onclick="alternarStatusDenuncia(${Number(den.id)})">
-                            ${resolvida ? '↩️ Reabrir Alerta (Admin)' : '✅ Marcar como Resolvido (Admin)'}
+                        <button type="button" class="card-link mod-or-admin" onclick="alternarStatusDenuncia(${Number(den.id)})">
+                            ${resolvida ? '↩️ Reabrir Alerta' : '✅ Marcar como Resolvido'}
                         </button>
                         <button type="button" class="card-link delete-btn admin-only" onclick="excluirDenuncia(${Number(den.id)})">🗑️ Excluir</button>
                     </div>
@@ -3300,7 +3449,7 @@
                 ultimo_voto_ainda_la_em: new Date().toISOString(),
                 ultimo_voto_recolhido_em: '',
                 foto_base64: fotoBase64DenunciaAtual || '',
-                aprovado_admin: nivelAcessoAtual === 'admin' ? 1 : 0,
+                aprovado_admin: temPermissaoModerador() ? 1 : 0,
                 latitude,
                 longitude
             };
@@ -3314,8 +3463,8 @@
                 if (!resp.ok) throw new Error('Erro HTTP ' + resp.status);
                 adicionarPontosEco(25);
                 limparFotoFormulario('den-foto', 'den-foto-preview', 'den');
-                if (nivelAcessoAtual !== 'admin') {
-                    alert('✅ Denúncia registrada com sucesso! (+25 pts Cidadão Eco)\n⏳ Seu relato foi enviado para validação do Admin antes de ficar visível no mapa público.');
+                if (!temPermissaoModerador()) {
+                    alert('✅ Denúncia registrada com sucesso! (+25 pts Cidadão Eco)\n⏳ Seu relato foi enviado para validação do Moderador/Admin antes de ficar visível no mapa público.');
                 }
                 document.getElementById('form-denuncia').reset();
                 document.getElementById('den-lat').value = '-8.0128';
@@ -3325,8 +3474,8 @@
             } catch (e) {
                 const proxId = Math.max(0, ...todasAsDenuncias.map(d => d.id || 0)) + 1;
                 todasAsDenuncias.unshift({ ...payload, id: proxId });
-                if (nivelAcessoAtual !== 'admin') {
-                    alert('✅ Denúncia registrada!\n⏳ Aguardando validação do Admin antes de aparecer no mapa público.');
+                if (!temPermissaoModerador()) {
+                    alert('✅ Denúncia registrada!\n⏳ Aguardando validação do Moderador/Admin antes de aparecer no mapa público.');
                 }
                 document.getElementById('form-denuncia').reset();
                 document.getElementById('den-lat').value = '-8.0128';
@@ -3350,7 +3499,7 @@
 
         // --- NAVEGAÇÃO ENTRE AS 5 ABAS (CADA ABA 100% INDIVIDUAL) ---
         function alternarAba(aba) {
-            if (aba === 'gestor' && nivelAcessoAtual !== 'admin') return;
+            if (aba === 'gestor' && !temPermissaoModerador()) return;
             abaAtual = aba;
             fecharTodosOsFormularios();
 
@@ -3431,7 +3580,7 @@
             const busca = document.getElementById('filtro-busca').value.trim().toLowerCase();
 
             let filtrados = todosOsPontos.filter(p => {
-                if (nivelAcessoAtual !== 'admin' && p.aprovado_admin === 0) {
+                if (!temPermissaoModerador() && p.aprovado_admin === 0) {
                     return false;
                 }
                 if (cidadeSelecionada && (p.cidade || '').toLowerCase() !== cidadeSelecionada.toLowerCase()) {
