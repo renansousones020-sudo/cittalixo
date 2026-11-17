@@ -1062,10 +1062,242 @@
             color: var(--text-muted);
             font-size: 0.85rem;
         }
+
+        /* Tela Inicial de Escolha de Perfil (Portão de Entrada CittaLixo) */
+        .welcome-gate-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            background: radial-gradient(circle at top left, #065f46 0%, #064e3b 45%, #0f172a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-y: auto;
+            transition: opacity 0.28s ease, visibility 0.28s ease;
+        }
+        .welcome-gate-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        .welcome-gate-card {
+            background: #ffffff;
+            color: #0f172a;
+            width: 100%;
+            max-width: 760px;
+            border-radius: 20px;
+            padding: 32px 28px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+            position: relative;
+        }
+        body.dark-mode .welcome-gate-card {
+            background: #1e293b;
+            color: #f8fafc;
+            border-color: #334155;
+        }
+        .welcome-logo-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #dcfce7;
+            color: #166534;
+            padding: 6px 16px;
+            border-radius: 999px;
+            font-size: 0.84rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+        .welcome-gate-title {
+            font-size: 2rem;
+            font-weight: 900;
+            color: #064e3b;
+            margin: 0 0 8px 0;
+            letter-spacing: -0.5px;
+        }
+        body.dark-mode .welcome-gate-title {
+            color: #4ade80;
+        }
+        .welcome-gate-subtitle {
+            font-size: 0.96rem;
+            color: #475569;
+            max-width: 580px;
+            margin: 0 auto 24px auto;
+            line-height: 1.5;
+        }
+        body.dark-mode .welcome-gate-subtitle {
+            color: #94a3b8;
+        }
+        .welcome-roles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 14px;
+            margin-bottom: 18px;
+            text-align: left;
+        }
+        .welcome-role-box {
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 18px 16px;
+            background: #f8fafc;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        body.dark-mode .welcome-role-box {
+            background: #0f172a;
+            border-color: #334155;
+        }
+        .welcome-role-box:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.1);
+        }
+        .welcome-role-box.role-cidadao {
+            border-color: #22c55e;
+            background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
+        }
+        body.dark-mode .welcome-role-box.role-cidadao {
+            background: linear-gradient(180deg, rgba(22, 163, 74, 0.16) 0%, #0f172a 100%);
+            border-color: #22c55e;
+        }
+        .welcome-role-box.selected-mod {
+            border-color: #2563eb;
+            background: #eff6ff;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+        }
+        body.dark-mode .welcome-role-box.selected-mod {
+            background: rgba(37, 99, 235, 0.18);
+            border-color: #3b82f6;
+        }
+        .welcome-role-box.selected-adm {
+            border-color: #ea580c;
+            background: #fff7ed;
+            box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.2);
+        }
+        body.dark-mode .welcome-role-box.selected-adm {
+            background: rgba(234, 88, 12, 0.18);
+            border-color: #f97316;
+        }
+        .welcome-role-tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 800;
+            padding: 3px 9px;
+            border-radius: 999px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .welcome-role-btn {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: none;
+            font-weight: 800;
+            font-size: 0.88rem;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .welcome-role-btn:hover {
+            opacity: 0.92;
+        }
+        .welcome-password-drawer {
+            background: #f1f5f9;
+            border: 2px solid #cbd5e1;
+            border-radius: 14px;
+            padding: 18px;
+            margin-top: 8px;
+            text-align: left;
+            display: none;
+        }
+        body.dark-mode .welcome-password-drawer {
+            background: #0f172a;
+            border-color: #334155;
+        }
+        .welcome-password-drawer.open {
+            display: block;
+        }
     </style>
 </head>
 
 <body class="role-user">
+
+    <!-- TELA INICIAL DE ENTRADA (PORTÃO DE ACESSO CITTALIXO) -->
+    <div class="welcome-gate-overlay" id="tela-inicial-acesso">
+        <div class="welcome-gate-card">
+            <button type="button" id="btn-fechar-tela-inicial" class="pill-btn" onclick="fecharModalAcessoPerfil()" style="position:absolute; top:16px; right:16px; display:none;">
+                ✖ Voltar ao Mapa
+            </button>
+            <div class="welcome-logo-badge">🌱 Plataforma Pública de Gestão Ambiental • Olinda &amp; Recife</div>
+            <h1 class="welcome-gate-title">♻️ Bem-vindo ao CittaLixo</h1>
+            <p class="welcome-gate-subtitle">
+                Escolha como deseja acessar a plataforma. Moradores entram diretamente com <strong>1 clique</strong>; membros da equipe utilizam credencial de <strong>Moderador</strong> ou <strong>Administrador</strong>.
+            </p>
+
+            <div class="welcome-roles-grid">
+                <!-- Opção 1: Usuário (1 Clique e já entra) -->
+                <div class="welcome-role-box role-cidadao" onclick="entrarDiretoComoUsuario()">
+                    <div>
+                        <span class="welcome-role-tag" style="background:#dcfce7; color:#166534;">Acesso Livre • Sem Senha</span>
+                        <h3 style="margin:10px 0 6px 0; font-size:1.15rem; color:#15803d;">👤 Usuário (Cidadão)</h3>
+                        <p style="margin:0; font-size:0.83rem; color:var(--text-muted); line-height:1.45;">
+                            Consulte horários de coleta, Ecopontos, vote em pontos críticos, agende Cata-Treco e envie sugestões.
+                        </p>
+                    </div>
+                    <button type="button" class="welcome-role-btn" style="background:#16a34a; color:#ffffff;" onclick="event.stopPropagation(); entrarDiretoComoUsuario()">
+                        🚀 Entrar Agora como Usuário
+                    </button>
+                </div>
+
+                <!-- Opção 2: Moderador (Pede Senha) -->
+                <div class="welcome-role-box" id="card-welcome-moderador" onclick="selecionarPerfilRestritoTelaInicial('moderador')">
+                    <div>
+                        <span class="welcome-role-tag" style="background:#dbeafe; color:#1e40af;">Requer Senha</span>
+                        <h3 style="margin:10px 0 6px 0; font-size:1.15rem; color:#1d4ed8;">🕵️ Moderador</h3>
+                        <p style="margin:0; font-size:0.83rem; color:var(--text-muted); line-height:1.45;">
+                            Triagem operacional: aprovar sugestões de moradores, atualizar status de Cata-Treco e resolver denúncias.
+                        </p>
+                    </div>
+                    <button type="button" class="welcome-role-btn" style="background:#2563eb; color:#ffffff;" onclick="event.stopPropagation(); selecionarPerfilRestritoTelaInicial('moderador')">
+                        🔑 Acessar como Moderador
+                    </button>
+                </div>
+
+                <!-- Opção 3: Administrador (Pede Senha) -->
+                <div class="welcome-role-box" id="card-welcome-admin" onclick="selecionarPerfilRestritoTelaInicial('admin')">
+                    <div>
+                        <span class="welcome-role-tag" style="background:#ffedd5; color:#9a3412;">Requer Senha</span>
+                        <h3 style="margin:10px 0 6px 0; font-size:1.15rem; color:#c2410c;">🛡️ Administrador</h3>
+                        <p style="margin:0; font-size:0.83rem; color:var(--text-muted); line-height:1.45;">
+                            Gestão total: criar/editar/excluir rotas oficiais, moderar envios, auditar indicadores e exportar CSV.
+                        </p>
+                    </div>
+                    <button type="button" class="welcome-role-btn" style="background:#ea580c; color:#ffffff;" onclick="event.stopPropagation(); selecionarPerfilRestritoTelaInicial('admin')">
+                        🛡️ Acessar como Admin
+                    </button>
+                </div>
+            </div>
+
+            <!-- Gaveta de Senha para Moderador ou Admin -->
+            <form class="welcome-password-drawer" id="gaveta-senha-inicial" onsubmit="autenticarPerfilNoModal(event)" novalidate>
+                <input type="hidden" id="sel-perfil-acesso" value="moderador" />
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+                    <strong id="titulo-gaveta-senha" style="font-size:0.95rem; color:var(--text-main);">🔐 Digite a senha de Moderador:</strong>
+                    <span style="font-size:0.78rem; color:var(--text-muted);">Suporta acentos (à), cedilha (ç) e símbolos especiais</span>
+                </div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <input type="password" id="inp-senha-perfil" placeholder="Digite a senha do perfil selecionado..." style="flex:1; min-width:200px; padding:11px 14px; border-radius:10px; border:1px solid var(--border-color); font-size:0.95rem;" autocomplete="current-password" />
+                    <button type="button" class="pill-btn" onclick="alternarVisibilidadeSenhaModal()" title="Mostrar ou ocultar senha" style="padding:0 14px;">👁️</button>
+                    <button type="submit" class="btn-action btn-add" id="btn-confirmar-perfil" style="padding:11px 20px; font-weight:800;">🔓 Entrar no CittaLixo</button>
+                </div>
+                <p id="feedback-acesso-perfil" style="font-size:0.85rem; font-weight:700; min-height:20px; margin:8px 0 0 0;"></p>
+            </form>
+        </div>
+    </div>
 
     <header>
         <div class="header-top-bar">
@@ -1751,38 +1983,6 @@
         </div>
     </div>
 
-    <!-- Modal de Autenticação de Perfil (Usuário, Moderador e Admin) -->
-    <div class="modal-overlay" id="modal-acesso-perfil" onclick="if(event.target===this) fecharModalAcessoPerfil()">
-        <div class="modal-box" style="max-width:460px;">
-            <h2 style="margin-top:0; color:var(--green-dark);">🔐 Controle de Acesso por Perfil</h2>
-            <p style="font-size:0.86rem; color:var(--text-muted); margin-top:0;">
-                Selecione o perfil de acesso. O perfil <strong>👤 Usuário</strong> é livre; os perfis <strong>🕵️ Moderador</strong> e <strong>🛡️ Administrador</strong> exigem autenticação por senha segura:
-            </p>
-            <form onsubmit="autenticarPerfilNoModal(event)" novalidate>
-                <div class="form-group">
-                    <label for="sel-perfil-acesso">Perfil Desejado</label>
-                    <select id="sel-perfil-acesso" onchange="aoMudarSelectPerfilModal()">
-                        <option value="usuario">👤 Usuário (Acesso Livre — Consulta, Voto e Sugestões)</option>
-                        <option value="moderador">🕵️ Moderador (Aprovar Envios e Atualizar Status)</option>
-                        <option value="admin">🛡️ Administrador (Acesso Total — CRUD, Exclusões e Relatórios)</option>
-                    </select>
-                </div>
-                <div class="form-group" id="grupo-senha-perfil" style="margin-top:12px; display:none;">
-                    <label for="inp-senha-perfil">Senha de Acesso *</label>
-                    <div style="display:flex; gap:6px;">
-                        <input type="password" id="inp-senha-perfil" placeholder="Digite a senha do perfil selecionado..." style="flex:1;" autocomplete="current-password" />
-                        <button type="button" class="pill-btn" onclick="alternarVisibilidadeSenhaModal()" title="Mostrar ou ocultar senha">👁️</button>
-                    </div>
-                </div>
-                <p id="feedback-acesso-perfil" style="font-size:0.84rem; font-weight:700; min-height:20px; margin:10px 0 4px 0;"></p>
-                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
-                    <button type="button" class="pill-btn" onclick="fecharModalAcessoPerfil()">Cancelar</button>
-                    <button type="submit" class="btn-action btn-add" id="btn-confirmar-perfil">✅ Confirmar Perfil</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <footer>
         CittaLixo v3.4.0 • Dados abertos com OpenStreetMap, Leaflet, Esri Satellite &amp; OSRM (Zero Custo de API) • Instalável como App (PWA) • Olinda e Recife
     </footer>
@@ -1800,6 +2000,7 @@
         // Controle de Nível de Acesso: 'usuario' (padrão), 'moderador' ou 'admin'
         let nivelAcessoAtual = 'usuario';
         let tokenAcessoAtual = '';
+        let jaEntrouNoCitta = false;
 
         function temPermissaoModerador() {
             return nivelAcessoAtual === 'moderador' || nivelAcessoAtual === 'admin';
@@ -1827,10 +2028,10 @@
                 if (btnCad) btnCad.textContent = '➕ Cadastrar Ponto/Rota';
             } else {
                 document.body.classList.add('role-user');
-                btnRole.innerHTML = '🔐 Perfil: 👤 Usuário';
+                btnRole.innerHTML = '👤 Perfil: Usuário (Trocar)';
                 if (btnCad) btnCad.textContent = '💡 Sugerir Ponto/Rota';
                 document.getElementById('secao-cadastro').classList.remove('open');
-                if (abaAtual === 'gestor') {
+                if (typeof abaAtual !== 'undefined' && abaAtual === 'gestor') {
                     alternarAba('coleta');
                 }
             }
@@ -1840,34 +2041,64 @@
             if (typeof atualizarDashboard === 'function') atualizarDashboard();
         }
 
-        function abrirModalAcessoPerfil() {
+        function entrarDiretoComoUsuario() {
+            nivelAcessoAtual = 'usuario';
+            tokenAcessoAtual = '';
+            jaEntrouNoCitta = true;
+            aplicarNivelAcessoNaInterface();
+            fecharModalAcessoPerfil();
+        }
+
+        function selecionarPerfilRestritoTelaInicial(perfil) {
             const sel = document.getElementById('sel-perfil-acesso');
+            const gaveta = document.getElementById('gaveta-senha-inicial');
+            const titulo = document.getElementById('titulo-gaveta-senha');
             const inp = document.getElementById('inp-senha-perfil');
             const fb = document.getElementById('feedback-acesso-perfil');
-            if (sel) sel.value = nivelAcessoAtual;
+            const cardMod = document.getElementById('card-welcome-moderador');
+            const cardAdm = document.getElementById('card-welcome-admin');
+
+            if (sel) sel.value = perfil;
+            if (fb) fb.textContent = '';
+            if (cardMod) cardMod.classList.toggle('selected-mod', perfil === 'moderador');
+            if (cardAdm) cardAdm.classList.toggle('selected-adm', perfil === 'admin');
+
+            if (titulo) {
+                titulo.textContent = perfil === 'admin'
+                    ? '🛡️ Digite a senha de Administrador:'
+                    : '🕵️ Digite a senha de Moderador:';
+            }
+            if (gaveta) {
+                gaveta.classList.add('open');
+            }
             if (inp) {
                 inp.value = '';
                 inp.type = 'password';
+                setTimeout(() => inp.focus(), 60);
             }
+        }
+
+        function abrirModalAcessoPerfil() {
+            const tela = document.getElementById('tela-inicial-acesso');
+            const btnFechar = document.getElementById('btn-fechar-tela-inicial');
+            const gaveta = document.getElementById('gaveta-senha-inicial');
+            const fb = document.getElementById('feedback-acesso-perfil');
+            const cardMod = document.getElementById('card-welcome-moderador');
+            const cardAdm = document.getElementById('card-welcome-admin');
+
             if (fb) fb.textContent = '';
-            aoMudarSelectPerfilModal();
-            document.getElementById('modal-acesso-perfil').classList.add('open');
-            if (sel && sel.value !== 'usuario' && inp) {
-                setTimeout(() => inp.focus(), 80);
-            }
+            if (gaveta) gaveta.classList.remove('open');
+            if (cardMod) cardMod.classList.remove('selected-mod');
+            if (cardAdm) cardAdm.classList.remove('selected-adm');
+            if (btnFechar) btnFechar.style.display = jaEntrouNoCitta ? 'inline-flex' : 'none';
+            if (tela) tela.classList.remove('hidden');
         }
 
         function fecharModalAcessoPerfil() {
-            document.getElementById('modal-acesso-perfil').classList.remove('open');
-        }
-
-        function aoMudarSelectPerfilModal() {
-            const sel = document.getElementById('sel-perfil-acesso');
-            const grp = document.getElementById('grupo-senha-perfil');
-            const fb = document.getElementById('feedback-acesso-perfil');
-            if (fb) fb.textContent = '';
-            if (sel && grp) {
-                grp.style.display = sel.value === 'usuario' ? 'none' : 'block';
+            const tela = document.getElementById('tela-inicial-acesso');
+            if (tela) tela.classList.add('hidden');
+            if (typeof map !== 'undefined' && map && typeof map.invalidateSize === 'function') {
+                setTimeout(() => map.invalidateSize(), 150);
             }
         }
 
@@ -1887,10 +2118,7 @@
             const senhaDigitada = (inp ? inp.value : '').trim();
 
             if (perfilEscolhido === 'usuario') {
-                nivelAcessoAtual = 'usuario';
-                tokenAcessoAtual = '';
-                aplicarNivelAcessoNaInterface();
-                fecharModalAcessoPerfil();
+                entrarDiretoComoUsuario();
                 return;
             }
 
@@ -1914,6 +2142,7 @@
                 }
                 nivelAcessoAtual = perfilEscolhido;
                 tokenAcessoAtual = encodeURIComponent(senhaDigitada);
+                jaEntrouNoCitta = true;
                 aplicarNivelAcessoNaInterface();
                 fecharModalAcessoPerfil();
             } catch (_) {
@@ -1923,6 +2152,7 @@
                 if ((perfilEscolhido === 'moderador' && okMod) || (perfilEscolhido === 'admin' && okAdm)) {
                     nivelAcessoAtual = perfilEscolhido;
                     tokenAcessoAtual = encodeURIComponent(senhaDigitada);
+                    jaEntrouNoCitta = true;
                     aplicarNivelAcessoNaInterface();
                     fecharModalAcessoPerfil();
                 } else {
