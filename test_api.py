@@ -244,10 +244,14 @@ def test_busca_sem_acento_votacao_unica_e_seguranca():
         assert r3["confirmacoes"] == 1
         assert r3["nao_esta_mais"] == 0
     finally:
-        client.delete(f"/denuncias/{den_id}", headers={"X-Admin-Token": "admin123"})
+        from urllib.parse import quote
+        client.delete(f"/denuncias/{den_id}", headers={"X-Admin-Token": quote("Adm@CittàLix0#ç2026!")})
 
 
 def test_validacao_geografica_e_moderacao_admin():
+    from urllib.parse import quote
+    token_adm = quote("Adm@CittàLix0#ç2026!")
+
     # 1. Rejeita coordenada no meio do Oceano Atlântico (422 Unprocessable Entity)
     ponto_oceano = {
         "nome": "Ponto em Alto Mar",
@@ -297,11 +301,11 @@ def test_validacao_geografica_e_moderacao_admin():
         assert all(p["id"] != ponto_sug_id for p in aprovados)
 
         # Admin aprova o ponto sugerido
-        resp_aprov = client.put(f"/pontos/{ponto_sug_id}/aprovar", headers={"X-Admin-Token": "admin123"})
+        resp_aprov = client.put(f"/pontos/{ponto_sug_id}/aprovar", headers={"X-Admin-Token": token_adm})
         assert resp_aprov.status_code == 200
         assert resp_aprov.json()["aprovado_admin"] == 1
     finally:
-        client.delete(f"/pontos/{ponto_sug_id}", headers={"X-Admin-Token": "admin123"})
+        client.delete(f"/pontos/{ponto_sug_id}", headers={"X-Admin-Token": token_adm})
 
 
 def test_perfis_usuario_moderador_e_admin_com_senhas_especiais():
@@ -312,18 +316,19 @@ def test_perfis_usuario_moderador_e_admin_com_senhas_especiais():
     assert r_user.status_code == 200
     assert r_user.json()["perfil"] == "usuario"
 
-    # 2. Login Moderador com senha segura contendo 'ç' e caracteres especiais
-    senha_mod = "M0d#CittaLix0!ç26"
+    # 2. Login Moderador com senha segura contendo 'à', 'ç' e caracteres especiais
+    senha_mod = "M0d#CittàLix0!ç26"
     r_mod = client.post("/auth/login", json={"perfil": "moderador", "senha": senha_mod})
     assert r_mod.status_code == 200
     assert r_mod.json()["perfil"] == "moderador"
 
-    # 3. Senha incorreta para Moderador ou Admin deve retornar 401
-    assert client.post("/auth/login", json={"perfil": "moderador", "senha": "errada"}).status_code == 401
+    # 3. Senha incorreta (ou sem crase) para Moderador ou Admin deve retornar 401
+    assert client.post("/auth/login", json={"perfil": "moderador", "senha": "M0d#CittaLix0!ç26"}).status_code == 401
+    assert client.post("/auth/login", json={"perfil": "admin", "senha": "Adm@CittaLix0#ç2026!"}).status_code == 401
     assert client.post("/auth/login", json={"perfil": "admin", "senha": senha_mod}).status_code == 401
 
-    # 4. Login Admin com senha segura contendo 'ç' e '@'
-    senha_adm = "Adm@CittaLix0#ç2026!"
+    # 4. Login Admin com senha segura contendo 'à', 'ç' e '@'
+    senha_adm = "Adm@CittàLix0#ç2026!"
     r_adm = client.post("/auth/login", json={"perfil": "admin", "senha": senha_adm})
     assert r_adm.status_code == 200
     assert r_adm.json()["perfil"] == "admin"
@@ -343,7 +348,7 @@ def test_perfis_usuario_moderador_e_admin_com_senhas_especiais():
     pid = criado["id"]
     try:
         assert criado["aprovado_admin"] == 0
-        # Moderador aprova com cabeçalho codificado (suportando 'ç')
+        # Moderador aprova com cabeçalho codificado (suportando 'à' e 'ç')
         r_aprov_mod = client.put(f"/pontos/{pid}/aprovar", headers={"X-Admin-Token": quote(senha_mod)})
         assert r_aprov_mod.status_code == 200
         assert r_aprov_mod.json()["aprovado_admin"] == 1

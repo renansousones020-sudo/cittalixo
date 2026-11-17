@@ -1918,8 +1918,8 @@
                 fecharModalAcessoPerfil();
             } catch (_) {
                 // Fallback offline se o servidor Python estiver desligado
-                const okMod = (senhaDigitada === 'M0d#CittaLix0!ç26' || senhaDigitada === 'M0d#CittàLix0!ç26' || senhaDigitada === 'Adm@CittaLix0#ç2026!' || senhaDigitada === 'Adm@CittàLix0#ç2026!');
-                const okAdm = (senhaDigitada === 'Adm@CittaLix0#ç2026!' || senhaDigitada === 'Adm@CittàLix0#ç2026!');
+                const okMod = (senhaDigitada === 'M0d#CittàLix0!ç26' || senhaDigitada === 'Adm@CittàLix0#ç2026!');
+                const okAdm = (senhaDigitada === 'Adm@CittàLix0#ç2026!');
                 if ((perfilEscolhido === 'moderador' && okMod) || (perfilEscolhido === 'admin' && okAdm)) {
                     nivelAcessoAtual = perfilEscolhido;
                     tokenAcessoAtual = encodeURIComponent(senhaDigitada);
@@ -2100,7 +2100,7 @@
             const headers = { ...(opts.headers || {}) };
             headers['X-User-Role'] = nivelAcessoAtual;
             if (temPermissaoModerador()) {
-                headers['X-Admin-Token'] = tokenAcessoAtual || 'admin123';
+                headers['X-Admin-Token'] = tokenAcessoAtual;
             }
             opts.headers = headers;
             return fetch(`${API_BASE}${caminho}`, opts);
