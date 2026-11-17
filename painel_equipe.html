@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CittaLixo — Painel Interativo de Equipe, Código & Atividades</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      --background: #f8fafc;
+      --card: #ffffff;
+      --content: #f1f5f9;
+      --border: #cbd5e1;
+      --foreground: #0f172a;
+      --muted-foreground: #475569;
+    }
+    body.dark {
+      --background: #0f172a;
+      --card: #1e293b;
+      --content: #334155;
+      --border: #475569;
+      --foreground: #f8fafc;
+      --muted-foreground: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-[var(--background)] text-[var(--foreground)] antialiased p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
+
+  <!-- Cabeçalho Principal -->
+  <header class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 md:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-sm">
+    <div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-600 text-white">♻️ CittaLixo v3.4.0</span>
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold border border-[var(--border)] text-[var(--muted-foreground)]" id="badge-save-status">💾 Salvo automaticamente</span>
+        <a href="/" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-600 hover:underline">🗺️ Voltar ao App CittaLixo</a>
+      </div>
+      <h1 class="text-lg md:text-xl font-bold mt-1">Painel de Acompanhamento da Equipe, Código &amp; Novas Modificações</h1>
+      <p class="text-xs text-[var(--muted-foreground)] mt-0.5">
+        Distribua funções para cada integrante, acompanhe a bateria de testes, cadastre novas funções e marque o progresso em tempo real.
+      </p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <button onclick="document.body.classList.toggle('dark')" class="px-2.5 py-2 rounded-lg text-xs font-semibold border border-[var(--border)] bg-[var(--content)] cursor-pointer">
+        🌙 Tema
+      </button>
+      <button onclick="abrirModalNovaTarefa()" class="px-3 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition cursor-pointer">
+        ➕ Nova Tarefa / Modificação
+      </button>
+      <button onclick="copiarResumoWhatsApp()" class="px-3 py-2 rounded-lg text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white transition cursor-pointer">
+        📲 Copiar Resumo p/ WhatsApp
+      </button>
+      <button onclick="exportarJSON()" class="px-3 py-2 rounded-lg text-xs font-semibold border border-[var(--border)] bg-[var(--content)] hover:opacity-80 transition cursor-pointer">
+        📥 Exportar JSON
+      </button>
+      <label class="px-3 py-2 rounded-lg text-xs font-semibold border border-[var(--border)] bg-[var(--content)] hover:opacity-80 transition cursor-pointer">
+        📤 Importar JSON
+        <input type="file" accept=".json" class="hidden" onchange="importarJSON(event)" />
+      </label>
+      <button onclick="resetarPadrao()" class="px-2.5 py-2 rounded-lg text-xs font-semibold border border-[var(--border)] text-[var(--muted-foreground)] hover:text-red-500 transition cursor-pointer" title="Restaurar tarefas originais da análise">
+        🔄 Restaurar Padrão
+      </button>
+    </div>
+  </header>
+
+  <!-- KPIs de Progresso Geral -->
+  <section class="grid grid-cols-2 md:grid-cols-5 gap-3">
+    <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3.5 shadow-sm">
+      <div class="text-xs text-[var(--muted-foreground)]">Total de Atividades</div>
+      <div class="text-2xl font-extrabold mt-1 tabular-nums" id="kpi-total">0</div>
+    </div>
+    <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3.5 shadow-sm">
+      <div class="text-xs text-[var(--muted-foreground)]">⏳ Pendentes</div>
+      <div class="text-2xl font-extrabold mt-1 text-amber-500 tabular-nums" id="kpi-pendentes">0</div>
+    </div>
+    <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3.5 shadow-sm">
+      <div class="text-xs text-[var(--muted-foreground)]">🔨 Em Andamento</div>
+      <div class="text-2xl font-extrabold mt-1 text-sky-500 tabular-nums" id="kpi-andamento">0</div>
+    </div>
+    <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3.5 shadow-sm">
+      <div class="text-xs text-[var(--muted-foreground)]">✅ Concluídas</div>
+      <div class="text-2xl font-extrabold mt-1 text-emerald-500 tabular-nums" id="kpi-concluidas">0</div>
+    </div>
+    <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3.5 col-span-2 md:col-span-1 shadow-sm">
+      <div class="flex items-center justify-between text-xs text-[var(--muted-foreground)]">
+        <span>Progresso Geral</span>
+        <span class="font-bold text-[var(--foreground)] tabular-nums" id="kpi-pct">0%</span>
+      </div>
+      <div class="w-full h-2.5 rounded-full bg-[var(--content)] border border-[var(--border)] overflow-hidden mt-2">
+        <div id="kpi-barra" class="h-full bg-emerald-500 transition-all duration-300" style="width: 0%;"></div>
+      </div>
+      <div class="text-xs text-[var(--muted-foreground)] mt-1 tabular-nums" id="kpi-subtarefas">0/0 subtarefas</div>
+    </div>
+  </section>
+
+  <!-- Abas de Navegação do Painel -->
+  <nav class="flex flex-wrap gap-2 border-b border-[var(--border)] pb-2">
+    <button id="tab-tarefas" onclick="mudarAba('tarefas')" class="px-3.5 py-2 rounded-lg text-xs font-bold bg-emerald-600 text-white cursor-pointer">
+      📋 Quadro de Tarefas &amp; Distribuição
+    </button>
+    <button id="tab-equipe" onclick="mudarAba('equipe')" class="px-3.5 py-2 rounded-lg text-xs font-bold bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] cursor-pointer">
+      👥 Gerenciar Equipe &amp; Carga de Trabalho
+    </button>
+    <button id="tab-diagnostico" onclick="mudarAba('diagnostico')" class="px-3.5 py-2 rounded-lg text-xs font-bold bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] cursor-pointer">
+      🔍 Análise Técnica do Código Atual
+    </button>
+  </nav>
+
+  <!-- ABA 1: QUADRO DE TAREFAS & FILTROS -->
+  <main id="secao-tarefas" class="space-y-4">
+    <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3.5 grid grid-cols-1 md:grid-cols-4 gap-3 shadow-sm">
+      <div>
+        <label class="block text-xs font-semibold text-[var(--muted-foreground)] mb-1">👤 Filtrar por Integrante</label>
+        <select id="filtro-membro" onchange="renderizarTudo()" class="w-full px-3 py-1.5 rounded-lg text-xs bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)]">
+          <option value="">Todos os integrantes</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-[var(--muted-foreground)] mb-1">📌 Filtrar por Status</label>
+        <select id="filtro-status" onchange="renderizarTudo()" class="w-full px-3 py-1.5 rounded-lg text-xs bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)]">
+          <option value="">Todos os status</option>
+          <option value="Pendente">⏳ Pendente</option>
+          <option value="Em Andamento">🔨 Em Andamento</option>
+          <option value="Concluído">✅ Concluído</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-[var(--muted-foreground)] mb-1">🗂️ Filtrar por Tipo de Atividade</label>
+        <select id="filtro-categoria" onchange="renderizarTudo()" class="w-full px-3 py-1.5 rounded-lg text-xs bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)]">
+          <option value="">Todas as categorias</option>
+          <option value="Testes & QA">🧪 Bateria de Testes &amp; QA</option>
+          <option value="Nova Função (Frontend)">🚀 Nova Função (Frontend / UI)</option>
+          <option value="Nova Função (Backend/API)">⚙️ Nova Função (Backend / API)</option>
+          <option value="Refatoração & Código">🧱 Refatoração &amp; Melhoria de Código</option>
+          <option value="Documentação & Dados">📖 Documentação &amp; Dados Reais</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-[var(--muted-foreground)] mb-1">🔎 Busca Rápida</label>
+        <input id="filtro-busca" type="text" oninput="renderizarTudo()" placeholder="Buscar tarefa, arquivo, função..." class="w-full px-3 py-1.5 rounded-lg text-xs bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)]" />
+      </div>
+    </div>
+
+    <div id="lista-tarefas" class="grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
+  </main>
+
+  <!-- ABA 2: GERENCIAR EQUIPE & CARGA DE TRABALHO -->
+  <section id="secao-equipe" class="hidden space-y-4">
+    <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-3 shadow-sm">
+      <h2 class="text-sm font-bold">👥 Cadastrar ou Renomear Integrantes do Grupo</h2>
+      <p class="text-xs text-[var(--muted-foreground)]">
+        Troque os nomes genéricos pelos nomes reais do seu grupo (ex: Renan, Lucas, Beatriz...). Todas as tarefas atribuídas atualizam na hora!
+      </p>
+      <div class="flex flex-wrap gap-2">
+        <input id="inp-novo-membro" type="text" placeholder="Nome do novo integrante e papel (ex: Carlos - Testes)" class="flex-1 min-w-[220px] px-3 py-2 rounded-lg text-xs bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)]" />
+        <button onclick="adicionarMembro()" class="px-4 py-2 rounded-lg text-xs font-bold bg-emerald-600 text-white cursor-pointer">
+          ➕ Adicionar Integrante
+        </button>
+      </div>
+      <div id="grid-membros" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-2"></div>
+    </div>
+  </section>
+
+  <!-- ABA 3: DIAGNÓSTICO TÉCNICO DO CÓDIGO ATUAL -->
+  <section id="secao-diagnostico" class="hidden space-y-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-2 shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-bold">🐍 Backend FastAPI (main.py — ~1.790 linhas)</span>
+          <span class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-600 text-white">Estável</span>
+        </div>
+        <p class="text-xs text-[var(--muted-foreground)]">
+          Gerencia o banco SQLite (<code>cittalixo.db</code> em modo WAL), busca sem acento (<code>norm_txt</code>), trava geográfica costeira de Olinda/Recife e moderação do Admin (<code>aprovado_admin</code>).
+        </p>
+        <div class="text-xs space-y-1 pt-1 border-t border-[var(--border)]">
+          <div>✅ <strong>Já implementado:</strong> Validação geográfica terrestre, proteção <code>X-Admin-Token</code>, limite Base64 (550 KB) e voto único idempotente.</div>
+          <div>⚠️ <strong>Pontos de melhoria (mapeados nas tarefas):</strong> Extrair <code>seed_data.py</code> (~755 linhas de dados iniciais), criar endpoint <code>GET /estatisticas</code>, adicionar cálculo de SLA (<code>resolvido_em</code>) e login via API.</div>
+        </div>
+      </div>
+
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-2 shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-bold">🗺️ Frontend SPA/PWA (index.html — ~4.785 linhas)</span>
+          <span class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-600 text-white">Estável</span>
+        </div>
+        <p class="text-xs text-[var(--muted-foreground)]">
+          Interface completa com Leaflet, rotas OSRM, Satélite Esri, Autocomplete inteligente em 8 campos, Quiz de 12 perguntas, Cidadão Eco e Central de Moderação.
+        </p>
+        <div class="text-xs space-y-1 pt-1 border-t border-[var(--border)]">
+          <div>✅ <strong>Já implementado:</strong> Sanitização anti-XSS (<code>escaparHtml</code>), bloqueio de clique no mar, Ordem de Serviço Diária e avisos de estimativa técnica.</div>
+          <div>⚠️ <strong>Pontos de melhoria (mapeados nas tarefas):</strong> Busca textual na aba de Denúncias, sincronização automática da fila offline quando o servidor reconectar e calculadora de 1m³ para Ecoestações.</div>
+        </div>
+      </div>
+
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-2 shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-bold">🧪 Suíte de Testes (test_api.py — 9 testes)</span>
+          <span class="px-2 py-0.5 rounded text-xs font-bold bg-sky-600 text-white">9/9 Passando</span>
+        </div>
+        <p class="text-xs text-[var(--muted-foreground)]">
+          Testa CRUD de pontos, denúncias, cata-treco, busca sem acento, rejeição de token inválido, trava de alto-mar e aprovação de ponto sugerido.
+        </p>
+        <div class="text-xs space-y-1 pt-1 border-t border-[var(--border)]">
+          <div>⚠️ <strong>O que falta testar (Pacote A):</strong> Isolar banco de teste com <code>tmp_path</code> para não usar o <code>cittalixo.db</code> real, testar aprovação de Denúncias e Cata-Treco e testar rotas com waypoints no mar.</div>
+        </div>
+      </div>
+
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-2 shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-bold">📖 Documentação &amp; PWA (README.md + sw.js)</span>
+          <span class="px-2 py-0.5 rounded text-xs font-bold bg-amber-500 text-white">Atualizar Docs</span>
+        </div>
+        <p class="text-xs text-[var(--muted-foreground)]">
+          O <code>sw.js</code> já está na versão <code>v3.4.0</code> fazendo cache de todas as rotas principais, mas o <code>README.md</code> ainda descreve uma versão anterior.
+        </p>
+        <div class="text-xs space-y-1 pt-1 border-t border-[var(--border)]">
+          <div>⚠️ <strong>O que falta (Pacote E):</strong> Documentar os novos endpoints de moderação e votação no <code>README.md</code> e adicionar novos pontos reais verificados.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MODAL: CRIAR / EDITAR TAREFA -->
+  <div id="modal-tarefa" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+    <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 w-full max-w-xl space-y-3 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <h3 id="modal-titulo" class="text-base font-bold">➕ Nova Atividade / Modificação</h3>
+        <button onclick="fecharModalTarefa()" class="text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] cursor-pointer">✕ Fechar</button>
+      </div>
+      <input type="hidden" id="inp-tarefa-id" />
+      <div class="space-y-2">
+        <div>
+          <label class="block text-xs font-semibold mb-1">Título da Atividade / Função *</label>
+          <input id="inp-tarefa-titulo" type="text" placeholder="Ex: Criar bateria de testes para aprovação de Cata-Treco" class="w-full px-3 py-2 rounded-lg text-xs bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)]" />
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <div>
+            <label class="block text-xs font-semibold mb-1">Responsável *</label>
+            <select id="inp-tarefa-membro" class="w-full px-3 py-2 rounded-lg text-xs bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)]"></select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold mb-1">Categoria *</label>
+            <select id="inp-tarefa-categoria" class="w-full px-3 py-2 rounded-lg text-xs bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)]">
+              <option value="Testes & QA">🧪 Testes &amp; QA</option>
+              <option value="Nova Função (Frontend)">🚀 Nova Função (Frontend)</option>
+              <option value="Nova Função (Backend/API)">⚙️ Nova Função (Backend/API)</option>
+              <option value="Refatoração & Código">🧱 Refatoração &amp; Código</option>
+              <option value="Documentação & Dados">📖 Documentação &amp; Dados</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold mb-1">Prioridade *</label>
+            <select id="inp-tarefa-prioridade" class="w-full px-3 py-2 rounded-lg text-xs bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)]">
+              <option value="Alta">🔴 Alta</option>
+              <option value="Média">🟡 Média</option>
+              <option value="Baixa">🟢 Baixa</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1">Arquivos / Linhas no Código (onde mexer)</label>
+          <input id="inp-tarefa-arquivos" type="text" placeholder="Ex: test_api.py (linhas 240-299) e main.py (linha 15)" class="w-full px-3 py-2 rounded-lg text-xs bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)]" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1">Explicação Técnica / O que deve ser feito</label>
+          <textarea id="inp-tarefa-desc" rows="2" placeholder="Descreva como o integrante deve implementar ou testar..." class="w-full px-3 py-2 rounded-lg text-xs bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)]"></textarea>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1">Checklist de Passos / Subtarefas (1 por linha)</label>
+          <textarea id="inp-tarefa-passos" rows="4" placeholder="Criar função X no main.py&#10;Testar retorno 200 no pytest&#10;Subir commit no GitHub" class="w-full px-3 py-2 rounded-lg text-xs bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)]"></textarea>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="fecharModalTarefa()" class="px-3 py-2 rounded-lg text-xs font-semibold border border-[var(--border)] cursor-pointer">Cancelar</button>
+        <button onclick="salvarTarefaModal()" class="px-4 py-2 rounded-lg text-xs font-bold bg-emerald-600 text-white cursor-pointer">💾 Salvar Atividade</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'cittalixo_painel_equipe_v1';
+
+    const DADOS_INICIAIS = {
+      membros: [
+        "Integrante 1 (QA & Testes)",
+        "Integrante 2 (Frontend & UI)",
+        "Integrante 3 (Backend & API)",
+        "Integrante 4 (Refatoração & Arquitetura)",
+        "Integrante 5 (Docs & Dados Reais)"
+      ],
+      tarefas: [
+        {
+          id: 1,
+          titulo: "Isolar Banco SQLite nos Testes Automatizados (pytest tmp_path)",
+          membro: "Integrante 1 (QA & Testes)",
+          categoria: "Testes & QA",
+          prioridade: "Alta",
+          status: "Pendente",
+          arquivos: "main.py (linha 15) e test_api.py (linhas 1–20)",
+          descricao: "Atualmente o pytest grava e deleta dados diretamente no arquivo cittalixo.db principal. Configurar variável CITTA_DB_PATH para usar banco temporário durante os testes.",
+          subtarefas: [
+            { texto: "Ler os.environ.get('CITTA_DB_PATH') no main.py para permitir trocar o banco nos testes", feito: false },
+            { texto: "Criar fixture no test_api.py com tmp_path criando banco limpo para a sessão de testes", feito: false },
+            { texto: "Executar pytest -q e confirmar que cittalixo.db principal não é alterado", feito: false }
+          ]
+        },
+        {
+          id: 2,
+          titulo: "Bateria de Testes de Moderação Admin (Denúncias, Cata-Treco e Rotas no Mar)",
+          membro: "Integrante 1 (QA & Testes)",
+          categoria: "Testes & QA",
+          prioridade: "Alta",
+          status: "Pendente",
+          arquivos: "test_api.py (linhas 245–299)",
+          descricao: "Expandir a suíte de testes automatizados para cobrir 100% das novas rotas de aprovação do Admin e validação de traçados de caminhão.",
+          subtarefas: [
+            { texto: "Criar teste enviando Denúncia e Cata-Treco com X-User-Role: usuario (verificar aprovado_admin == 0)", feito: false },
+            { texto: "Testar aprovação via PUT /denuncias/{id}/aprovar e PUT /catatreco/{id}/aprovar com X-Admin-Token", feito: false },
+            { texto: "Testar envio de rota_coordenadas com ponto no Oceano Atlântico (deve bloquear com HTTP 422)", feito: false },
+            { texto: "Executar checklist manual no navegador (clique no mar, autocomplete 'our'/'maran' e Ordem de Serviço)", feito: false }
+          ]
+        },
+        {
+          id: 3,
+          titulo: "Campo de Busca Textual e Autocomplete na Aba de Denúncias",
+          membro: "Integrante 2 (Frontend & UI)",
+          categoria: "Nova Função (Frontend)",
+          prioridade: "Alta",
+          status: "Pendente",
+          arquivos: "index.html (#toolbar-denuncias linha 1220 e renderizarDenuncias linha 3066)",
+          descricao: "As abas Coleta e Cata-Treco já têm busca por texto, mas a aba de Denúncias só filtra por status. Adicionar input de busca com autocomplete de bairros.",
+          subtarefas: [
+            { texto: "Inserir input #filtro-busca-denuncias dentro de #toolbar-denuncias no index.html", feito: false },
+            { texto: "Conectar o input ao autocomplete de bairros/regiões em inicializarTodosAutocompletesLocais()", feito: false },
+            { texto: "Filtrar todasAsDenuncias em renderizarDenuncias() por título, bairro, rua ou tipo de resíduo", feito: false }
+          ]
+        },
+        {
+          id: 4,
+          titulo: "Calculadora Interativa de Volume (Limite de 1m³ das Ecoestações)",
+          membro: "Integrante 2 (Frontend & UI)",
+          categoria: "Nova Função (Frontend)",
+          prioridade: "Média",
+          status: "Pendente",
+          arquivos: "index.html (#secao-catatreco-form linha 1335 ou aba Guia & Quiz)",
+          descricao: "Ajudar o cidadão a saber se o descarte dele cabe em uma Ecoestação (até 1m³/dia) ou se precisa agendar o caminhão Cata-Treco.",
+          subtarefas: [
+            { texto: "Criar botões seletores de itens comuns (Sofá 0.6m³, Colchão 0.3m³, Geladeira 0.5m³, Saco 50L 0.05m³)", feito: false },
+            { texto: "Exibir barra visual somando o volume em m³", feito: false },
+            { texto: "Mostrar recomendação automática: 'Leve à Ecoestação (<=1m³)' ou 'Agende Cata-Treco (>1m³)'", feito: false }
+          ]
+        },
+        {
+          id: 5,
+          titulo: "Sincronização Automática da Fila Offline quando o Servidor Reconectar",
+          membro: "Integrante 2 (Frontend & UI)",
+          categoria: "Nova Função (Frontend)",
+          prioridade: "Média",
+          status: "Pendente",
+          arquivos: "index.html (salvarPonto, salvarNovoCataTreco, salvarNovaDenuncia)",
+          descricao: "Quando um cadastro é feito no modo offline (fallback localStorage), enfileirar para enviar via POST automaticamente assim que a API responder.",
+          subtarefas: [
+            { texto: "Guardar registros criados sem servidor em localStorage ('cittalixo_fila_sync')", feito: false },
+            { texto: "Criar função sincronizarFilaOffline() chamada no carregamento e no evento window.ononline", feito: false },
+            { texto: "Exibir notificação verde quando os itens offline forem sincronizados com o banco SQLite", feito: false }
+          ]
+        },
+        {
+          id: 6,
+          titulo: "Criar Endpoint Consolidado GET /estatisticas na API FastAPI",
+          membro: "Integrante 3 (Backend & API)",
+          categoria: "Nova Função (Backend/API)",
+          prioridade: "Alta",
+          status: "Pendente",
+          arquivos: "main.py (após /health na linha 1215) e test_api.py",
+          descricao: "Expor indicadores agregados direto pelo backend (totais por cidade, modalidade, taxa de resolução, fila de moderação e top 5 bairros).",
+          subtarefas: [
+            { texto: "Criar rota @app.get('/estatisticas') consultando pontos, denuncias e catatreco no SQLite", feito: false },
+            { texto: "Retornar JSON estruturado com contagens por município (Olinda/Recife), status e pendências de Admin", feito: false },
+            { texto: "Adicionar test_estatisticas() no arquivo test_api.py", feito: false }
+          ]
+        },
+        {
+          id: 7,
+          titulo: "Registrar Data/Hora de Resolução (SLA de Atendimento no Painel Gestor)",
+          membro: "Integrante 3 (Backend & API)",
+          categoria: "Nova Função (Backend/API)",
+          prioridade: "Média",
+          status: "Pendente",
+          arquivos: "main.py (resolver_denuncia linha 1595 e recolher_catatreco linha 1705)",
+          descricao: "Salvar timestamp ISO quando o Admin marcar uma Denúncia como Resolvida ou um Cata-Treco como Recolhido para medir a velocidade de resposta.",
+          subtarefas: [
+            { texto: "Adicionar coluna resolvido_em / recolhido_em nas tabelas denuncias e catatreco em init_db()", feito: false },
+            { texto: "Preencher datetime.now().isoformat() ao concluir limpeza/recolhimento", feito: false },
+            { texto: "Exibir no card e na Ordem de Serviço Diária o horário em que foi concluído", feito: false }
+          ]
+        },
+        {
+          id: 8,
+          titulo: "Extrair Dados Iniciais para seed_data.py (Reduzir main.py em 750 linhas)",
+          membro: "Integrante 4 (Refatoração & Arquitetura)",
+          categoria: "Refatoração & Código",
+          prioridade: "Alta",
+          status: "Pendente",
+          arquivos: "main.py (linhas 165–920) -> novo arquivo seed_data.py",
+          descricao: "Separar as listas estáticas PONTOS_INICIAIS, DENUNCIAS_INICIAIS e CATATRECO_INICIAIS em um módulo dedicado para evitar conflitos de git merge.",
+          subtarefas: [
+            { texto: "Criar arquivo seed_data.py contendo PONTOS_INICIAIS, DENUNCIAS_INICIAIS e CATATRECO_INICIAIS", feito: false },
+            { texto: "Importar as 3 constantes no main.py", feito: false },
+            { texto: "Rodar pytest -q para garantir que a inicialização do banco continua idêntica", feito: false }
+          ]
+        },
+        {
+          id: 9,
+          titulo: "Endpoint de Login Admin no Backend (POST /admin/login)",
+          membro: "Integrante 4 (Refatoração & Arquitetura)",
+          categoria: "Refatoração & Código",
+          prioridade: "Média",
+          status: "Pendente",
+          arquivos: "main.py (linha 35) e index.html (alternarNivelAcesso)",
+          descricao: "Remover a validação de senha fixa no código cliente e validar a senha do Gestor consultando o backend.",
+          subtarefas: [
+            { texto: "Criar @app.post('/admin/login') validando a senha contra CITTA_ADMIN_TOKEN no servidor", feito: false },
+            { texto: "Atualizar o botão Modo Admin no index.html para autenticar via fetch('/admin/login')", feito: false },
+            { texto: "Manter fallback local seguro caso o usuário abra o arquivo offline", feito: false }
+          ]
+        },
+        {
+          id: 10,
+          titulo: "Atualizar README.md para v3.4.0 e Adicionar Cooperativas Reais de Olinda/Recife",
+          membro: "Integrante 5 (Docs & Dados Reais)",
+          categoria: "Documentação & Dados",
+          prioridade: "Média",
+          status: "Pendente",
+          arquivos: "README.md e main.py (PONTOS_INICIAIS)",
+          descricao: "Documentar todas as novas funções (Validação Geográfica, Moderação Admin, Voto Único, Fotos Base64, Quiz de 12 perguntas) e cadastrar cooperativas.",
+          subtarefas: [
+            { texto: "Atualizar tabela de endpoints e recursos da v3.4.0 no README.md", feito: false },
+            { texto: "Adicionar pontos reais de cooperativas (ex: COOCARES Olinda, Ecoestação Cais de Santa Rita)", feito: false },
+            { texto: "Criar roteiro curto de demonstração de 3 minutos para apresentação do projeto", feito: false }
+          ]
+        }
+      ]
+    };
+
+    let estado = carregarEstado();
+
+    function carregarEstado() {
+      try {
+        const salvo = localStorage.getItem(STORAGE_KEY);
+        if (salvo) {
+          const parsed = JSON.parse(salvo);
+          if (parsed && Array.isArray(parsed.membros) && Array.isArray(parsed.tarefas)) {
+            return parsed;
+          }
+        }
+      } catch (_) {}
+      return JSON.parse(JSON.stringify(DADOS_INICIAIS));
+    }
+
+    function salvarEstado() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(estado));
+      const badge = document.getElementById('badge-save-status');
+      if (badge) {
+        const hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        badge.textContent = `💾 Salvo às ${hora}`;
+      }
+    }
+
+    function escapar(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function mudarAba(aba) {
+      ['tarefas', 'equipe', 'diagnostico'].forEach(nome => {
+        document.getElementById(`secao-${nome}`).classList.toggle('hidden', nome !== aba);
+        const btn = document.getElementById(`tab-${nome}`);
+        if (nome === aba) {
+          btn.className = 'px-3.5 py-2 rounded-lg text-xs font-bold bg-emerald-600 text-white cursor-pointer';
+        } else {
+          btn.className = 'px-3.5 py-2 rounded-lg text-xs font-bold bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] cursor-pointer';
+        }
+      });
+    }
+
+    function atualizarSelectsMembros() {
+      const selFiltro = document.getElementById('filtro-membro');
+      const selModal = document.getElementById('inp-tarefa-membro');
+      const valorAtualFiltro = selFiltro.value;
+
+      selFiltro.innerHTML = `<option value="">Todos os integrantes</option>` +
+        estado.membros.map(m => `<option value="${escapar(m)}">${escapar(m)}</option>`).join('');
+      selFiltro.value = estado.membros.includes(valorAtualFiltro) ? valorAtualFiltro : '';
+
+      selModal.innerHTML = estado.membros.map(m => `<option value="${escapar(m)}">${escapar(m)}</option>`).join('');
+    }
+
+    function renderizarKPIs() {
+      const total = estado.tarefas.length;
+      const pendentes = estado.tarefas.filter(t => t.status === 'Pendente').length;
+      const andamento = estado.tarefas.filter(t => t.status === 'Em Andamento').length;
+      const concluidas = estado.tarefas.filter(t => t.status === 'Concluído').length;
+
+      let totalSub = 0;
+      let feitasSub = 0;
+      estado.tarefas.forEach(t => {
+        (t.subtarefas || []).forEach(s => {
+          totalSub++;
+          if (s.feito) feitasSub++;
+        });
+      });
+
+      const pct = totalSub > 0
+        ? Math.round((feitasSub / totalSub) * 100)
+        : (total > 0 ? Math.round((concluidas / total) * 100) : 0);
+
+      document.getElementById('kpi-total').textContent = total;
+      document.getElementById('kpi-pendentes').textContent = pendentes;
+      document.getElementById('kpi-andamento').textContent = andamento;
+      document.getElementById('kpi-concluidas').textContent = concluidas;
+      document.getElementById('kpi-pct').textContent = `${pct}%`;
+      document.getElementById('kpi-barra').style.width = `${pct}%`;
+      document.getElementById('kpi-subtarefas').textContent = `${feitasSub}/${totalSub} passos concluídos`;
+    }
+
+    function renderizarMembros() {
+      const grid = document.getElementById('grid-membros');
+      grid.innerHTML = estado.membros.map((nome, idx) => {
+        const tarefasMembro = estado.tarefas.filter(t => t.membro === nome);
+        const concluidas = tarefasMembro.filter(t => t.status === 'Concluído').length;
+        const total = tarefasMembro.length;
+        const pct = total > 0 ? Math.round((concluidas / total) * 100) : 0;
+
+        return `
+          <div class="bg-[var(--background)] border border-[var(--border)] rounded-xl p-3.5 space-y-2.5">
+            <div class="flex items-center justify-between gap-2">
+              <input
+                type="text"
+                value="${escapar(nome)}"
+                onchange="renomearMembro(${idx}, this.value)"
+                class="font-bold text-xs px-2.5 py-1.5 rounded bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] flex-1"
+                title="Clique para editar o nome deste integrante"
+              />
+              <button onclick="removerMembro(${idx})" class="text-xs text-[var(--muted-foreground)] hover:text-red-500 px-1.5 cursor-pointer" title="Remover integrante">🗑️</button>
+            </div>
+            <div class="flex items-center justify-between text-xs text-[var(--muted-foreground)]">
+              <span>${total} ${total === 1 ? 'tarefa atribuída' : 'tarefas atribuídas'}</span>
+              <span class="font-bold text-[var(--foreground)]">${concluidas}/${total} (${pct}%)</span>
+            </div>
+            <div class="w-full h-2 rounded-full bg-[var(--card)] overflow-hidden">
+              <div class="h-full bg-emerald-500 transition-all" style="width:${pct}%;"></div>
+            </div>
+            <button onclick="filtrarPorMembro('${escapar(nome)}')" class="w-full py-1.5 rounded-lg text-xs font-semibold border border-[var(--border)] bg-[var(--card)] hover:opacity-80 cursor-pointer">
+              🔍 Ver Tarefas de ${escapar(nome.split('(')[0].trim())}
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filtrarPorMembro(nome) {
+      mudarAba('tarefas');
+      document.getElementById('filtro-membro').value = nome;
+      renderizarTudo();
+    }
+
+    function adicionarMembro() {
+      const inp = document.getElementById('inp-novo-membro');
+      const nome = inp.value.trim();
+      if (!nome) return;
+      if (!estado.membros.includes(nome)) {
+        estado.membros.push(nome);
+        inp.value = '';
+        salvarEstado();
+        renderizarTudo();
+      }
+    }
+
+    function renomearMembro(idx, novoNome) {
+      const limpo = novoNome.trim();
+      if (!limpo) return;
+      const antigo = estado.membros[idx];
+      estado.membros[idx] = limpo;
+      estado.tarefas.forEach(t => {
+        if (t.membro === antigo) t.membro = limpo;
+      });
+      salvarEstado();
+      renderizarTudo();
+    }
+
+    function removerMembro(idx) {
+      if (estado.membros.length <= 1) {
+        alert('Mantenha pelo menos 1 integrante na equipe.');
+        return;
+      }
+      const nome = estado.membros[idx];
+      if (!confirm(`Remover "${nome}" da lista de integrantes?`)) return;
+      estado.membros.splice(idx, 1);
+      salvarEstado();
+      renderizarTudo();
+    }
+
+    function renderizarTarefas() {
+      const container = document.getElementById('lista-tarefas');
+      const fMembro = document.getElementById('filtro-membro').value;
+      const fStatus = document.getElementById('filtro-status').value;
+      const fCat = document.getElementById('filtro-categoria').value;
+      const fBusca = document.getElementById('filtro-busca').value.trim().toLowerCase();
+
+      const filtradas = estado.tarefas.filter(t => {
+        if (fMembro && t.membro !== fMembro) return false;
+        if (fStatus && t.status !== fStatus) return false;
+        if (fCat && t.categoria !== fCat) return false;
+        if (fBusca) {
+          const texto = `${t.titulo} ${t.membro} ${t.categoria} ${t.arquivos} ${t.descricao}`.toLowerCase();
+          if (!texto.includes(fBusca)) return false;
+        }
+        return true;
+      });
+
+      if (filtradas.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full bg-[var(--card)] border border-[var(--border)] rounded-xl p-6 text-center text-xs text-[var(--muted-foreground)]">
+            Nenhuma atividade encontrada com esses filtros. Clique em <strong>➕ Nova Tarefa / Modificação</strong> para criar uma!
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtradas.map(t => {
+        const corPrio = t.prioridade === 'Alta'
+          ? 'bg-red-500/15 text-red-500 border-red-500/30'
+          : (t.prioridade === 'Média' ? 'bg-amber-500/15 text-amber-500 border-amber-500/30' : 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30');
+
+        const corStatus = t.status === 'Concluído'
+          ? 'bg-emerald-600 text-white'
+          : (t.status === 'Em Andamento' ? 'bg-sky-600 text-white' : 'bg-amber-500 text-white');
+
+        const sub = t.subtarefas || [];
+        const feitas = sub.filter(s => s.feito).length;
+        const pctSub = sub.length > 0 ? Math.round((feitas / sub.length) * 100) : (t.status === 'Concluído' ? 100 : 0);
+
+        const opcoesMembro = estado.membros.map(m =>
+          `<option value="${escapar(m)}" ${m === t.membro ? 'selected' : ''}>👤 ${escapar(m)}</option>`
+        ).join('');
+
+        return `
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 flex flex-col justify-between gap-3 shadow-sm">
+            <div class="space-y-2.5">
+              <div class="flex items-center justify-between gap-2 flex-wrap">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="px-2 py-0.5 rounded text-xs font-bold ${corStatus}">${escapar(t.status)}</span>
+                  <span class="px-2 py-0.5 rounded text-xs font-semibold border ${corPrio}">Prioridade ${escapar(t.prioridade)}</span>
+                  <span class="px-2 py-0.5 rounded text-xs font-semibold border border-[var(--border)] text-[var(--muted-foreground)]">${escapar(t.categoria)}</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <button onclick="editarTarefa(${t.id})" class="px-2 py-1 rounded text-xs border border-[var(--border)] hover:opacity-80 cursor-pointer" title="Editar tarefa">✏️</button>
+                  <button onclick="excluirTarefa(${t.id})" class="px-2 py-1 rounded text-xs border border-[var(--border)] hover:text-red-500 cursor-pointer" title="Excluir tarefa">🗑️</button>
+                </div>
+              </div>
+
+              <h3 class="text-sm font-bold leading-snug ${t.status === 'Concluído' ? 'line-through opacity-70' : ''}">${escapar(t.titulo)}</h3>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                <div>
+                  <label class="block text-xs text-[var(--muted-foreground)] mb-0.5">Responsável atribuído:</label>
+                  <select onchange="alterarResponsavelTarefa(${t.id}, this.value)" class="w-full px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)]">
+                    ${opcoesMembro}
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs text-[var(--muted-foreground)] mb-0.5">Status da atividade:</label>
+                  <select onchange="alterarStatusTarefa(${t.id}, this.value)" class="w-full px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)]">
+                    <option value="Pendente" ${t.status === 'Pendente' ? 'selected' : ''}>⏳ Pendente</option>
+                    <option value="Em Andamento" ${t.status === 'Em Andamento' ? 'selected' : ''}>🔨 Em Andamento</option>
+                    <option value="Concluído" ${t.status === 'Concluído' ? 'selected' : ''}>✅ Concluído</option>
+                  </select>
+                </div>
+              </div>
+
+              ${t.arquivos ? `
+                <div class="px-2.5 py-1.5 rounded-lg bg-[var(--background)] border border-[var(--border)] text-xs font-mono">
+                  📂 <span class="text-[var(--muted-foreground)]">Arquivos:</span> ${escapar(t.arquivos)}
+                </div>
+              ` : ''}
+
+              ${t.descricao ? `<p class="text-xs text-[var(--muted-foreground)] leading-relaxed">${escapar(t.descricao)}</p>` : ''}
+
+              <div class="space-y-1.5 pt-1">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-semibold">Checklist de Execução (${feitas}/${sub.length})</span>
+                  <span class="font-mono tabular-nums">${pctSub}%</span>
+                </div>
+                <div class="w-full h-1.5 rounded-full bg-[var(--background)] overflow-hidden">
+                  <div class="h-full bg-emerald-500 transition-all" style="width:${pctSub}%;"></div>
+                </div>
+                <div class="space-y-1 pt-1">
+                  ${sub.map((item, sIdx) => `
+                    <label class="flex items-start gap-2 text-xs cursor-pointer select-none py-0.5">
+                      <input
+                        type="checkbox"
+                        ${item.feito ? 'checked' : ''}
+                        onchange="alternarSubtarefa(${t.id}, ${sIdx})"
+                        class="mt-0.5 accent-emerald-600 cursor-pointer"
+                      />
+                      <span class="${item.feito ? 'line-through text-[var(--muted-foreground)]' : ''}">${escapar(item.texto)}</span>
+                    </label>
+                  `).join('')}
+                </div>
+                <div class="flex gap-1.5 pt-1">
+                  <input
+                    type="text"
+                    id="novo-passo-${t.id}"
+                    placeholder="+ Adicionar passo ao checklist..."
+                    onkeydown="if(event.key==='Enter') adicionarPassoRapido(${t.id})"
+                    class="flex-1 px-2.5 py-1 rounded text-xs bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)]"
+                  />
+                  <button onclick="adicionarPassoRapido(${t.id})" class="px-2.5 py-1 rounded text-xs font-bold border border-[var(--border)] bg-[var(--background)] hover:opacity-80 cursor-pointer">+</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function alterarResponsavelTarefa(id, novoMembro) {
+      const t = estado.tarefas.find(x => x.id === id);
+      if (!t) return;
+      t.membro = novoMembro;
+      salvarEstado();
+      renderizarTudo();
+    }
+
+    function alterarStatusTarefa(id, novoStatus) {
+      const t = estado.tarefas.find(x => x.id === id);
+      if (!t) return;
+      t.status = novoStatus;
+      if (novoStatus === 'Concluído' && Array.isArray(t.subtarefas)) {
+        t.subtarefas.forEach(s => { s.feito = true; });
+      }
+      salvarEstado();
+      renderizarTudo();
+    }
+
+    function alternarSubtarefa(tarefaId, subIdx) {
+      const t = estado.tarefas.find(x => x.id === tarefaId);
+      if (!t || !t.subtarefas || !t.subtarefas[subIdx]) return;
+      t.subtarefas[subIdx].feito = !t.subtarefas[subIdx].feito;
+
+      const total = t.subtarefas.length;
+      const feitas = t.subtarefas.filter(s => s.feito).length;
+      if (feitas === total && total > 0) {
+        t.status = 'Concluído';
+      } else if (feitas > 0) {
+        t.status = 'Em Andamento';
+      } else {
+        t.status = 'Pendente';
+      }
+      salvarEstado();
+      renderizarTudo();
+    }
+
+    function adicionarPassoRapido(tarefaId) {
+      const inp = document.getElementById(`novo-passo-${tarefaId}`);
+      if (!inp) return;
+      const texto = inp.value.trim();
+      if (!texto) return;
+      const t = estado.tarefas.find(x => x.id === tarefaId);
+      if (!t) return;
+      if (!Array.isArray(t.subtarefas)) t.subtarefas = [];
+      t.subtarefas.push({ texto, feito: false });
+      if (t.status === 'Concluído') t.status = 'Em Andamento';
+      inp.value = '';
+      salvarEstado();
+      renderizarTudo();
+    }
+
+    function abrirModalNovaTarefa() {
+      atualizarSelectsMembros();
+      document.getElementById('modal-titulo').textContent = '➕ Nova Atividade / Modificação';
+      document.getElementById('inp-tarefa-id').value = '';
+      document.getElementById('inp-tarefa-titulo').value = '';
+      document.getElementById('inp-tarefa-arquivos').value = '';
+      document.getElementById('inp-tarefa-desc').value = '';
+      document.getElementById('inp-tarefa-passos').value = '';
+      document.getElementById('inp-tarefa-prioridade').value = 'Alta';
+      document.getElementById('modal-tarefa').classList.remove('hidden');
+    }
+
+    function editarTarefa(id) {
+      const t = estado.tarefas.find(x => x.id === id);
+      if (!t) return;
+      atualizarSelectsMembros();
+      document.getElementById('modal-titulo').textContent = '✏️ Editar Atividade';
+      document.getElementById('inp-tarefa-id').value = String(t.id);
+      document.getElementById('inp-tarefa-titulo').value = t.titulo || '';
+      document.getElementById('inp-tarefa-membro').value = t.membro || estado.membros[0];
+      document.getElementById('inp-tarefa-categoria').value = t.categoria || 'Nova Função (Frontend)';
+      document.getElementById('inp-tarefa-prioridade').value = t.prioridade || 'Média';
+      document.getElementById('inp-tarefa-arquivos').value = t.arquivos || '';
+      document.getElementById('inp-tarefa-desc').value = t.descricao || '';
+      document.getElementById('inp-tarefa-passos').value = (t.subtarefas || []).map(s => s.texto).join('\n');
+      document.getElementById('modal-tarefa').classList.remove('hidden');
+    }
+
+    function fecharModalTarefa() {
+      document.getElementById('modal-tarefa').classList.add('hidden');
+    }
+
+    function salvarTarefaModal() {
+      const idStr = document.getElementById('inp-tarefa-id').value;
+      const titulo = document.getElementById('inp-tarefa-titulo').value.trim();
+      if (!titulo) {
+        alert('Digite o título da atividade.');
+        return;
+      }
+      const membro = document.getElementById('inp-tarefa-membro').value;
+      const categoria = document.getElementById('inp-tarefa-categoria').value;
+      const prioridade = document.getElementById('inp-tarefa-prioridade').value;
+      const arquivos = document.getElementById('inp-tarefa-arquivos').value.trim();
+      const descricao = document.getElementById('inp-tarefa-desc').value.trim();
+      const linhasPassos = document.getElementById('inp-tarefa-passos').value
+        .split('\n')
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      if (idStr) {
+        const t = estado.tarefas.find(x => x.id === Number(idStr));
+        if (t) {
+          t.titulo = titulo;
+          t.membro = membro;
+          t.categoria = categoria;
+          t.prioridade = prioridade;
+          t.arquivos = arquivos;
+          t.descricao = descricao;
+          const mapaAntigo = new Map((t.subtarefas || []).map(s => [s.texto, s.feito]));
+          t.subtarefas = linhasPassos.map(txt => ({ texto: txt, feito: mapaAntigo.get(txt) || false }));
+        }
+      } else {
+        const novoId = Math.max(0, ...estado.tarefas.map(x => x.id || 0)) + 1;
+        estado.tarefas.unshift({
+          id: novoId,
+          titulo,
+          membro,
+          categoria,
+          prioridade,
+          status: 'Pendente',
+          arquivos,
+          descricao,
+          subtarefas: linhasPassos.map(txt => ({ texto: txt, feito: false }))
+        });
+      }
+
+      salvarEstado();
+      fecharModalTarefa();
+      renderizarTudo();
+    }
+
+    function excluirTarefa(id) {
+      const t = estado.tarefas.find(x => x.id === id);
+      if (!t) return;
+      if (!confirm(`Excluir a atividade "${t.titulo}"?`)) return;
+      estado.tarefas = estado.tarefas.filter(x => x.id !== id);
+      salvarEstado();
+      renderizarTudo();
+    }
+
+    function copiarResumoWhatsApp() {
+      const linhas = ['♻️ *CITTALIXO v3.4.0 — DISTRIBUIÇÃO DE ATIVIDADES DA EQUIPE*', ''];
+      estado.membros.forEach(m => {
+        const doMembro = estado.tarefas.filter(t => t.membro === m);
+        if (doMembro.length === 0) return;
+        linhas.push(`👤 *${m}*`);
+        doMembro.forEach(t => {
+          const icone = t.status === 'Concluído' ? '✅' : (t.status === 'Em Andamento' ? '🔨' : '⏳');
+          linhas.push(`  ${icone} ${t.titulo} _(${t.status})_`);
+          if (t.arquivos) linhas.push(`      📂 ${t.arquivos}`);
+        });
+        linhas.push('');
+      });
+
+      const texto = linhas.join('\n');
+      navigator.clipboard.writeText(texto).then(() => {
+        alert('✅ Resumo copiado! Agora é só colar no WhatsApp do grupo.');
+      }).catch(() => {
+        prompt('Copie o resumo abaixo:', texto);
+      });
+    }
+
+    function exportarJSON() {
+      const blob = new Blob([JSON.stringify(estado, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'cittalixo_plano_equipe.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importarJSON(ev) {
+      const file = ev.target.files && ev.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const dados = JSON.parse(e.target.result);
+          if (dados && Array.isArray(dados.membros) && Array.isArray(dados.tarefas)) {
+            estado = dados;
+            salvarEstado();
+            renderizarTudo();
+            alert('✅ Painel da equipe importado com sucesso!');
+          } else {
+            alert('⚠️ Arquivo JSON inválido.');
+          }
+        } catch (_) {
+          alert('⚠️ Erro ao ler o arquivo JSON.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function resetarPadrao() {
+      if (!confirm('Restaurar todas as tarefas e integrantes para a configuração original da análise?')) return;
+      estado = JSON.parse(JSON.stringify(DADOS_INICIAIS));
+      salvarEstado();
+      renderizarTudo();
+    }
+
+    function renderizarTudo() {
+      atualizarSelectsMembros();
+      renderizarKPIs();
+      renderizarMembros();
+      renderizarTarefas();
+    }
+
+    renderizarTudo();
+  </script>
+</body>
+</html>

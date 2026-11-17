@@ -1186,6 +1186,11 @@ def inicio():
     return FileResponse(BASE_DIR / "index.html")
 
 
+@app.get("/equipe")
+def painel_equipe():
+    return FileResponse(BASE_DIR / "painel_equipe.html")
+
+
 @app.get("/manifest.json")
 def pwa_manifest():
     return FileResponse(BASE_DIR / "manifest.json", media_type="application/manifest+json")
